@@ -551,6 +551,11 @@
   font-weight: 600;
 }
 
+.watch-form-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
 /* Nav link */
 .nav-link {
   color: #fff;

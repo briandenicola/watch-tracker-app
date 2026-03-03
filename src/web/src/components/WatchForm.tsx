@@ -5,12 +5,13 @@ interface WatchFormProps {
   initial?: Partial<CreateWatch>;
   onSubmit: (data: CreateWatch, files: File[]) => void;
   submitLabel?: string;
+  onCancel?: () => void;
 }
 
 const MOVEMENT_TYPES: MovementType[] = ['Automatic', 'Manual', 'Quartz', 'Digital'];
 const BAND_TYPE_OPTIONS = ['Black Leather', 'Brown Leather', 'Titanium'];
 
-export default function WatchForm({ initial, onSubmit, submitLabel = 'Save' }: WatchFormProps) {
+export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onCancel }: WatchFormProps) {
   const [brand, setBrand] = useState(initial?.brand ?? '');
   const [model, setModel] = useState(initial?.model ?? '');
   const [movementType, setMovementType] = useState<MovementType>(initial?.movementType ?? 'Automatic');
@@ -125,7 +126,10 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save' }: W
         {files.length > 0 && <p className="file-count">{files.length} file(s) selected</p>}
       </fieldset>
 
-      <button type="submit">{submitLabel}</button>
+      <div className="watch-form-actions">
+        <button type="submit">{submitLabel}</button>
+        {onCancel && <button type="button" className="btn btn-danger" onClick={onCancel}>Cancel</button>}
+      </div>
     </form>
   );
 }
