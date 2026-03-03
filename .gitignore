@@ -10,6 +10,7 @@ src/web/dist/
 # Docker / secrets
 .env
 src/api/uploads/
+src/web/.env
 
 # IDE
 .vs/
