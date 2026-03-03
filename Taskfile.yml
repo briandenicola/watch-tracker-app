@@ -1,0 +1,92 @@
+version: '3'
+
+env:
+  GITHUB_REPO: briandenicola
+
+tasks:
+  default: 
+    cmds: 
+    - task --list 
+    
+  db:
+    desc: Apply EF Core migrations to the SQLite database
+    dir: src/api
+    cmds:
+    - dotnet ef migrations add Initial --project ./WatchTracker.Api.csproj
+    - dotnet ef database update --project ./WatchTracker.Api.csproj
+
+  build-api:
+    desc: Build the .NET API project
+    dir: src/api
+    cmds:
+      - dotnet build
+
+  build-web:
+    desc: Build the React frontend
+    dir: src/web
+    cmds:
+      - npm install
+      - npm run build
+
+  run-api:
+    desc: Run the .NET API server
+    dir: src/api
+    cmds:
+      - dotnet run
+    env:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  run-web:
+    desc: Run the Vite dev server
+    dir: src/web
+    cmds:
+      - npm install
+      - npm run dev
+
+  build:
+    desc: Build both API and web
+    deps:
+      - db
+      - build-api
+      - build-web
+
+  run:
+    desc: Run both API and web servers in parallel
+    deps:
+      - run-api
+      - run-web
+    silent: true
+
+  docker-build:
+    desc: Build the Docker container image
+    vars:
+      COMMIT_SHA:
+        sh: git rev-parse --short HEAD
+    cmds:
+      - docker build -t ghcr.io/{{.GITHUB_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} -t ghcr.io/{{.GITHUB_REPO}}/watch-tracker-app:latest .
+
+  docker-run:
+    desc: Run the Docker container locally
+    dotenv: ['.env']
+    cmds:
+      - docker run -p 8080:8080 -d
+        -e Jwt__Key=${JWT_KEY}
+        -e Jwt__Issuer=Horologium 
+        -e Jwt__Audience=Solis
+        -e Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
+        -v watch-tracker-data:/app/data
+        -v watch-tracker-uploads:/app/uploads
+        --name watch-tracker-app
+        ghcr.io/{{.GITHUB_REPO}}/watch-tracker-app:latest
+
+  init:
+    desc: Generate a .env file with a random JWT key
+    status:
+      - test -f .env
+    cmds:
+      - |
+        cat > .env <<EOF
+        JWT_KEY=$(openssl rand -base64 48)
+        ANTHROPIC_API_KEY=
+        EOF
+      - echo ".env file created with a generated JWT key."

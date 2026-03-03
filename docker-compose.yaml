@@ -1,0 +1,21 @@
+services:
+  app:
+    image: ghcr.io/briandenicola/watch-tracker-app:latest
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/watchtracker.db
+      - Jwt__Key=${JWT_KEY:?Set JWT_KEY in .env (min 32 chars)}
+      - Jwt__Issuer=WatchTracker
+      - Jwt__Audience=WatchTracker
+      - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
+      - VITE_API_BASE_URL=""
+    ports:
+      - "8080:8080"
+    volumes:
+      - db-data:/app/data
+      - uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  uploads:
