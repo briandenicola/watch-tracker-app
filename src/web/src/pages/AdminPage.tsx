@@ -1,7 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { getUsers, unlockUser, resetUserPassword, getSettings, updateSettings } from '../api/admin';
-import { updateUsername as apiUpdateUsername } from '../api/auth';
-import { useAuth } from '../context/AuthContext';
 import type { UserDto } from '../types';
 
 type Tab = 'users' | 'settings';
@@ -57,40 +55,42 @@ function UsersPanel() {
   if (loading) return <p>Loading…</p>;
 
   return (
-    <div>
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Failed Attempts</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.id}>
-              <td>{u.username}</td>
-              <td>{u.email}</td>
-              <td><span className={`role-badge role-${u.role.toLowerCase()}`}>{u.role}</span></td>
-              <td>
+    <div className="users-panel">
+      {users.map((u) => (
+        <fieldset key={u.id} className="watch-form-group user-card">
+          <legend>{u.username}</legend>
+          <div className="watch-form-row">
+            <label>
+              Email
+              <span className="user-card-value">{u.email}</span>
+            </label>
+            <label>
+              Role
+              <span><span className={`role-badge role-${u.role.toLowerCase()}`}>{u.role}</span></span>
+            </label>
+          </div>
+          <div className="watch-form-row">
+            <label>
+              Status
+              <span>
                 {u.isLockedOut
                   ? <span className="status-badge status-locked">Locked</span>
                   : <span className="status-badge status-active">Active</span>}
-              </td>
-              <td>{u.failedLoginAttempts}</td>
-              <td className="action-cell">
-                {u.isLockedOut && (
-                  <button className="btn btn-sm" onClick={() => handleUnlock(u.id)}>Unlock</button>
-                )}
-                <button className="btn btn-sm" onClick={() => setResetId(u.id)}>Reset Password</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </span>
+            </label>
+            <label>
+              Failed Attempts
+              <span className="user-card-value">{u.failedLoginAttempts}</span>
+            </label>
+          </div>
+          <div className="user-card-actions">
+            {u.isLockedOut && (
+              <button className="btn btn-sm" onClick={() => handleUnlock(u.id)}>Unlock</button>
+            )}
+            <button className="btn btn-sm" onClick={() => setResetId(u.id)}>Reset Password</button>
+          </div>
+        </fieldset>
+      ))}
 
       {resetId !== null && (
         <div className="modal-overlay" onClick={() => setResetId(null)}>
@@ -112,13 +112,11 @@ function UsersPanel() {
 }
 
 function SettingsPanel() {
-  const { user, updateUsername } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [resettingKey, setResettingKey] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
-  const [username, setUsername] = useState(user?.username ?? '');
 
   useEffect(() => {
     getSettings().then(setSettings).finally(() => setLoading(false));
@@ -131,10 +129,6 @@ function SettingsPanel() {
       entries.push({ key: 'AnthropicApiKey', value: newApiKey });
     }
     await updateSettings(entries);
-    if (username !== user?.username) {
-      await apiUpdateUsername(username);
-      updateUsername(username);
-    }
     if (resettingKey && newApiKey) {
       setSettings({ ...settings, AnthropicApiKey: newApiKey.substring(0, 10) + '...' });
       setResettingKey(false);
@@ -150,20 +144,6 @@ function SettingsPanel() {
 
   return (
     <form className="settings-form" onSubmit={handleSave}>
-      <fieldset className="watch-form-group">
-        <legend>My Account</legend>
-        <div className="watch-form-row">
-          <label>
-            Username
-            <input value={username} onChange={(e) => setUsername(e.target.value)} required />
-          </label>
-          <label>
-            Email
-            <input type="email" value={user?.email ?? ''} disabled />
-          </label>
-        </div>
-      </fieldset>
-
       <fieldset className="watch-form-group">
         <legend>AI Configuration</legend>
         <label>
