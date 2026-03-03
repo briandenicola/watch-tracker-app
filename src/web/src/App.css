@@ -558,7 +558,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 400px;
+  max-width: 600px;
 }
 
 .settings-form label {
@@ -568,14 +568,9 @@
   font-weight: 500;
 }
 
-.settings-form input {
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--input-bg);
-}
-
-.settings-form select {
+.settings-form input,
+.settings-form select,
+.settings-form textarea {
   padding: 0.5rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -583,13 +578,19 @@
 }
 
 .settings-form textarea {
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
   min-height: 80px;
   resize: vertical;
   font-family: inherit;
-  background: var(--input-bg);
+}
+
+.settings-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-inline-field input {
+  flex: 1;
 }
 
 .save-success {

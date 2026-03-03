@@ -142,66 +142,80 @@ function SettingsPanel() {
 
   return (
     <form className="settings-form" onSubmit={handleSave}>
-      <label>
-        Anthropic API Key
-        {!resettingKey ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <input type="text" value={maskedKey} disabled />
-            <button type="button" className="btn btn-sm" onClick={() => setResettingKey(true)}>Reset</button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <fieldset className="watch-form-group">
+        <legend>AI Configuration</legend>
+        <label>
+          Anthropic API Key
+          {!resettingKey ? (
+            <div className="settings-inline-field">
+              <input type="text" value={maskedKey} disabled />
+              <button type="button" className="btn btn-sm" onClick={() => setResettingKey(true)}>Reset</button>
+            </div>
+          ) : (
+            <div className="settings-inline-field">
+              <input
+                type="password"
+                value={newApiKey}
+                onChange={(e) => setNewApiKey(e.target.value)}
+                placeholder="sk-ant-..."
+              />
+              <button type="button" className="btn btn-sm" onClick={() => { setResettingKey(false); setNewApiKey(''); }}>Cancel</button>
+            </div>
+          )}
+        </label>
+        <label>
+          AI Analysis Prompt
+          <textarea
+            rows={4}
+            value={settings['AiAnalysisPrompt'] ?? ''}
+            onChange={(e) => setSettings({ ...settings, AiAnalysisPrompt: e.target.value })}
+          />
+        </label>
+      </fieldset>
+
+      <fieldset className="watch-form-group">
+        <legend>Security</legend>
+        <div className="watch-form-row">
+          <label>
+            Max Failed Login Attempts
             <input
-              type="password"
-              value={newApiKey}
-              onChange={(e) => setNewApiKey(e.target.value)}
-              placeholder="sk-ant-..."
+              type="number"
+              min="1"
+              value={settings['MaxFailedAttempts'] ?? '5'}
+              onChange={(e) => setSettings({ ...settings, MaxFailedAttempts: e.target.value })}
             />
-            <button type="button" className="btn btn-sm" onClick={() => { setResettingKey(false); setNewApiKey(''); }}>Cancel</button>
-          </div>
-        )}
-      </label>
-      <label>
-        Max Failed Login Attempts
-        <input
-          type="number"
-          min="1"
-          value={settings['MaxFailedAttempts'] ?? '5'}
-          onChange={(e) => setSettings({ ...settings, MaxFailedAttempts: e.target.value })}
-        />
-      </label>
-      <label>
-        Lockout Duration (minutes)
-        <input
-          type="number"
-          min="1"
-          value={settings['LockoutDurationMinutes'] ?? '15'}
-          onChange={(e) => setSettings({ ...settings, LockoutDurationMinutes: e.target.value })}
-        />
-      </label>
-      <label>
-        Log Level
-        <select
-          value={settings['LogLevel'] ?? 'Information'}
-          onChange={(e) => setSettings({ ...settings, LogLevel: e.target.value })}
-        >
-          <option value="Trace">Trace</option>
-          <option value="Debug">Debug</option>
-          <option value="Information">Information</option>
-          <option value="Warning">Warning</option>
-          <option value="Error">Error</option>
-          <option value="Critical">Critical</option>
-          <option value="None">None</option>
-        </select>
-      </label>
-      <label>
-        AI Analysis Prompt
-        <textarea
-          rows={4}
-          value={settings['AiAnalysisPrompt'] ?? ''}
-          onChange={(e) => setSettings({ ...settings, AiAnalysisPrompt: e.target.value })}
-        />
-      </label>
+          </label>
+          <label>
+            Lockout Duration (minutes)
+            <input
+              type="number"
+              min="1"
+              value={settings['LockoutDurationMinutes'] ?? '15'}
+              onChange={(e) => setSettings({ ...settings, LockoutDurationMinutes: e.target.value })}
+            />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset className="watch-form-group">
+        <legend>Logging</legend>
+        <label>
+          Log Level
+          <select
+            value={settings['LogLevel'] ?? 'Information'}
+            onChange={(e) => setSettings({ ...settings, LogLevel: e.target.value })}
+          >
+            <option value="Trace">Trace</option>
+            <option value="Debug">Debug</option>
+            <option value="Information">Information</option>
+            <option value="Warning">Warning</option>
+            <option value="Error">Error</option>
+            <option value="Critical">Critical</option>
+            <option value="None">None</option>
+          </select>
+        </label>
+      </fieldset>
+
       <button type="submit" className="btn">Save Settings</button>
       {saved && <span className="save-success">✓ Saved</span>}
     </form>
