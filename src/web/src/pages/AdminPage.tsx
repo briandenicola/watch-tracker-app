@@ -113,6 +113,8 @@ function SettingsPanel() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [resettingKey, setResettingKey] = useState(false);
+  const [newApiKey, setNewApiKey] = useState('');
 
   useEffect(() => {
     getSettings().then(setSettings).finally(() => setLoading(false));
@@ -121,15 +123,44 @@ function SettingsPanel() {
   async function handleSave(e: FormEvent) {
     e.preventDefault();
     const entries = Object.entries(settings).map(([key, value]) => ({ key, value }));
+    if (resettingKey && newApiKey) {
+      entries.push({ key: 'AnthropicApiKey', value: newApiKey });
+    }
     await updateSettings(entries);
+    if (resettingKey && newApiKey) {
+      setSettings({ ...settings, AnthropicApiKey: newApiKey.substring(0, 10) + '...' });
+      setResettingKey(false);
+      setNewApiKey('');
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
 
   if (loading) return <p>Loading…</p>;
 
+  const maskedKey = settings['AnthropicApiKey'] ?? '';
+
   return (
     <form className="settings-form" onSubmit={handleSave}>
+      <label>
+        Anthropic API Key
+        {!resettingKey ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input type="text" value={maskedKey} disabled />
+            <button type="button" className="btn btn-sm" onClick={() => setResettingKey(true)}>Reset</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              type="password"
+              value={newApiKey}
+              onChange={(e) => setNewApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+            />
+            <button type="button" className="btn btn-sm" onClick={() => { setResettingKey(false); setNewApiKey(''); }}>Cancel</button>
+          </div>
+        )}
+      </label>
       <label>
         Max Failed Login Attempts
         <input

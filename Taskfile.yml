@@ -65,6 +65,14 @@ tasks:
     cmds:
       - docker build -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} .
 
+  docker-push:
+    desc: Build the Docker container image
+    vars:
+      COMMIT_SHA:
+        sh: git rev-parse --short HEAD
+    cmds:
+      - docker push {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}}
+
   docker-run:
     desc: Run the Docker container locally
     dotenv: ['.env']

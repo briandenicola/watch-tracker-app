@@ -39,6 +39,13 @@ public class AdminController(
     public async Task<ActionResult<Dictionary<string, string>>> GetSettings()
     {
         var settings = await appSettings.GetAllAsync();
+
+        // Mask the Anthropic API key – only expose the first 10 characters
+        if (settings.TryGetValue("AnthropicApiKey", out var apiKey) && apiKey.Length > 10)
+        {
+            settings["AnthropicApiKey"] = apiKey[..10] + "...";
+        }
+
         return Ok(settings);
     }
 
@@ -47,6 +54,10 @@ public class AdminController(
     {
         foreach (var s in settings)
         {
+            // Skip masked API key values to avoid overwriting with truncated data
+            if (s.Key == "AnthropicApiKey" && s.Value.EndsWith("..."))
+                continue;
+
             await appSettings.SetAsync(s.Key, s.Value);
         }
 
