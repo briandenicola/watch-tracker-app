@@ -22,6 +22,10 @@ export async function getProfile(): Promise<AuthResponse> {
   return data;
 }
 
+export async function updateUsername(username: string): Promise<void> {
+  await client.put('/auth/username', { username });
+}
+
 export async function uploadProfileImage(file: File): Promise<string> {
   const form = new FormData();
   form.append('file', file);

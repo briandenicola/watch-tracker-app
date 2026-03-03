@@ -43,6 +43,15 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     [Authorize]
+    [HttpPut("username")]
+    public async Task<IActionResult> UpdateUsername(UpdateUsernameDto dto)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await authService.UpdateUsernameAsync(userId, dto.Username);
+        return result ? NoContent() : NotFound();
+    }
+
+    [Authorize]
     [HttpPost("profile-image")]
     public async Task<ActionResult<object>> UploadProfileImage([FromForm] IFormFile file)
     {

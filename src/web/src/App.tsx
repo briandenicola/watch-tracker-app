@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { useState } from 'react';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import LoginPage from './pages/LoginPage';
@@ -16,6 +17,7 @@ import './App.css';
 
 function App() {
   const { user, isAdmin, needsSetup, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (needsSetup === null) return <p>Loading…</p>;
 
@@ -23,13 +25,18 @@ function App() {
     <BrowserRouter>
       {user && !needsSetup && (
         <header className="app-header">
-          <Link to="/" className="app-title">⌚ Watch Tracker</Link>
-          <nav>
-            {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
-            <Link to="/settings" className="nav-avatar" title={user.username}>
+          <div className="app-header-left">
+            <Link to="/" className="app-title">⌚ Watch Tracker</Link>
+            <button className="hamburger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
+              <span /><span /><span />
+            </button>
+          </div>
+          <nav className={menuOpen ? 'nav-open' : ''}>
+            {isAdmin && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
+            <Link to="/settings" className="nav-avatar" title={user.username} onClick={() => setMenuOpen(false)}>
               <img src={user.profileImage || gravatarUrl(user.email, 64)} alt={user.username} className="avatar" />
             </Link>
-            <button onClick={logout}>Logout</button>
+            <button onClick={() => { setMenuOpen(false); logout(); }}>Logout</button>
           </nav>
         </header>
       )}

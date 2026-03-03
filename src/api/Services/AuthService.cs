@@ -142,4 +142,13 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         await context.SaveChangesAsync();
         return old;
     }
+
+    public async Task<bool> UpdateUsernameAsync(int userId, string username)
+    {
+        var user = await context.Users.FindAsync(userId);
+        if (user is null) return false;
+        user.Username = username;
+        await context.SaveChangesAsync();
+        return true;
+    }
 }

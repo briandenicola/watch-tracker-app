@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { getUsers, unlockUser, resetUserPassword, getSettings, updateSettings } from '../api/admin';
+import { updateUsername as apiUpdateUsername } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 import type { UserDto } from '../types';
 
 type Tab = 'users' | 'settings';
@@ -110,11 +112,13 @@ function UsersPanel() {
 }
 
 function SettingsPanel() {
+  const { user, updateUsername } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [resettingKey, setResettingKey] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
+  const [username, setUsername] = useState(user?.username ?? '');
 
   useEffect(() => {
     getSettings().then(setSettings).finally(() => setLoading(false));
@@ -127,6 +131,10 @@ function SettingsPanel() {
       entries.push({ key: 'AnthropicApiKey', value: newApiKey });
     }
     await updateSettings(entries);
+    if (username !== user?.username) {
+      await apiUpdateUsername(username);
+      updateUsername(username);
+    }
     if (resettingKey && newApiKey) {
       setSettings({ ...settings, AnthropicApiKey: newApiKey.substring(0, 10) + '...' });
       setResettingKey(false);
@@ -142,6 +150,20 @@ function SettingsPanel() {
 
   return (
     <form className="settings-form" onSubmit={handleSave}>
+      <fieldset className="watch-form-group">
+        <legend>My Account</legend>
+        <div className="watch-form-row">
+          <label>
+            Username
+            <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+          </label>
+          <label>
+            Email
+            <input type="email" value={user?.email ?? ''} disabled />
+          </label>
+        </div>
+      </fieldset>
+
       <fieldset className="watch-form-group">
         <legend>AI Configuration</legend>
         <label>

@@ -20,6 +20,7 @@ interface AuthContextType {
   logout: () => void;
   setTokenAndUser: (token: string, user: AuthUser) => void;
   updateProfileImage: (profileImage: string | null) => void;
+  updateUsername: (username: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -88,6 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => prev ? { ...prev, profileImage: profileImage ?? undefined } : prev);
   }, []);
 
+  const updateUsername = useCallback((username: string) => {
+    setUser((prev) => prev ? { ...prev, username } : prev);
+  }, []);
+
   // Fetch profile image on mount when token exists
   useEffect(() => {
     if (!token) return;
@@ -99,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === 'Admin';
 
   return (
-    <AuthContext.Provider value={{ user, token, isAdmin, needsSetup, login, register, logout, setTokenAndUser, updateProfileImage }}>
+    <AuthContext.Provider value={{ user, token, isAdmin, needsSetup, login, register, logout, setTokenAndUser, updateProfileImage, updateUsername }}>
       {children}
     </AuthContext.Provider>
   );

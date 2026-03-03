@@ -15,7 +15,7 @@ On first launch, a setup wizard walks you through creating an admin account and 
 
 The React SPA communicates with the .NET API exclusively via REST (`/api/*`). In production the API serves the SPA as static files from a single container, so no separate web server is needed.
 
-The frontend is a Progressive Web App (PWA) and can be installed on iOS (Safari → Share → Add to Home Screen), Android, and desktop browsers for a native app-like experience with offline caching.
+The frontend is a Progressive Web App (PWA) and can be installed on iOS (Safari → Share → Add to Home Screen), Android, and desktop browsers for a native app-like experience with offline caching. When running as a standalone PWA on iOS, the navigation bar collapses into a hamburger menu to avoid the notch and status bar area.
 
 ## Prerequisites
 
@@ -147,12 +147,12 @@ All authenticated users can access **Settings** (⚙️ in the navigation bar) t
 
 ### Admin Settings
 
-Admins can manage application-wide settings under **Admin → Settings**:
+Admins can manage application-wide settings under **Admin → Settings**, organized into grouped sections:
 
-- **Max Failed Login Attempts** — Number of failed logins before an account is locked.
-- **Lockout Duration** — How long locked accounts remain locked (in minutes).
-- **Log Level** — Runtime application log verbosity (Trace through None). Changes take effect immediately without a restart.
-- **AI Analysis Prompt** — Customize the prompt sent to the Anthropic API for watch image analysis.
+- **My Account** — Change your display username. Your email address is shown but not editable.
+- **AI Configuration** — View the masked Anthropic API key (first 10 characters only) and reset it with a new value. Customize the AI analysis prompt.
+- **Security** — Max failed login attempts and lockout duration.
+- **Logging** — Runtime log level (Trace through None). Changes take effect immediately without a restart.
 
 ### Environment Variables
 

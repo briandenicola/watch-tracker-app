@@ -10,4 +10,5 @@ public interface IAuthService
     Task<AuthResponseDto?> GetProfileAsync(int userId);
     Task SetProfileImageAsync(int userId, string fileName);
     Task<string?> DeleteProfileImageAsync(int userId);
+    Task<bool> UpdateUsernameAsync(int userId, string username);
 }

@@ -28,7 +28,8 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save' }: W
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+      e.target.value = '';
     }
   }
 
