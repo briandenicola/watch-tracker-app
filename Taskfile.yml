@@ -1,7 +1,7 @@
 version: '3'
 
 env:
-  GITHUB_REPO: briandenicola
+  DOCKER_REPO: bjd145
 
 tasks:
   default: 
@@ -63,7 +63,7 @@ tasks:
       COMMIT_SHA:
         sh: git rev-parse --short HEAD
     cmds:
-      - docker build -t ghcr.io/{{.GITHUB_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} -t ghcr.io/{{.GITHUB_REPO}}/watch-tracker-app:latest .
+      - docker build -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} .
 
   docker-run:
     desc: Run the Docker container locally
@@ -77,7 +77,7 @@ tasks:
         -v watch-tracker-data:/app/data
         -v watch-tracker-uploads:/app/uploads
         --name watch-tracker-app
-        ghcr.io/{{.GITHUB_REPO}}/watch-tracker-app:latest
+        {{.DOCKER_REPO}}/watch-tracker-app:latest
 
   init:
     desc: Generate a .env file with a random JWT key
