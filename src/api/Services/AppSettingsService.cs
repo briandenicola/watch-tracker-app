@@ -11,12 +11,14 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string MaxFailedAttempts = "MaxFailedAttempts";
         public const string LockoutDurationMinutes = "LockoutDurationMinutes";
         public const string AiAnalysisPrompt = "AiAnalysisPrompt";
+        public const string LogLevel = "LogLevel";
     }
 
     private static readonly Dictionary<string, string> Defaults = new()
     {
         [Keys.MaxFailedAttempts] = "5",
         [Keys.LockoutDurationMinutes] = "15",
+        [Keys.LogLevel] = "Information",
         [Keys.AiAnalysisPrompt] = "You are a watch expert. Analyze this watch image and provide a detailed description including the brand, model (if identifiable), movement type, case material, approximate case size, dial color, and any notable features or complications. Be concise but informative."
     };
 

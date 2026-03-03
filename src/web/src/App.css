@@ -458,6 +458,13 @@
   background: var(--input-bg);
 }
 
+.settings-form select {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-bg);
+}
+
 .settings-form textarea {
   padding: 0.5rem;
   border: 1px solid var(--border-color);

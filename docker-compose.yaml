@@ -3,11 +3,14 @@ services:
     image: ghcr.io/briandenicola/watch-tracker-app:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ConnectionStrings__DefaultConnection=Data Source=/app/data/watchtracker.db
       - Jwt__Key=${JWT_KEY:?Set JWT_KEY in .env (min 32 chars)}
       - Jwt__Issuer=WatchTracker
       - Jwt__Audience=WatchTracker
       - Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
+      - AllowedOrigins=${ALLOWED_ORIGINS:-*}
+      - Logging__LogLevel__Default=${LOG_LEVEL:-Information}
       - VITE_API_BASE_URL=""
     ports:
       - "8080:8080"

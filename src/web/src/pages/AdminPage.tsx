@@ -149,6 +149,21 @@ function SettingsPanel() {
         />
       </label>
       <label>
+        Log Level
+        <select
+          value={settings['LogLevel'] ?? 'Information'}
+          onChange={(e) => setSettings({ ...settings, LogLevel: e.target.value })}
+        >
+          <option value="Trace">Trace</option>
+          <option value="Debug">Debug</option>
+          <option value="Information">Information</option>
+          <option value="Warning">Warning</option>
+          <option value="Error">Error</option>
+          <option value="Critical">Critical</option>
+          <option value="None">None</option>
+        </select>
+      </label>
+      <label>
         AI Analysis Prompt
         <textarea
           rows={4}

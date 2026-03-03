@@ -1,12 +1,18 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Dynamic configuration source for runtime log-level changes
+var dynamicConfigSource = new DynamicConfigurationSource();
+((IConfigurationBuilder)builder.Configuration).Add(dynamicConfigSource);
+builder.Services.AddSingleton(dynamicConfigSource.Provider);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -34,14 +40,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// Configure forwarded headers for reverse-proxy deployments (nginx, etc.)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddCors(options =>
 {
-    var allowedOrigins = builder.Configuration.GetValue<string>("AllowedOrigins")?.Split(';') ?? new[] { "http://localhost:5173" };
+    var originsValue = builder.Configuration.GetValue<string>("AllowedOrigins") ?? "http://localhost:5173";
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (originsValue == "*")
+        {
+            policy.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithOrigins(originsValue.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
     });
 });
 
@@ -53,6 +76,9 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
 
 var app = builder.Build();
+
+// Must be first middleware for correct scheme/host resolution behind proxies
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
@@ -86,6 +112,12 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+
+    // Seed runtime log level from database setting
+    var settingsService = scope.ServiceProvider.GetRequiredService<IAppSettingsService>();
+    var storedLogLevel = await settingsService.GetAsync(AppSettingsService.Keys.LogLevel, "Information");
+    var dynConfig = scope.ServiceProvider.GetRequiredService<DynamicConfigurationProvider>();
+    dynConfig.Set("Logging:LogLevel:Default", storedLogLevel);
 }
 
 app.Run();

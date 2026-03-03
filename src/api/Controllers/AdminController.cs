@@ -8,7 +8,11 @@ namespace WatchTracker.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class AdminController(IAdminService adminService, IAppSettingsService appSettings) : ControllerBase
+public class AdminController(
+    IAdminService adminService,
+    IAppSettingsService appSettings,
+    DynamicConfigurationProvider dynamicConfig,
+    ILogger<AdminController> logger) : ControllerBase
 {
     [HttpGet("users")]
     public async Task<ActionResult<List<UserDto>>> GetUsers()
@@ -45,6 +49,14 @@ public class AdminController(IAdminService adminService, IAppSettingsService app
         {
             await appSettings.SetAsync(s.Key, s.Value);
         }
+
+        var logLevelEntry = settings.FirstOrDefault(s => s.Key == AppSettingsService.Keys.LogLevel);
+        if (logLevelEntry is not null)
+        {
+            dynamicConfig.Set("Logging:LogLevel:Default", logLevelEntry.Value);
+            logger.LogInformation("Log level changed to {LogLevel}", logLevelEntry.Value);
+        }
+
         return NoContent();
     }
 }
