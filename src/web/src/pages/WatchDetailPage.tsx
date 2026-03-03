@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import Markdown from 'react-markdown';
 import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, recordWear } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
 import { usePreferences } from '../context/PreferencesContext';
@@ -87,7 +88,7 @@ export default function WatchDetailPage() {
         )}
       </div>
 
-      {watch.notes && <p className="watch-detail-notes">{watch.notes}</p>}
+      {watch.notes && <div className="watch-detail-notes"><Markdown>{watch.notes}</Markdown></div>}
 
       {watch.imageUrls.length > 0 && (
         <div className="watch-images-section">

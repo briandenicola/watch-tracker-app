@@ -434,6 +434,44 @@
   line-height: 1.6;
 }
 
+.watch-detail-notes h1,
+.watch-detail-notes h2,
+.watch-detail-notes h3 {
+  color: var(--text-primary);
+  margin: 0.75rem 0 0.25rem;
+}
+
+.watch-detail-notes p {
+  margin: 0.4rem 0;
+}
+
+.watch-detail-notes ul,
+.watch-detail-notes ol {
+  margin: 0.4rem 0;
+  padding-left: 1.5rem;
+}
+
+.watch-detail-notes code {
+  background: var(--input-bg);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.watch-detail-notes pre {
+  background: var(--input-bg);
+  padding: 0.75rem;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.watch-detail-notes blockquote {
+  border-left: 3px solid var(--border-color);
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  color: var(--text-muted);
+}
+
 .image-actions {
   display: flex;
   gap: 0.5rem;
