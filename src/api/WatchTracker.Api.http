@@ -1,0 +1,6 @@
+@WatchTracker.Api_HostAddress = http://localhost:5209
+
+GET {{WatchTracker.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
