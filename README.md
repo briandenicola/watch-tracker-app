@@ -158,8 +158,7 @@ Admins can manage application-wide settings under **Admin → Settings**, organi
 
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
-| `JWT_KEY` | *(required)* | JWT signing key (min 32 characters) |
-| `ANTHROPIC_API_KEY` | *(empty)* | Anthropic API key for AI watch analysis |
+| `JWT_KEY` | *(required)* | JWT signing key (`openssl rand -base64 48`) |
 | `ALLOWED_ORIGINS` | `*` | CORS allowed origins (`*` or semicolon-separated URLs) |
 | `LOG_LEVEL` | `Information` | Initial log level (`Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical`, `None`) |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` | Enable forwarded headers for reverse proxy support |
@@ -191,6 +190,18 @@ watch-tracker-app/
 ├── docker-compose.yaml         # Container orchestration
 └── README.md
 ```
+
+## Backlog
+Future feature ideas for the app:
+
+- [ ] **Maintenance Tracker** — Log service history, battery replacements, and strap changes. Set reminders for the next scheduled service.
+- [ ] **Wishlist** — Track watches you want to buy, with notes, target prices, and links.
+- [ ] **Wear Calendar** — Visual heatmap showing which watches were worn on which days, inspired by GitHub's contribution graph.
+- [ ] **Watch Comparison** — Side-by-side spec comparison of any two watches in your collection.
+- [ ] **Collection Statistics** — Dashboard with total collection value, most-worn watch, brand breakdown charts, average price, and wearing streaks.
+- [ ] **Collection Timeline** — Visual timeline of when each watch was acquired, showing how the collection grew over time.
+- [ ] **Export / Import** — Export your collection as CSV or JSON. Import watches from a spreadsheet.
+
 
 ## License
 
