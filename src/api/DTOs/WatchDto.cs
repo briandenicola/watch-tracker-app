@@ -17,6 +17,17 @@ public class WatchDto
     public DateTime? LastWornDate { get; set; }
     public int TimesWorn { get; set; }
     public List<WatchImageDto> ImageUrls { get; set; } = [];
+    public string? CrystalType { get; set; }
+    public string? CaseShape { get; set; }
+    public string? CrownType { get; set; }
+    public string? CalendarType { get; set; }
+    public string? CountryOfOrigin { get; set; }
+    public string? WaterResistance { get; set; }
+    public double? LugWidthMm { get; set; }
+    public string? DialColor { get; set; }
+    public string? BezelType { get; set; }
+    public int? PowerReserveHours { get; set; }
+    public string? SerialNumber { get; set; }
     public string BrandName => Brand;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

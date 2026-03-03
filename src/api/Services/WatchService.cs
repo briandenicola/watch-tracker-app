@@ -37,6 +37,17 @@ public class WatchService(AppDbContext context) : IWatchService
             PurchaseDate = dto.PurchaseDate,
             PurchasePrice = dto.PurchasePrice,
             Notes = dto.Notes,
+            CrystalType = dto.CrystalType,
+            CaseShape = dto.CaseShape,
+            CrownType = dto.CrownType,
+            CalendarType = dto.CalendarType,
+            CountryOfOrigin = dto.CountryOfOrigin,
+            WaterResistance = dto.WaterResistance,
+            LugWidthMm = dto.LugWidthMm,
+            DialColor = dto.DialColor,
+            BezelType = dto.BezelType,
+            PowerReserveHours = dto.PowerReserveHours,
+            SerialNumber = dto.SerialNumber,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -63,6 +74,17 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.PurchaseDate = dto.PurchaseDate;
         watch.PurchasePrice = dto.PurchasePrice;
         watch.Notes = dto.Notes;
+        watch.CrystalType = dto.CrystalType;
+        watch.CaseShape = dto.CaseShape;
+        watch.CrownType = dto.CrownType;
+        watch.CalendarType = dto.CalendarType;
+        watch.CountryOfOrigin = dto.CountryOfOrigin;
+        watch.WaterResistance = dto.WaterResistance;
+        watch.LugWidthMm = dto.LugWidthMm;
+        watch.DialColor = dto.DialColor;
+        watch.BezelType = dto.BezelType;
+        watch.PowerReserveHours = dto.PowerReserveHours;
+        watch.SerialNumber = dto.SerialNumber;
         watch.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
@@ -114,6 +136,17 @@ public class WatchService(AppDbContext context) : IWatchService
         AiAnalysis = watch.AiAnalysis,
         LastWornDate = watch.LastWornDate,
         TimesWorn = watch.TimesWorn,
+        CrystalType = watch.CrystalType,
+        CaseShape = watch.CaseShape,
+        CrownType = watch.CrownType,
+        CalendarType = watch.CalendarType,
+        CountryOfOrigin = watch.CountryOfOrigin,
+        WaterResistance = watch.WaterResistance,
+        LugWidthMm = watch.LugWidthMm,
+        DialColor = watch.DialColor,
+        BezelType = watch.BezelType,
+        PowerReserveHours = watch.PowerReserveHours,
+        SerialNumber = watch.SerialNumber,
         ImageUrls = watch.Images.OrderBy(i => i.SortOrder).Select(i => new WatchImageDto
         {
             Id = i.Id,

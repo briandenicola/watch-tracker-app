@@ -14,6 +14,7 @@ export default function WatchDetailPage() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState('');
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -89,6 +90,39 @@ export default function WatchDetailPage() {
       </div>
 
       {watch.notes && <div className="watch-detail-notes"><Markdown>{watch.notes}</Markdown></div>}
+
+      {(() => {
+        const extras: { label: string; value: string }[] = [];
+        if (watch.crystalType) extras.push({ label: 'Crystal', value: watch.crystalType });
+        if (watch.caseShape) extras.push({ label: 'Case Shape', value: watch.caseShape });
+        if (watch.crownType) extras.push({ label: 'Crown', value: watch.crownType });
+        if (watch.calendarType) extras.push({ label: 'Calendar', value: watch.calendarType });
+        if (watch.countryOfOrigin) extras.push({ label: 'Origin', value: watch.countryOfOrigin });
+        if (watch.waterResistance) extras.push({ label: 'Water Resistance', value: watch.waterResistance });
+        if (watch.lugWidthMm) extras.push({ label: 'Lug Width', value: `${watch.lugWidthMm}mm` });
+        if (watch.dialColor) extras.push({ label: 'Dial', value: watch.dialColor });
+        if (watch.bezelType) extras.push({ label: 'Bezel', value: watch.bezelType });
+        if (watch.powerReserveHours) extras.push({ label: 'Power Reserve', value: `${watch.powerReserveHours}h` });
+        if (watch.serialNumber) extras.push({ label: 'Serial / Ref', value: watch.serialNumber });
+        if (extras.length === 0) return null;
+        return (
+          <div className="accordion" style={{ marginBottom: '1rem' }}>
+            <button type="button" className="accordion-toggle" onClick={() => setDetailsOpen(!detailsOpen)}>
+              Additional Details
+              <span className={`accordion-chevron${detailsOpen ? ' open' : ''}`}>▼</span>
+            </button>
+            <div className={`accordion-content${detailsOpen ? ' open' : ''}`}>
+              <div className="accordion-inner">
+                <div className="watch-detail-chips" style={{ marginTop: '0.75rem' }}>
+                  {extras.map((e) => (
+                    <span key={e.label} className="detail-chip"><strong>{e.label}</strong> {e.value}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {watch.imageUrls.length > 0 && (
         <div className="watch-images-section">

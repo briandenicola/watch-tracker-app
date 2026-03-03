@@ -194,8 +194,8 @@ watch-tracker-app/
 ## Backlog
 Future feature ideas for the app:
 
+- [ ] **Display Updates** - Limit the number of watches shown on the main collection page, with pagination or infinite scroll. Add sorting and filtering options (brand, movement type, band type, etc.).
 - [ ] **Extended Watch Properties** — Capture additional details: crystal type, case shape, crown type, calendar type, country of origin, water resistance, lug width, dial color, bezel type, power reserve, and serial/reference number.
-
 - [ ] **Maintenance Tracker** — Log service history, battery replacements, and strap changes. Set reminders for the next scheduled service.
 - [ ] **Wishlist** — Track watches you want to buy, with notes, target prices, and links.
 - [ ] **Wear Calendar** — Visual heatmap showing which watches were worn on which days, inspired by GitHub's contribution graph.

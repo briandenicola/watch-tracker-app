@@ -12,4 +12,15 @@ public class CreateWatchDto
     public DateTime? PurchaseDate { get; set; }
     public decimal? PurchasePrice { get; set; }
     public string? Notes { get; set; }
+    public string? CrystalType { get; set; }
+    public string? CaseShape { get; set; }
+    public string? CrownType { get; set; }
+    public string? CalendarType { get; set; }
+    public string? CountryOfOrigin { get; set; }
+    public string? WaterResistance { get; set; }
+    public double? LugWidthMm { get; set; }
+    public string? DialColor { get; set; }
+    public string? BezelType { get; set; }
+    public int? PowerReserveHours { get; set; }
+    public string? SerialNumber { get; set; }
 }

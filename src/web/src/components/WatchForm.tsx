@@ -27,6 +27,20 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [files, setFiles] = useState<File[]>([]);
 
+  // Additional detail fields
+  const [crystalType, setCrystalType] = useState(initial?.crystalType ?? '');
+  const [caseShape, setCaseShape] = useState(initial?.caseShape ?? '');
+  const [crownType, setCrownType] = useState(initial?.crownType ?? '');
+  const [calendarType, setCalendarType] = useState(initial?.calendarType ?? '');
+  const [countryOfOrigin, setCountryOfOrigin] = useState(initial?.countryOfOrigin ?? '');
+  const [waterResistance, setWaterResistance] = useState(initial?.waterResistance ?? '');
+  const [lugWidthMm, setLugWidthMm] = useState(initial?.lugWidthMm?.toString() ?? '');
+  const [dialColor, setDialColor] = useState(initial?.dialColor ?? '');
+  const [bezelType, setBezelType] = useState(initial?.bezelType ?? '');
+  const [powerReserveHours, setPowerReserveHours] = useState(initial?.powerReserveHours?.toString() ?? '');
+  const [serialNumber, setSerialNumber] = useState(initial?.serialNumber ?? '');
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files) {
       const selected = Array.from(e.target.files);
@@ -47,6 +61,17 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       ...(purchaseDate && { purchaseDate }),
       ...(purchasePrice && { purchasePrice: Number(purchasePrice) }),
       ...(notes && { notes }),
+      ...(crystalType && { crystalType }),
+      ...(caseShape && { caseShape }),
+      ...(crownType && { crownType }),
+      ...(calendarType && { calendarType }),
+      ...(countryOfOrigin && { countryOfOrigin }),
+      ...(waterResistance && { waterResistance }),
+      ...(lugWidthMm && { lugWidthMm: Number(lugWidthMm) }),
+      ...(dialColor && { dialColor }),
+      ...(bezelType && { bezelType }),
+      ...(powerReserveHours && { powerReserveHours: Number(powerReserveHours) }),
+      ...(serialNumber && { serialNumber }),
     };
     onSubmit(data, files);
   }
@@ -112,6 +137,74 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
           </label>
         </div>
       </fieldset>
+
+      <div className="accordion">
+        <button type="button" className="accordion-toggle" onClick={() => setDetailsOpen(!detailsOpen)}>
+          Additional Details
+          <span className={`accordion-chevron${detailsOpen ? ' open' : ''}`}>▼</span>
+        </button>
+        <div className={`accordion-content${detailsOpen ? ' open' : ''}`}>
+          <div className="accordion-inner">
+            <div className="watch-form-row" style={{ marginTop: '0.75rem' }}>
+              <label>
+                Crystal Type
+                <input value={crystalType} onChange={(e) => setCrystalType(e.target.value)} placeholder="e.g. Sapphire" />
+              </label>
+              <label>
+                Case Shape
+                <input value={caseShape} onChange={(e) => setCaseShape(e.target.value)} placeholder="e.g. Round" />
+              </label>
+            </div>
+            <div className="watch-form-row">
+              <label>
+                Crown Type
+                <input value={crownType} onChange={(e) => setCrownType(e.target.value)} placeholder="e.g. Screw-down" />
+              </label>
+              <label>
+                Calendar Type
+                <input value={calendarType} onChange={(e) => setCalendarType(e.target.value)} placeholder="e.g. Date" />
+              </label>
+            </div>
+            <div className="watch-form-row">
+              <label>
+                Country of Origin
+                <input value={countryOfOrigin} onChange={(e) => setCountryOfOrigin(e.target.value)} placeholder="e.g. Switzerland" />
+              </label>
+              <label>
+                Water Resistance
+                <input value={waterResistance} onChange={(e) => setWaterResistance(e.target.value)} placeholder="e.g. 100m" />
+              </label>
+            </div>
+            <div className="watch-form-row">
+              <label>
+                Lug Width (mm)
+                <input type="number" value={lugWidthMm} onChange={(e) => setLugWidthMm(e.target.value)} />
+              </label>
+              <label>
+                Dial Color
+                <input value={dialColor} onChange={(e) => setDialColor(e.target.value)} placeholder="e.g. Black" />
+              </label>
+            </div>
+            <div className="watch-form-row">
+              <label>
+                Bezel Type
+                <input value={bezelType} onChange={(e) => setBezelType(e.target.value)} placeholder="e.g. Rotating" />
+              </label>
+              <label>
+                Power Reserve (hours)
+                <input type="number" value={powerReserveHours} onChange={(e) => setPowerReserveHours(e.target.value)} />
+              </label>
+            </div>
+            <div className="watch-form-row">
+              <label>
+                Serial / Reference Number
+                <input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
+              </label>
+              <label>{/* spacer */}</label>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <fieldset className="watch-form-group">
         <legend>Additional</legend>

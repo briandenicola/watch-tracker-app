@@ -14,6 +14,18 @@ public class Watch
     public string? AiAnalysis { get; set; }
     public DateTime? LastWornDate { get; set; }
     public int TimesWorn { get; set; }
+    public string? CrystalType { get; set; }
+    public string? CaseShape { get; set; }
+    public string? CrownType { get; set; }
+    public string? CalendarType { get; set; }
+    public string? CountryOfOrigin { get; set; }
+    public string? WaterResistance { get; set; }
+    public double? LugWidthMm { get; set; }
+    public string? DialColor { get; set; }
+    public string? BezelType { get; set; }
+    public int? PowerReserveHours { get; set; }
+    public string? SerialNumber { get; set; }
+
     public int UserId { get; set; }
     public User User { get; set; } = null!;
     public ICollection<WatchImage> Images { get; set; } = [];

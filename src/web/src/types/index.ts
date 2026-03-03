@@ -19,6 +19,17 @@ export interface Watch {
   lastWornDate?: string;
   timesWorn: number;
   imageUrls: WatchImage[];
+  crystalType?: string;
+  caseShape?: string;
+  crownType?: string;
+  calendarType?: string;
+  countryOfOrigin?: string;
+  waterResistance?: string;
+  lugWidthMm?: number;
+  dialColor?: string;
+  bezelType?: string;
+  powerReserveHours?: number;
+  serialNumber?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,6 +43,17 @@ export interface CreateWatch {
   purchaseDate?: string;
   purchasePrice?: number;
   notes?: string;
+  crystalType?: string;
+  caseShape?: string;
+  crownType?: string;
+  calendarType?: string;
+  countryOfOrigin?: string;
+  waterResistance?: string;
+  lugWidthMm?: number;
+  dialColor?: string;
+  bezelType?: string;
+  powerReserveHours?: number;
+  serialNumber?: string;
 }
 
 export type UpdateWatch = CreateWatch;
