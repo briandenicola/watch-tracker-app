@@ -1,0 +1,48 @@
+version: '3'
+
+vars:
+  TAG: "__REPLACE_ME__"
+  DEFAULT_REGION: canadacentral
+
+tasks:
+  default:
+    cmds:
+    - task --list 
+    
+  up:
+    desc: Creates a complete {{.TAG}} environment
+    dir: ./infrastructure
+    cmds:
+    - terraform workspace new {{.REGION}} || true
+    - terraform workspace select {{.REGION}}
+    - terraform init
+    - task: apply
+    vars: 
+      REGION: '{{default .DEFAULT_REGION .CLI_ARGS}}'  
+      
+  apply:
+    dir: ./infrastructure
+    cmds:
+    - terraform apply -auto-approve -var "region={{.REGION}}" 
+        -var "tags={{.TAG}}" 
+        -compact-warnings
+    #- task: creds
+    vars: 
+      REGION: '{{default .DEFAULT_REGION .CLI_ARGS}}'
+
+  # creds:
+  #   desc: Gets AKS credential file
+  #   cmds:
+  #   - az aks get-credentials -g {{.RG}} -n {{.AKS}} --overwrite-existing
+  #   - kubelogin convert-kubeconfig -l azurecli
+  #   vars:
+  #     RG: 
+  #       sh: terraform output -raw APP_RESOURCE_GROUP
+  #     AKS: 
+  #       sh: terraform output -raw AKS_CLUSTER_NAME
+
+  down:
+    desc: Destroys all Azure resources and cleans up Terraform
+    cmds:
+    - az group list --tag Application="{{.TAG}}" --query "[].name" -o tsv | xargs -ot -n 1 az group delete -y --verbose --no-wait -n || true
+    - rm -rf terraform.tfstate.d .terraform.lock.hcl .terraform terraform.tfstate terraform.tfstate.backup .terraform.tfstate.lock.info || true
