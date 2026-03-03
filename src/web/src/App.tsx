@@ -9,6 +9,7 @@ import WatchDetailPage from './pages/WatchDetailPage';
 import AddWatchPage from './pages/AddWatchPage';
 import EditWatchPage from './pages/EditWatchPage';
 import AdminPage from './pages/AdminPage';
+import SettingsPage from './pages/SettingsPage';
 import { useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -24,6 +25,7 @@ function App() {
           <span>⌚ Watch Tracker</span>
           <nav>
             {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
+            <Link to="/settings" className="nav-link" title="Settings">⚙️</Link>
             <span>{user.username}</span>
             <button onClick={logout}>Logout</button>
           </nav>
@@ -46,6 +48,7 @@ function App() {
                 <Route path="/watches/new" element={<AddWatchPage />} />
                 <Route path="/watches/:id/edit" element={<EditWatchPage />} />
                 <Route path="/watches/:id" element={<WatchDetailPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
               <Route element={<AdminProtectedRoute />}>
                 <Route path="/admin" element={<AdminPage />} />
