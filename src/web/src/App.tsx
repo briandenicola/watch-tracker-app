@@ -27,7 +27,7 @@ function App() {
           <nav>
             {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
             <Link to="/settings" className="nav-avatar" title={user.username}>
-              <img src={gravatarUrl(user.email, 64)} alt={user.username} className="avatar" />
+              <img src={user.profileImage || gravatarUrl(user.email, 64)} alt={user.username} className="avatar" />
             </Link>
             <button onClick={logout}>Logout</button>
           </nav>

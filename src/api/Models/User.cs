@@ -6,6 +6,7 @@ public class User
     public required string Username { get; set; }
     public required string Email { get; set; }
     public required string PasswordHash { get; set; }
+    public string? ProfileImage { get; set; }
     public UserRole Role { get; set; } = UserRole.Standard;
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }

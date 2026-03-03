@@ -41,6 +41,7 @@ export interface AuthResponse {
   username: string;
   email: string;
   role: string;
+  profileImage?: string;
 }
 
 export interface LoginCredentials {

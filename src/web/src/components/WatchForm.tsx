@@ -50,59 +50,79 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save' }: W
 
   return (
     <form className="watch-form" onSubmit={handleSubmit}>
-      <label>
-        Brand *
-        <input value={brand} onChange={(e) => setBrand(e.target.value)} required />
-      </label>
-      <label>
-        Model *
-        <input value={model} onChange={(e) => setModel(e.target.value)} required />
-      </label>
-      <label>
-        Movement Type *
-        <select value={movementType} onChange={(e) => setMovementType(e.target.value as MovementType)}>
-          {MOVEMENT_TYPES.map((mt) => (
-            <option key={mt} value={mt}>{mt}</option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Case Size (mm)
-        <input type="number" value={caseSizeMm} onChange={(e) => setCaseSizeMm(e.target.value)} />
-      </label>
-      <label>
-        Band Type
-        <select value={bandTypeSelect} onChange={(e) => setBandTypeSelect(e.target.value)}>
-          <option value="">— Select —</option>
-          {BAND_TYPE_OPTIONS.map((bt) => (
-            <option key={bt} value={bt}>{bt}</option>
-          ))}
-          <option value="Custom">Custom…</option>
-        </select>
-      </label>
-      {bandTypeSelect === 'Custom' && (
+      <fieldset className="watch-form-group">
+        <legend>Watch Details</legend>
+        <div className="watch-form-row">
+          <label>
+            Brand *
+            <input value={brand} onChange={(e) => setBrand(e.target.value)} required />
+          </label>
+          <label>
+            Model *
+            <input value={model} onChange={(e) => setModel(e.target.value)} required />
+          </label>
+        </div>
+        <div className="watch-form-row">
+          <label>
+            Movement Type *
+            <select value={movementType} onChange={(e) => setMovementType(e.target.value as MovementType)}>
+              {MOVEMENT_TYPES.map((mt) => (
+                <option key={mt} value={mt}>{mt}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Case Size (mm)
+            <input type="number" value={caseSizeMm} onChange={(e) => setCaseSizeMm(e.target.value)} />
+          </label>
+        </div>
+        <div className="watch-form-row">
+          <label>
+            Band Type
+            <select value={bandTypeSelect} onChange={(e) => setBandTypeSelect(e.target.value)}>
+              <option value="">— Select —</option>
+              {BAND_TYPE_OPTIONS.map((bt) => (
+                <option key={bt} value={bt}>{bt}</option>
+              ))}
+              <option value="Custom">Custom…</option>
+            </select>
+          </label>
+          {bandTypeSelect === 'Custom' && (
+            <label>
+              Custom Band Type
+              <input value={bandTypeCustom} onChange={(e) => setBandTypeCustom(e.target.value)} />
+            </label>
+          )}
+        </div>
+      </fieldset>
+
+      <fieldset className="watch-form-group">
+        <legend>Purchase Info</legend>
+        <div className="watch-form-row">
+          <label>
+            Purchase Date
+            <input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
+          </label>
+          <label>
+            Purchase Price
+            <input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset className="watch-form-group">
+        <legend>Additional</legend>
         <label>
-          Custom Band Type
-          <input value={bandTypeCustom} onChange={(e) => setBandTypeCustom(e.target.value)} />
+          Notes
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </label>
-      )}
-      <label>
-        Purchase Date
-        <input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
-      </label>
-      <label>
-        Purchase Price
-        <input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
-      </label>
-      <label>
-        Notes
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </label>
-      <label>
-        Images
-        <input type="file" accept="image/*" multiple onChange={handleFileChange} />
-      </label>
-      {files.length > 0 && <p className="file-count">{files.length} file(s) selected</p>}
+        <label>
+          Images
+          <input type="file" accept="image/*" multiple onChange={handleFileChange} />
+        </label>
+        {files.length > 0 && <p className="file-count">{files.length} file(s) selected</p>}
+      </fieldset>
+
       <button type="submit">{submitLabel}</button>
     </form>
   );

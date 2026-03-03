@@ -1,12 +1,13 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
 import { useAuth } from '../context/AuthContext';
-import { changePassword } from '../api/auth';
+import { changePassword, uploadProfileImage, deleteProfileImage } from '../api/auth';
 import { gravatarUrl } from '../utils/gravatar';
 
 export default function SettingsPage() {
   const { theme, setTheme, timezone, setTimezone } = usePreferences();
-  const { user } = useAuth();
+  const { user, updateProfileImage } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -65,7 +66,43 @@ export default function SettingsPage() {
 
       {user && (
         <section className="settings-section settings-profile">
-          <img src={gravatarUrl(user.email, 128)} alt={user.username} className="settings-avatar" />
+          <div className="settings-avatar-wrapper">
+            <img
+              src={user.profileImage || gravatarUrl(user.email, 128)}
+              alt={user.username}
+              className="settings-avatar"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const url = await uploadProfileImage(file);
+                updateProfileImage(url);
+                e.target.value = '';
+              }}
+            />
+            <div className="settings-avatar-actions">
+              <button type="button" className="btn btn-sm" onClick={() => fileInputRef.current?.click()}>
+                Upload Photo
+              </button>
+              {user.profileImage && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={async () => {
+                    await deleteProfileImage();
+                    updateProfileImage(null);
+                  }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
           <div>
             <p className="settings-profile-name">{user.username}</p>
             <p className="settings-profile-email">{user.email}</p>

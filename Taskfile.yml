@@ -72,6 +72,7 @@ tasks:
       COMMIT_SHA:
         sh: git rev-parse --short HEAD    
     cmds:
+      - docker stop watch-tracker-app && docker rm watch-tracker-app || true
       - docker run -p 8080:8080 -d
         -e Jwt__Key=${JWT_KEY}
         -e Jwt__Issuer=Horologium 

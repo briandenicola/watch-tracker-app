@@ -7,6 +7,7 @@ interface AuthUser {
   username: string;
   email: string;
   role: string;
+  profileImage?: string;
 }
 
 interface AuthContextType {
@@ -18,6 +19,7 @@ interface AuthContextType {
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
   setTokenAndUser: (token: string, user: AuthUser) => void;
+  updateProfileImage: (profileImage: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -60,13 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (credentials: LoginCredentials) => {
     const res = await authApi.login(credentials);
     setToken(res.token);
-    setUser({ username: res.username, email: res.email, role: res.role });
+    setUser({ username: res.username, email: res.email, role: res.role, profileImage: res.profileImage });
   }, []);
 
   const register = useCallback(async (credentials: RegisterCredentials) => {
     const res = await authApi.register(credentials);
     setToken(res.token);
-    setUser({ username: res.username, email: res.email, role: res.role });
+    setUser({ username: res.username, email: res.email, role: res.role, profileImage: res.profileImage });
   }, []);
 
   const logout = useCallback(() => {
@@ -82,10 +84,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNeedsSetup(false);
   }, []);
 
+  const updateProfileImage = useCallback((profileImage: string | null) => {
+    setUser((prev) => prev ? { ...prev, profileImage: profileImage ?? undefined } : prev);
+  }, []);
+
+  // Fetch profile image on mount when token exists
+  useEffect(() => {
+    if (!token) return;
+    authApi.getProfile().then((profile) => {
+      setUser((prev) => prev ? { ...prev, profileImage: profile.profileImage } : prev);
+    }).catch(() => {});
+  }, [token]);
+
   const isAdmin = user?.role === 'Admin';
 
   return (
-    <AuthContext.Provider value={{ user, token, isAdmin, needsSetup, login, register, logout, setTokenAndUser }}>
+    <AuthContext.Provider value={{ user, token, isAdmin, needsSetup, login, register, logout, setTokenAndUser, updateProfileImage }}>
       {children}
     </AuthContext.Provider>
   );

@@ -78,7 +78,8 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         Token = GenerateToken(user),
         Username = user.Username,
         Email = user.Email,
-        Role = user.Role.ToString()
+        Role = user.Role.ToString(),
+        ProfileImage = user.ProfileImage is not null ? $"/uploads/{user.ProfileImage}" : null
     };
 
     private string GenerateToken(User user)
@@ -116,5 +117,29 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         await context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<AuthResponseDto?> GetProfileAsync(int userId)
+    {
+        var user = await context.Users.FindAsync(userId);
+        return user is null ? null : BuildResponse(user);
+    }
+
+    public async Task SetProfileImageAsync(int userId, string fileName)
+    {
+        var user = await context.Users.FindAsync(userId);
+        if (user is null) return;
+        user.ProfileImage = fileName;
+        await context.SaveChangesAsync();
+    }
+
+    public async Task<string?> DeleteProfileImageAsync(int userId)
+    {
+        var user = await context.Users.FindAsync(userId);
+        if (user?.ProfileImage is null) return null;
+        var old = user.ProfileImage;
+        user.ProfileImage = null;
+        await context.SaveChangesAsync();
+        return old;
     }
 }
