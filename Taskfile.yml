@@ -68,6 +68,9 @@ tasks:
   docker-run:
     desc: Run the Docker container locally
     dotenv: ['.env']
+    vars:
+      COMMIT_SHA:
+        sh: git rev-parse --short HEAD    
     cmds:
       - docker run -p 8080:8080 -d
         -e Jwt__Key=${JWT_KEY}
@@ -77,7 +80,7 @@ tasks:
         -v watch-tracker-data:/app/data
         -v watch-tracker-uploads:/app/uploads
         --name watch-tracker-app
-        {{.DOCKER_REPO}}/watch-tracker-app:latest
+        {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}}
 
   init:
     desc: Generate a .env file with a random JWT key

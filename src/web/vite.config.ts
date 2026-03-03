@@ -39,6 +39,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Prevent the SW from serving cached index.html for API and upload routes
+        navigateFallbackDenylist: [/^\/api/, /^\/uploads/, /^\/sw\.js/],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https?:\/\/.*\/api\//,
@@ -49,10 +54,25 @@ export default defineConfig({
                 maxEntries: 50,
                 maxAgeSeconds: 300,
               },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
         ],
       },
     }),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5209',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:5209',
+        changeOrigin: true,
+      },
+    },
+  },
 })

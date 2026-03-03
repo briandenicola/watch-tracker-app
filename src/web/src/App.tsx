@@ -22,7 +22,7 @@ function App() {
     <BrowserRouter>
       {user && !needsSetup && (
         <header className="app-header">
-          <span>⌚ Watch Tracker</span>
+          <Link to="/" className="app-title">⌚ Watch Tracker</Link>
           <nav>
             {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
             <Link to="/settings" className="nav-link" title="Settings">⚙️</Link>

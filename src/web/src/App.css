@@ -28,6 +28,17 @@
   cursor: pointer;
 }
 
+.app-title {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.app-title:hover {
+  text-decoration: none;
+  opacity: 0.85;
+}
+
 .btn {
   display: inline-block;
   padding: 0.5rem 1rem;

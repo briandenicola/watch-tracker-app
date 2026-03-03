@@ -106,9 +106,9 @@ docker run -p 8080:8080 -d \
 
 The application will be available on `http://localhost:8080`. On first launch, the setup wizard will guide you through creating an admin account.
 
-### Deploying Behind a Reverse Proxy (nginx, Traefik, etc.)
+### Deploying Behind a Reverse Proxy
 
-The application includes built-in support for reverse proxy deployments. It handles `X-Forwarded-For` and `X-Forwarded-Proto` headers automatically so that HTTPS termination, JWT validation, and redirect URLs work correctly behind a proxy.
+The .NET backend handles `X-Forwarded-For` and `X-Forwarded-Proto` headers automatically. The standalone web container (`src/web/Dockerfile`) uses a Node.js server that proxies `/api/` and `/uploads/` to the backend — no nginx required.
 
 Set `AllowedOrigins` to your public domain(s) or `*` if the proxy is trusted:
 
@@ -120,17 +120,20 @@ Set `AllowedOrigins` to your public domain(s) or `*` if the proxy is trusted:
 -e AllowedOrigins="https://watches.example.com;https://api.example.com"
 ```
 
-Example nginx proxy configuration:
+The web container accepts an `API_URL` environment variable (default `http://localhost:8080`) to locate the backend:
 
-```nginx
-location / {
-    proxy_pass http://localhost:8080;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    client_max_body_size 20M;
-}
+```yaml
+services:
+  web:
+    build: src/web
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=http://api:8080
+      - PORT=3000
+  api:
+    build: src/api
+    # ...
 ```
 
 ## Features
