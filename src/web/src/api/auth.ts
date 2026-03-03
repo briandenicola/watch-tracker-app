@@ -12,3 +12,7 @@ export async function register(credentials: RegisterCredentials): Promise<AuthRe
   localStorage.setItem('token', data.token);
   return data;
 }
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await client.post('/auth/change-password', { currentPassword, newPassword });
+}

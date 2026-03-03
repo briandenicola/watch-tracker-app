@@ -9,4 +9,5 @@ public interface IWatchService
     Task<WatchDto> CreateAsync(CreateWatchDto dto, int userId);
     Task<WatchDto?> UpdateAsync(int id, UpdateWatchDto dto, int userId);
     Task<bool> DeleteAsync(int id, int userId);
+    Task<WatchDto?> RecordWearAsync(int id, int userId);
 }

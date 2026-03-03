@@ -104,4 +104,17 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto dto)
+    {
+        var user = await context.Users.FindAsync(userId);
+        if (user is null) return false;
+
+        if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        await context.SaveChangesAsync();
+        return true;
+    }
 }

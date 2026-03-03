@@ -16,6 +16,8 @@ export interface Watch {
   purchasePrice?: number;
   notes?: string;
   aiAnalysis?: string;
+  lastWornDate?: string;
+  timesWorn: number;
   imageUrls: WatchImage[];
   createdAt: string;
   updatedAt: string;

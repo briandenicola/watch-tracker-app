@@ -20,3 +20,9 @@ public class AuthResponseDto
     public required string Email { get; set; }
     public required string Role { get; set; }
 }
+
+public class ChangePasswordDto
+{
+    public required string CurrentPassword { get; set; }
+    public required string NewPassword { get; set; }
+}

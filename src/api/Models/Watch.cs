@@ -12,6 +12,8 @@ public class Watch
     public decimal? PurchasePrice { get; set; }
     public string? Notes { get; set; }
     public string? AiAnalysis { get; set; }
+    public DateTime? LastWornDate { get; set; }
+    public int TimesWorn { get; set; }
     public int UserId { get; set; }
     public User User { get; set; } = null!;
     public ICollection<WatchImage> Images { get; set; } = [];

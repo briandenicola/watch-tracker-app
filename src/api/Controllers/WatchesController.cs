@@ -62,4 +62,11 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    [HttpPost("{id}/wear")]
+    public async Task<ActionResult<WatchDto>> RecordWear(int id)
+    {
+        var watch = await watchService.RecordWearAsync(id, UserId);
+        return watch is null ? NotFound() : Ok(watch);
+    }
 }

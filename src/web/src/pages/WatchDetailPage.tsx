@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch } from '../api/watches';
+import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, recordWear } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
+import { usePreferences } from '../context/PreferencesContext';
 import type { Watch } from '../types';
 
 export default function WatchDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { timezone } = usePreferences();
   const [watch, setWatch] = useState<Watch | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -46,29 +48,56 @@ export default function WatchDetailPage() {
     }
   }
 
+  async function handleRecordWear() {
+    if (!watch) return;
+    const updated = await recordWear(watch.id);
+    setWatch(updated);
+  }
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleDateString('en-US', { timeZone: timezone });
+  }
+
   if (loading) return <p>Loading…</p>;
   if (!watch) return <p>Watch not found.</p>;
 
   return (
     <div className="watch-detail">
       <Link to="/" className="back-link">← Back</Link>
-      <h1>{watch.brand} {watch.model}</h1>
+      <div className="watch-detail-header">
+        <h1>{watch.brand} {watch.model}</h1>
+        <div className="watch-detail-header-actions">
+          <button className="btn btn-sm" onClick={handleRecordWear}>⌚ Wore Today</button>
+          <Link to={`/watches/${watch.id}/edit`} className="btn btn-sm">Edit</Link>
+          <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete</button>
+        </div>
+      </div>
+
+      <div className="watch-detail-chips">
+        <span className="detail-chip"><strong>Movement</strong> {watch.movementType}</span>
+        {watch.caseSizeMm && <span className="detail-chip"><strong>Case</strong> {watch.caseSizeMm}mm</span>}
+        {watch.bandType && <span className="detail-chip"><strong>Band</strong> {watch.bandType}</span>}
+        {watch.purchaseDate && <span className="detail-chip"><strong>Purchased</strong> {fmtDate(watch.purchaseDate)}</span>}
+        {watch.purchasePrice != null && <span className="detail-chip"><strong>Price</strong> ${watch.purchasePrice.toFixed(2)}</span>}
+        <span className="detail-chip">
+          <strong>Worn</strong> {watch.timesWorn} {watch.timesWorn === 1 ? 'time' : 'times'}
+        </span>
+        {watch.lastWornDate && (
+          <span className="detail-chip"><strong>Last Worn</strong> {fmtDate(watch.lastWornDate)}</span>
+        )}
+      </div>
+
+      {watch.notes && <p className="watch-detail-notes">{watch.notes}</p>}
+
       {watch.imageUrls.length > 0 && (
         <div className="watch-images-section">
           <ImageCarousel images={watch.imageUrls} alt={`${watch.brand} ${watch.model}`} />
           <div className="image-actions">
+            <button className="btn btn-sm" onClick={handleAnalyze} disabled={analyzing}>
+              {analyzing ? 'Analyzing…' : watch.aiAnalysis ? '🤖 Re-analyze' : '🤖 Analyze with AI'}
+            </button>
             <button className="btn btn-danger btn-sm" onClick={() => handleDeleteImage(watch.imageUrls[0]?.id)}>
               Delete Current Image
-            </button>
-          </div>
-        </div>
-      )}
-      {watch.imageUrls.length > 0 && (
-        <div className="ai-analysis-section">
-          <div className="ai-analysis-header">
-            <h3>🤖 AI Analysis</h3>
-            <button className="btn btn-sm" onClick={handleAnalyze} disabled={analyzing}>
-              {analyzing ? 'Analyzing…' : watch.aiAnalysis ? 'Re-analyze' : 'Analyze with AI'}
             </button>
           </div>
           {analyzeError && <p className="error">{analyzeError}</p>}
@@ -79,18 +108,6 @@ export default function WatchDetailPage() {
           )}
         </div>
       )}
-      <dl>
-        <dt>Movement</dt><dd>{watch.movementType}</dd>
-        {watch.caseSizeMm && <><dt>Case Size</dt><dd>{watch.caseSizeMm}mm</dd></>}
-        {watch.bandType && <><dt>Band Type</dt><dd>{watch.bandType}</dd></>}
-        {watch.purchaseDate && <><dt>Purchase Date</dt><dd>{new Date(watch.purchaseDate).toLocaleDateString()}</dd></>}
-        {watch.purchasePrice != null && <><dt>Purchase Price</dt><dd>${watch.purchasePrice.toFixed(2)}</dd></>}
-        {watch.notes && <><dt>Notes</dt><dd>{watch.notes}</dd></>}
-      </dl>
-      <div className="detail-actions">
-        <Link to={`/watches/${watch.id}/edit`} className="btn">Edit</Link>
-        <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
-      </div>
     </div>
   );
 }

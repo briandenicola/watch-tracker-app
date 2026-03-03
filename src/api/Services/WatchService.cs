@@ -83,6 +83,23 @@ public class WatchService(AppDbContext context) : IWatchService
         return true;
     }
 
+    public async Task<WatchDto?> RecordWearAsync(int id, int userId)
+    {
+        var watch = await context.Watches
+            .Include(w => w.Images)
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+
+        if (watch is null) return null;
+
+        watch.TimesWorn++;
+        watch.LastWornDate = DateTime.UtcNow;
+        watch.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        return MapToDto(watch);
+    }
+
     private static WatchDto MapToDto(Watch watch) => new()
     {
         Id = watch.Id,
@@ -95,6 +112,8 @@ public class WatchService(AppDbContext context) : IWatchService
         PurchasePrice = watch.PurchasePrice,
         Notes = watch.Notes,
         AiAnalysis = watch.AiAnalysis,
+        LastWornDate = watch.LastWornDate,
+        TimesWorn = watch.TimesWorn,
         ImageUrls = watch.Images.OrderBy(i => i.SortOrder).Select(i => new WatchImageDto
         {
             Id = i.Id,

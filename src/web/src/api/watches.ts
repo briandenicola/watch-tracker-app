@@ -49,3 +49,8 @@ export async function analyzeWatch(id: number): Promise<string> {
   const { data } = await client.post<{ analysis: string }>(`/watches/${id}/analyze`);
   return data.analysis;
 }
+
+export async function recordWear(id: number): Promise<Watch> {
+  const { data } = await client.post<Watch>(`/watches/${id}/wear`);
+  return data;
+}

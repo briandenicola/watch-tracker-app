@@ -14,6 +14,8 @@ public class WatchDto
     public decimal? PurchasePrice { get; set; }
     public string? Notes { get; set; }
     public string? AiAnalysis { get; set; }
+    public DateTime? LastWornDate { get; set; }
+    public int TimesWorn { get; set; }
     public List<WatchImageDto> ImageUrls { get; set; } = [];
     public string BrandName => Brand;
     public DateTime CreatedAt { get; set; }

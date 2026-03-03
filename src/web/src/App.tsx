@@ -11,6 +11,7 @@ import EditWatchPage from './pages/EditWatchPage';
 import AdminPage from './pages/AdminPage';
 import SettingsPage from './pages/SettingsPage';
 import { useAuth } from './context/AuthContext';
+import { gravatarUrl } from './utils/gravatar';
 import './App.css';
 
 function App() {
@@ -25,8 +26,9 @@ function App() {
           <Link to="/" className="app-title">⌚ Watch Tracker</Link>
           <nav>
             {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
-            <Link to="/settings" className="nav-link" title="Settings">⚙️</Link>
-            <span>{user.username}</span>
+            <Link to="/settings" className="nav-avatar" title={user.username}>
+              <img src={gravatarUrl(user.email, 64)} alt={user.username} className="avatar" />
+            </Link>
             <button onClick={logout}>Logout</button>
           </nav>
         </header>
