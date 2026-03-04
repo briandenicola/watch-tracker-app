@@ -77,6 +77,7 @@ export default function WatchDetailPage() {
       bezelType: watch.bezelType,
       powerReserveHours: watch.powerReserveHours,
       serialNumber: watch.serialNumber,
+      batteryType: watch.batteryType,
       linkUrl: watch.linkUrl,
       linkText: watch.linkText,
     });
@@ -142,6 +143,7 @@ export default function WatchDetailPage() {
         if (watch.bezelType) extras.push({ label: 'Bezel', value: watch.bezelType });
         if (watch.powerReserveHours) extras.push({ label: 'Power Reserve', value: `${watch.powerReserveHours}h` });
         if (watch.serialNumber) extras.push({ label: 'Serial / Ref', value: watch.serialNumber });
+        if (watch.batteryType) extras.push({ label: 'Battery', value: watch.batteryType });
         if (extras.length === 0 && !watch.notes) return null;
         return (
           <div className="accordion" style={{ marginBottom: '1rem' }}>

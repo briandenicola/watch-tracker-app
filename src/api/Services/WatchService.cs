@@ -49,6 +49,7 @@ public class WatchService(AppDbContext context) : IWatchService
             BezelType = dto.BezelType,
             PowerReserveHours = dto.PowerReserveHours,
             SerialNumber = dto.SerialNumber,
+            BatteryType = dto.BatteryType,
             LinkUrl = dto.LinkUrl,
             LinkText = dto.LinkText,
             UserId = userId,
@@ -89,6 +90,7 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.BezelType = dto.BezelType;
         watch.PowerReserveHours = dto.PowerReserveHours;
         watch.SerialNumber = dto.SerialNumber;
+        watch.BatteryType = dto.BatteryType;
         watch.LinkUrl = dto.LinkUrl;
         watch.LinkText = dto.LinkText;
         watch.UpdatedAt = DateTime.UtcNow;
@@ -154,6 +156,7 @@ public class WatchService(AppDbContext context) : IWatchService
         BezelType = watch.BezelType,
         PowerReserveHours = watch.PowerReserveHours,
         SerialNumber = watch.SerialNumber,
+        BatteryType = watch.BatteryType,
         LinkUrl = watch.LinkUrl,
         LinkText = watch.LinkText,
         ImageUrls = watch.Images.OrderBy(i => i.SortOrder).Select(i => new WatchImageDto

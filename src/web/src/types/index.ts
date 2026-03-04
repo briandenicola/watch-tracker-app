@@ -31,6 +31,7 @@ export interface Watch {
   bezelType?: string;
   powerReserveHours?: number;
   serialNumber?: string;
+  batteryType?: string;
   linkUrl?: string;
   linkText?: string;
   createdAt: string;
@@ -58,6 +59,7 @@ export interface CreateWatch {
   bezelType?: string;
   powerReserveHours?: number;
   serialNumber?: string;
+  batteryType?: string;
   linkUrl?: string;
   linkText?: string;
 }

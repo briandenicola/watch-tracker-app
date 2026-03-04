@@ -26,6 +26,7 @@ public class Watch
     public string? BezelType { get; set; }
     public int? PowerReserveHours { get; set; }
     public string? SerialNumber { get; set; }
+    public string? BatteryType { get; set; }
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
 

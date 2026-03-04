@@ -42,6 +42,15 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   const [bezelType, setBezelType] = useState(initial?.bezelType ?? '');
   const [powerReserveHours, setPowerReserveHours] = useState(initial?.powerReserveHours?.toString() ?? '');
   const [serialNumber, setSerialNumber] = useState(initial?.serialNumber ?? '');
+  const [batteryTypeSelect, setBatteryTypeSelect] = useState(() => {
+    const v = initial?.batteryType ?? '';
+    if (v === 'Solar' || v === 'Motion') return v;
+    return v ? 'Custom' : '';
+  });
+  const [batteryTypeCustom, setBatteryTypeCustom] = useState(() => {
+    const v = initial?.batteryType ?? '';
+    return (v === 'Solar' || v === 'Motion') ? '' : v;
+  });
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -55,6 +64,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const bandType = bandTypeSelect === 'Custom' ? bandTypeCustom : bandTypeSelect;
+    const batteryType = batteryTypeSelect === 'Custom' ? batteryTypeCustom : batteryTypeSelect;
     const data: CreateWatch = {
       brand,
       model,
@@ -76,6 +86,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       ...(bezelType && { bezelType }),
       ...(powerReserveHours && { powerReserveHours: Number(powerReserveHours) }),
       ...(serialNumber && { serialNumber }),
+      ...(batteryType && { batteryType }),
       ...(linkUrl && { linkUrl }),
       ...(linkUrl && linkText && { linkText }),
     };
@@ -210,8 +221,25 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
                 Serial / Reference Number
                 <input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
               </label>
-              <label>{/* spacer */}</label>
+              <label>
+                Battery Type
+                <select value={batteryTypeSelect} onChange={(e) => setBatteryTypeSelect(e.target.value)}>
+                  <option value="">— Select —</option>
+                  <option value="Solar">Solar</option>
+                  <option value="Motion">Motion</option>
+                  <option value="Custom">Custom…</option>
+                </select>
+              </label>
             </div>
+            {batteryTypeSelect === 'Custom' && (
+              <div className="watch-form-row">
+                <label>
+                  Custom Battery Type
+                  <input value={batteryTypeCustom} onChange={(e) => setBatteryTypeCustom(e.target.value)} />
+                </label>
+                <label>{/* spacer */}</label>
+              </div>
+            )}
             <label style={{ marginTop: '0.75rem' }}>
               Notes
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
