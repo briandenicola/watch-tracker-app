@@ -12,6 +12,7 @@ export interface Watch {
   movementType: MovementType;
   caseSizeMm?: number;
   bandType?: string;
+  bandColor?: string;
   purchaseDate?: string;
   purchasePrice?: number;
   notes?: string;
@@ -42,6 +43,7 @@ export interface CreateWatch {
   movementType: MovementType;
   caseSizeMm?: number;
   bandType?: string;
+  bandColor?: string;
   purchaseDate?: string;
   purchasePrice?: number;
   notes?: string;

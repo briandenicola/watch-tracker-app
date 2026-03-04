@@ -62,6 +62,7 @@ export default function WatchDetailPage() {
       movementType: watch.movementType,
       caseSizeMm: watch.caseSizeMm,
       bandType: watch.bandType,
+      bandColor: watch.bandColor,
       purchaseDate: watch.purchaseDate,
       purchasePrice: watch.purchasePrice,
       notes: newNotes,
@@ -112,6 +113,7 @@ export default function WatchDetailPage() {
         <span className="detail-chip"><strong>Movement</strong> {watch.movementType}</span>
         {watch.caseSizeMm && <span className="detail-chip"><strong>Case</strong> {watch.caseSizeMm}mm</span>}
         {watch.bandType && <span className="detail-chip"><strong>Band</strong> {watch.bandType}</span>}
+        {watch.bandColor && <span className="detail-chip"><strong>Band Color</strong> {watch.bandColor}</span>}
         {watch.purchaseDate && <span className="detail-chip"><strong>Purchased</strong> {fmtDate(watch.purchaseDate)}</span>}
         {watch.purchasePrice != null && <span className="detail-chip"><strong>Price</strong> ${watch.purchasePrice.toFixed(2)}</span>}
         <span className="detail-chip">

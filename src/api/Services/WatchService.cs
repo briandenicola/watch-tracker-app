@@ -34,6 +34,7 @@ public class WatchService(AppDbContext context) : IWatchService
             MovementType = dto.MovementType,
             CaseSizeMm = dto.CaseSizeMm,
             BandType = dto.BandType,
+            BandColor = dto.BandColor,
             PurchaseDate = dto.PurchaseDate,
             PurchasePrice = dto.PurchasePrice,
             Notes = dto.Notes,
@@ -73,6 +74,7 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.MovementType = dto.MovementType;
         watch.CaseSizeMm = dto.CaseSizeMm;
         watch.BandType = dto.BandType;
+        watch.BandColor = dto.BandColor;
         watch.PurchaseDate = dto.PurchaseDate;
         watch.PurchasePrice = dto.PurchasePrice;
         watch.Notes = dto.Notes;
@@ -134,6 +136,7 @@ public class WatchService(AppDbContext context) : IWatchService
         MovementType = watch.MovementType,
         CaseSizeMm = watch.CaseSizeMm,
         BandType = watch.BandType,
+        BandColor = watch.BandColor,
         PurchaseDate = watch.PurchaseDate,
         PurchasePrice = watch.PurchasePrice,
         Notes = watch.Notes,

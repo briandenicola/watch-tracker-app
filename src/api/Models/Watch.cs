@@ -8,6 +8,7 @@ public class Watch
     public MovementType MovementType { get; set; }
     public double? CaseSizeMm { get; set; }
     public string? BandType { get; set; }
+    public string? BandColor { get; set; }
     public DateTime? PurchaseDate { get; set; }
     public decimal? PurchasePrice { get; set; }
     public string? Notes { get; set; }

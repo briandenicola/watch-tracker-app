@@ -9,7 +9,7 @@ interface WatchFormProps {
 }
 
 const MOVEMENT_TYPES: MovementType[] = ['Automatic', 'Manual', 'Quartz', 'Digital'];
-const BAND_TYPE_OPTIONS = ['Black Leather', 'Brown Leather', 'Titanium'];
+const BAND_TYPE_OPTIONS = ['Leather Strap', 'Bracelet'];
 
 export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onCancel }: WatchFormProps) {
   const [brand, setBrand] = useState(initial?.brand ?? '');
@@ -38,6 +38,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   const [waterResistance, setWaterResistance] = useState(initial?.waterResistance ?? '');
   const [lugWidthMm, setLugWidthMm] = useState(initial?.lugWidthMm?.toString() ?? '');
   const [dialColor, setDialColor] = useState(initial?.dialColor ?? '');
+  const [bandColor, setBandColor] = useState(initial?.bandColor ?? '');
   const [bezelType, setBezelType] = useState(initial?.bezelType ?? '');
   const [powerReserveHours, setPowerReserveHours] = useState(initial?.powerReserveHours?.toString() ?? '');
   const [serialNumber, setSerialNumber] = useState(initial?.serialNumber ?? '');
@@ -60,6 +61,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       movementType,
       ...(caseSizeMm && { caseSizeMm: Number(caseSizeMm) }),
       ...(bandType && { bandType }),
+      ...(bandColor && { bandColor }),
       ...(purchaseDate && { purchaseDate }),
       ...(purchasePrice && { purchasePrice: Number(purchasePrice) }),
       ...(notes && { notes }),
@@ -190,6 +192,10 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
               </label>
             </div>
             <div className="watch-form-row">
+              <label>
+                Band Color
+                <input value={bandColor} onChange={(e) => setBandColor(e.target.value)} placeholder="e.g. Brown" />
+              </label>
               <label>
                 Bezel Type
                 <input value={bezelType} onChange={(e) => setBezelType(e.target.value)} placeholder="e.g. Rotating" />
