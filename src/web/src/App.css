@@ -201,6 +201,21 @@
   min-width: 160px;
 }
 
+.btn-sort-dir {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-bg);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
+.btn-sort-dir:hover {
+  color: var(--accent);
+}
+
 .scroll-sentinel {
   height: 1px;
 }
@@ -270,6 +285,12 @@
 
 .watch-table-row:hover {
   background: var(--input-bg);
+}
+
+@media (max-width: 600px) {
+  .watch-table .hide-mobile {
+    display: none;
+  }
 }
 
 .watch-grid {

@@ -25,6 +25,8 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   const [purchaseDate, setPurchaseDate] = useState(initial?.purchaseDate?.substring(0, 10) ?? '');
   const [purchasePrice, setPurchasePrice] = useState(initial?.purchasePrice?.toString() ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [linkUrl, setLinkUrl] = useState(initial?.linkUrl ?? '');
+  const [linkText, setLinkText] = useState(initial?.linkText ?? '');
   const [files, setFiles] = useState<File[]>([]);
 
   // Additional detail fields
@@ -72,6 +74,8 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       ...(bezelType && { bezelType }),
       ...(powerReserveHours && { powerReserveHours: Number(powerReserveHours) }),
       ...(serialNumber && { serialNumber }),
+      ...(linkUrl && { linkUrl }),
+      ...(linkText && { linkText }),
     };
     onSubmit(data, files);
   }
@@ -202,16 +206,30 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
               </label>
               <label>{/* spacer */}</label>
             </div>
+            <label style={{ marginTop: '0.75rem' }}>
+              Notes
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </label>
           </div>
         </div>
       </div>
 
       <fieldset className="watch-form-group">
-        <legend>Additional</legend>
-        <label>
-          Notes
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </label>
+        <legend>Link</legend>
+        <div className="watch-form-row">
+          <label>
+            URL
+            <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://…" />
+          </label>
+          <label>
+            Display Text
+            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} placeholder="e.g. Product page" />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset className="watch-form-group">
+        <legend>Images</legend>
         <label>
           Images
           <input type="file" accept="image/*" multiple onChange={handleFileChange} />

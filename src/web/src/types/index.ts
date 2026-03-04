@@ -30,6 +30,8 @@ export interface Watch {
   bezelType?: string;
   powerReserveHours?: number;
   serialNumber?: string;
+  linkUrl?: string;
+  linkText?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +56,8 @@ export interface CreateWatch {
   bezelType?: string;
   powerReserveHours?: number;
   serialNumber?: string;
+  linkUrl?: string;
+  linkText?: string;
 }
 
 export type UpdateWatch = CreateWatch;

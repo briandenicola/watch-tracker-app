@@ -91,6 +91,14 @@ export default function WatchDetailPage() {
 
       {watch.notes && <div className="watch-detail-notes"><Markdown>{watch.notes}</Markdown></div>}
 
+      {watch.linkUrl && (
+        <p style={{ marginBottom: '1rem' }}>
+          <a href={watch.linkUrl} target="_blank" rel="noopener noreferrer">
+            {watch.linkText || watch.linkUrl}
+          </a>
+        </p>
+      )}
+
       {(() => {
         const extras: { label: string; value: string }[] = [];
         if (watch.crystalType) extras.push({ label: 'Crystal', value: watch.crystalType });

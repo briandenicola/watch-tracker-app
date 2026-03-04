@@ -8,7 +8,7 @@ const PAGE_SIZE = 12;
 
 type ViewMode = 'gallery' | 'table';
 type SortOption = 'dateAdded' | 'brand';
-type TableSortField = 'brand' | 'movementType' | 'caseSizeMm' | 'createdAt' | 'timesWorn' | 'lastWornDate';
+type TableSortField = 'brand' | 'model' | 'movementType' | 'caseSizeMm' | 'createdAt' | 'timesWorn' | 'lastWornDate';
 type SortDir = 'asc' | 'desc';
 
 function formatDate(value?: string | null) {
@@ -24,6 +24,7 @@ export default function WatchListPage() {
   const [brandFilter, setBrandFilter] = useState('');
   const [bandTypeFilter, setBandTypeFilter] = useState('');
   const [sort, setSort] = useState<SortOption>('dateAdded');
+  const [gallerySortDir, setGallerySortDir] = useState<SortDir>('desc');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const [tableSort, setTableSort] = useState<TableSortField>('createdAt');
@@ -72,13 +73,14 @@ export default function WatchListPage() {
   // Gallery sort (used for gallery view)
   const galleryList = useMemo(() => {
     const result = [...baseFiltered];
+    const dir = gallerySortDir === 'asc' ? 1 : -1;
     if (sort === 'brand') {
-      result.sort((a, b) => a.brand.localeCompare(b.brand));
+      result.sort((a, b) => dir * a.brand.localeCompare(b.brand));
     } else {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      result.sort((a, b) => dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
     }
     return result;
-  }, [baseFiltered, sort]);
+  }, [baseFiltered, sort, gallerySortDir]);
 
   // Table sort (independent, all columns sortable)
   const tableList = useMemo(() => {
@@ -88,6 +90,8 @@ export default function WatchListPage() {
       switch (tableSort) {
         case 'brand':
           return dir * a.brand.localeCompare(b.brand);
+        case 'model':
+          return dir * a.model.localeCompare(b.model);
         case 'movementType':
           return dir * a.movementType.localeCompare(b.movementType);
         case 'caseSizeMm':
@@ -154,10 +158,17 @@ export default function WatchListPage() {
           </select>
 
           {viewMode === 'gallery' && (
-            <select value={sort} onChange={(e) => handleSortChange(e.target.value as SortOption)}>
-              <option value="dateAdded">Sort: Date Added</option>
-              <option value="brand">Sort: Brand</option>
-            </select>
+            <>
+              <select value={sort} onChange={(e) => handleSortChange(e.target.value as SortOption)}>
+                <option value="dateAdded">Sort: Date Added</option>
+                <option value="brand">Sort: Brand</option>
+              </select>
+              <button
+                className="btn-sort-dir"
+                onClick={() => { setGallerySortDir((d) => (d === 'asc' ? 'desc' : 'asc')); setVisibleCount(PAGE_SIZE); }}
+                title={gallerySortDir === 'asc' ? 'Ascending' : 'Descending'}
+              >{gallerySortDir === 'asc' ? '▲' : '▼'}</button>
+            </>
           )}
 
           <div className="view-toggle">
@@ -192,22 +203,24 @@ export default function WatchListPage() {
             <thead>
               <tr>
                 <th onClick={() => handleTableSort('brand')}>Brand{sortIndicator('brand')}</th>
-                <th onClick={() => handleTableSort('movementType')}>Type{sortIndicator('movementType')}</th>
-                <th onClick={() => handleTableSort('caseSizeMm')}>Size{sortIndicator('caseSizeMm')}</th>
+                <th onClick={() => handleTableSort('model')}>Model{sortIndicator('model')}</th>
+                <th className="hide-mobile" onClick={() => handleTableSort('caseSizeMm')}>Size{sortIndicator('caseSizeMm')}</th>
+                <th className="hide-mobile" onClick={() => handleTableSort('movementType')}>Type{sortIndicator('movementType')}</th>
                 <th onClick={() => handleTableSort('createdAt')}>Date Added{sortIndicator('createdAt')}</th>
-                <th onClick={() => handleTableSort('timesWorn')}>Worn{sortIndicator('timesWorn')}</th>
-                <th onClick={() => handleTableSort('lastWornDate')}>Last Worn{sortIndicator('lastWornDate')}</th>
+                <th className="hide-mobile" onClick={() => handleTableSort('lastWornDate')}>Last Worn{sortIndicator('lastWornDate')}</th>
+                <th className="hide-mobile" onClick={() => handleTableSort('timesWorn')}>Worn{sortIndicator('timesWorn')}</th>
               </tr>
             </thead>
             <tbody>
               {tableList.map((w) => (
                 <tr key={w.id} onClick={() => navigate(`/watches/${w.id}`)} className="watch-table-row">
-                  <td>{w.brand} {w.model}</td>
-                  <td>{w.movementType}</td>
-                  <td>{w.caseSizeMm ? `${w.caseSizeMm}mm` : '—'}</td>
+                  <td>{w.brand}</td>
+                  <td>{w.model}</td>
+                  <td className="hide-mobile">{w.caseSizeMm ? `${w.caseSizeMm}mm` : '—'}</td>
+                  <td className="hide-mobile">{w.movementType}</td>
                   <td>{formatDate(w.createdAt)}</td>
-                  <td>{w.timesWorn}</td>
-                  <td>{formatDate(w.lastWornDate)}</td>
+                  <td className="hide-mobile">{formatDate(w.lastWornDate)}</td>
+                  <td className="hide-mobile">{w.timesWorn}</td>
                 </tr>
               ))}
             </tbody>
