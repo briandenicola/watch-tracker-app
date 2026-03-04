@@ -186,6 +186,92 @@
   margin-bottom: 1.5rem;
 }
 
+.watch-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.watch-toolbar select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-bg);
+  min-width: 160px;
+}
+
+.scroll-sentinel {
+  height: 1px;
+}
+
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-left: auto;
+}
+
+.view-toggle-btn {
+  padding: 0.4rem 0.65rem;
+  border: none;
+  background: var(--input-bg);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.view-toggle-btn + .view-toggle-btn {
+  border-left: 1px solid var(--border-color);
+}
+
+.view-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Watch table */
+.watch-table-wrap {
+  overflow-x: auto;
+}
+
+.watch-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.watch-table th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.watch-table th:hover {
+  color: var(--accent);
+}
+
+.watch-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border-light, var(--border-color));
+}
+
+.watch-table-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.watch-table-row:hover {
+  background: var(--input-bg);
+}
+
 .watch-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

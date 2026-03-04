@@ -1,12 +1,36 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { getWatches } from '../api/watches';
 import WatchCard from '../components/WatchCard';
 import type { Watch } from '../types';
 
+const PAGE_SIZE = 12;
+
+type ViewMode = 'gallery' | 'table';
+type SortOption = 'dateAdded' | 'brand';
+type TableSortField = 'brand' | 'movementType' | 'caseSizeMm' | 'createdAt' | 'timesWorn' | 'lastWornDate';
+type SortDir = 'asc' | 'desc';
+
+function formatDate(value?: string | null) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString();
+}
+
 export default function WatchListPage() {
   const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [viewMode, setViewMode] = useState<ViewMode>('gallery');
+  const [brandFilter, setBrandFilter] = useState('');
+  const [bandTypeFilter, setBandTypeFilter] = useState('');
+  const [sort, setSort] = useState<SortOption>('dateAdded');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const [tableSort, setTableSort] = useState<TableSortField>('createdAt');
+  const [tableSortDir, setTableSortDir] = useState<SortDir>('desc');
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     getWatches()
@@ -14,6 +38,95 @@ export default function WatchListPage() {
       .catch(() => setWatches([]))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleBrandChange = (v: string) => { setBrandFilter(v); setVisibleCount(PAGE_SIZE); };
+  const handleBandTypeChange = (v: string) => { setBandTypeFilter(v); setVisibleCount(PAGE_SIZE); };
+  const handleSortChange = (v: SortOption) => { setSort(v); setVisibleCount(PAGE_SIZE); };
+
+  const handleTableSort = (field: TableSortField) => {
+    if (tableSort === field) {
+      setTableSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setTableSort(field);
+      setTableSortDir('asc');
+    }
+  };
+
+  const brands = useMemo(
+    () => [...new Set(watches.map((w) => w.brand))].sort(),
+    [watches],
+  );
+
+  const bandTypes = useMemo(
+    () => [...new Set(watches.map((w) => w.bandType).filter(Boolean))].sort() as string[],
+    [watches],
+  );
+
+  const baseFiltered = useMemo(() => {
+    let result = watches;
+    if (brandFilter) result = result.filter((w) => w.brand === brandFilter);
+    if (bandTypeFilter) result = result.filter((w) => w.bandType === bandTypeFilter);
+    return result;
+  }, [watches, brandFilter, bandTypeFilter]);
+
+  // Gallery sort (used for gallery view)
+  const galleryList = useMemo(() => {
+    const result = [...baseFiltered];
+    if (sort === 'brand') {
+      result.sort((a, b) => a.brand.localeCompare(b.brand));
+    } else {
+      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return result;
+  }, [baseFiltered, sort]);
+
+  // Table sort (independent, all columns sortable)
+  const tableList = useMemo(() => {
+    const result = [...baseFiltered];
+    const dir = tableSortDir === 'asc' ? 1 : -1;
+    result.sort((a, b) => {
+      switch (tableSort) {
+        case 'brand':
+          return dir * a.brand.localeCompare(b.brand);
+        case 'movementType':
+          return dir * a.movementType.localeCompare(b.movementType);
+        case 'caseSizeMm':
+          return dir * ((a.caseSizeMm ?? 0) - (b.caseSizeMm ?? 0));
+        case 'timesWorn':
+          return dir * (a.timesWorn - b.timesWorn);
+        case 'lastWornDate':
+          return dir * (new Date(a.lastWornDate ?? 0).getTime() - new Date(b.lastWornDate ?? 0).getTime());
+        case 'createdAt':
+        default:
+          return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
+    });
+    return result;
+  }, [baseFiltered, tableSort, tableSortDir]);
+
+  const visible = galleryList.slice(0, visibleCount);
+  const hasMore = visibleCount < galleryList.length;
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => Math.min(c + PAGE_SIZE, galleryList.length));
+  }, [galleryList.length]);
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  const sortIndicator = (field: TableSortField) =>
+    tableSort === field ? (tableSortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
   if (loading) return <p>Loading…</p>;
 
@@ -23,13 +136,82 @@ export default function WatchListPage() {
         <h1>My Watches</h1>
         <Link to="/watches/new" className="btn">Add Watch</Link>
       </div>
-      {watches.length === 0 ? (
-        <p>No watches yet. Add your first one!</p>
+
+      {watches.length > 0 && (
+        <div className="watch-toolbar">
+          <select value={brandFilter} onChange={(e) => handleBrandChange(e.target.value)}>
+            <option value="">All Brands</option>
+            {brands.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+
+          <select value={bandTypeFilter} onChange={(e) => handleBandTypeChange(e.target.value)}>
+            <option value="">All Band Types</option>
+            {bandTypes.map((bt) => (
+              <option key={bt} value={bt}>{bt}</option>
+            ))}
+          </select>
+
+          {viewMode === 'gallery' && (
+            <select value={sort} onChange={(e) => handleSortChange(e.target.value as SortOption)}>
+              <option value="dateAdded">Sort: Date Added</option>
+              <option value="brand">Sort: Brand</option>
+            </select>
+          )}
+
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn${viewMode === 'gallery' ? ' active' : ''}`}
+              onClick={() => setViewMode('gallery')}
+              title="Gallery view"
+            >▦</button>
+            <button
+              className={`view-toggle-btn${viewMode === 'table' ? ' active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="Table view"
+            >☰</button>
+          </div>
+        </div>
+      )}
+
+      {baseFiltered.length === 0 ? (
+        <p>{watches.length === 0 ? 'No watches yet. Add your first one!' : 'No watches match the selected filters.'}</p>
+      ) : viewMode === 'gallery' ? (
+        <>
+          <div className="watch-grid">
+            {visible.map((w) => (
+              <WatchCard key={w.id} watch={w} />
+            ))}
+          </div>
+          {hasMore && <div ref={sentinelRef} className="scroll-sentinel" />}
+        </>
       ) : (
-        <div className="watch-grid">
-          {watches.map((w) => (
-            <WatchCard key={w.id} watch={w} />
-          ))}
+        <div className="watch-table-wrap">
+          <table className="watch-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleTableSort('brand')}>Brand{sortIndicator('brand')}</th>
+                <th onClick={() => handleTableSort('movementType')}>Type{sortIndicator('movementType')}</th>
+                <th onClick={() => handleTableSort('caseSizeMm')}>Size{sortIndicator('caseSizeMm')}</th>
+                <th onClick={() => handleTableSort('createdAt')}>Date Added{sortIndicator('createdAt')}</th>
+                <th onClick={() => handleTableSort('timesWorn')}>Worn{sortIndicator('timesWorn')}</th>
+                <th onClick={() => handleTableSort('lastWornDate')}>Last Worn{sortIndicator('lastWornDate')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableList.map((w) => (
+                <tr key={w.id} onClick={() => navigate(`/watches/${w.id}`)} className="watch-table-row">
+                  <td>{w.brand} {w.model}</td>
+                  <td>{w.movementType}</td>
+                  <td>{w.caseSizeMm ? `${w.caseSizeMm}mm` : '—'}</td>
+                  <td>{formatDate(w.createdAt)}</td>
+                  <td>{w.timesWorn}</td>
+                  <td>{formatDate(w.lastWornDate)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
