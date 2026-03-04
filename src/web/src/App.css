@@ -287,6 +287,10 @@
   background: var(--input-bg);
 }
 
+.watch-table tbody tr:nth-child(even) {
+  background: var(--bg-surface);
+}
+
 @media (max-width: 600px) {
   .watch-table .hide-mobile {
     display: none;
