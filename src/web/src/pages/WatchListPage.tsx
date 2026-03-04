@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getWatches } from '../api/watches';
 import WatchCard from '../components/WatchCard';
+import { usePreferences } from '../context/PreferencesContext';
 import type { Watch } from '../types';
 
 const PAGE_SIZE = 12;
@@ -17,10 +18,11 @@ function formatDate(value?: string | null) {
 }
 
 export default function WatchListPage() {
+  const { defaultView } = usePreferences();
   const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [viewMode, setViewMode] = useState<ViewMode>('gallery');
+  const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
   const [brandFilter, setBrandFilter] = useState('');
   const [bandTypeFilter, setBandTypeFilter] = useState('');
   const [sort, setSort] = useState<SortOption>('dateAdded');

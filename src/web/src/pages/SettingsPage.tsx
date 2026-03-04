@@ -5,7 +5,7 @@ import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage
 import { gravatarUrl } from '../utils/gravatar';
 
 export default function SettingsPage() {
-  const { theme, setTheme, timezone, setTimezone } = usePreferences();
+  const { theme, setTheme, timezone, setTimezone, defaultView, setDefaultView } = usePreferences();
   const { user, updateProfileImage, updateUsername } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -180,6 +180,27 @@ export default function SettingsPage() {
                 type="button"
               >
                 🌙 Dark
+              </button>
+            </div>
+          </div>
+          <div className="settings-row">
+            <label htmlFor="view-select">Default View</label>
+            <div className="theme-toggle">
+              <button
+                className={`theme-btn${defaultView === 'gallery' ? ' active' : ''}`}
+                onClick={() => setDefaultView('gallery')}
+                aria-pressed={defaultView === 'gallery'}
+                type="button"
+              >
+                ▦ Gallery
+              </button>
+              <button
+                className={`theme-btn${defaultView === 'table' ? ' active' : ''}`}
+                onClick={() => setDefaultView('table')}
+                aria-pressed={defaultView === 'table'}
+                type="button"
+              >
+                ☰ Table
               </button>
             </div>
           </div>
