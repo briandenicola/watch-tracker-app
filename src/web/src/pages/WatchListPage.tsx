@@ -7,7 +7,7 @@ import type { Watch } from '../types';
 const PAGE_SIZE = 12;
 
 type ViewMode = 'gallery' | 'table';
-type SortOption = 'dateAdded' | 'brand';
+type SortOption = 'dateAdded' | 'brand' | 'lastWorn';
 type TableSortField = 'brand' | 'model' | 'movementType' | 'caseSizeMm' | 'createdAt' | 'timesWorn' | 'lastWornDate';
 type SortDir = 'asc' | 'desc';
 
@@ -76,6 +76,8 @@ export default function WatchListPage() {
     const dir = gallerySortDir === 'asc' ? 1 : -1;
     if (sort === 'brand') {
       result.sort((a, b) => dir * a.brand.localeCompare(b.brand));
+    } else if (sort === 'lastWorn') {
+      result.sort((a, b) => dir * (new Date(a.lastWornDate ?? 0).getTime() - new Date(b.lastWornDate ?? 0).getTime()));
     } else {
       result.sort((a, b) => dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
     }
@@ -162,6 +164,7 @@ export default function WatchListPage() {
               <select value={sort} onChange={(e) => handleSortChange(e.target.value as SortOption)}>
                 <option value="dateAdded">Sort: Date Added</option>
                 <option value="brand">Sort: Brand</option>
+                <option value="lastWorn">Sort: Last Worn</option>
               </select>
               <button
                 className="btn-sort-dir"
