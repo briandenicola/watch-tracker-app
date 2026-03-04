@@ -93,11 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => prev ? { ...prev, username } : prev);
   }, []);
 
-  // Fetch profile image on mount when token exists
+  // Fetch full profile from DB on mount when token exists
   useEffect(() => {
     if (!token) return;
     authApi.getProfile().then((profile) => {
-      setUser((prev) => prev ? { ...prev, profileImage: profile.profileImage } : prev);
+      setUser((prev) => prev ? { ...prev, username: profile.username, email: profile.email, role: profile.role, profileImage: profile.profileImage } : prev);
     }).catch(() => {});
   }, [token]);
 

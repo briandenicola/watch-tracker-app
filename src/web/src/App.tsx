@@ -10,7 +10,7 @@ import WatchDetailPage from './pages/WatchDetailPage';
 import AddWatchPage from './pages/AddWatchPage';
 import EditWatchPage from './pages/EditWatchPage';
 import AdminPage from './pages/AdminPage';
-import SettingsPage from './pages/SettingsPage';
+import SettingsModal from './components/SettingsModal';
 import { useAuth } from './context/AuthContext';
 import { gravatarUrl } from './utils/gravatar';
 import './App.css';
@@ -18,6 +18,7 @@ import './App.css';
 function App() {
   const { user, isAdmin, needsSetup, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (needsSetup === null) return <p>Loading…</p>;
 
@@ -33,9 +34,9 @@ function App() {
           </div>
           <nav className={menuOpen ? 'nav-open' : ''}>
             {isAdmin && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
-            <Link to="/settings" className="nav-avatar" title={user.username} onClick={() => setMenuOpen(false)}>
+            <button className="nav-avatar" title={user.username} onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
               <img src={user.profileImage || gravatarUrl(user.email, 128)} alt={user.username} className="avatar" />
-            </Link>
+            </button>
             <button onClick={() => { setMenuOpen(false); logout(); }}>Logout</button>
           </nav>
         </header>
@@ -57,7 +58,6 @@ function App() {
                 <Route path="/watches/new" element={<AddWatchPage />} />
                 <Route path="/watches/:id/edit" element={<EditWatchPage />} />
                 <Route path="/watches/:id" element={<WatchDetailPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
               </Route>
               <Route element={<AdminProtectedRoute />}>
                 <Route path="/admin" element={<AdminPage />} />
@@ -66,6 +66,7 @@ function App() {
           )}
         </Routes>
       </main>
+      {user && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
     </BrowserRouter>
   );
 }
