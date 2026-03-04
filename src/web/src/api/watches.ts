@@ -41,6 +41,10 @@ export async function deleteWatchImage(watchId: number, imageId: number): Promis
   await client.delete(`/watches/${watchId}/images/${imageId}`);
 }
 
+export async function setCoverImage(watchId: number, imageId: number): Promise<void> {
+  await client.put(`/watches/${watchId}/images/${imageId}/cover`);
+}
+
 export function imageUrl(path: string): string {
   return `${apiBaseUrl}${path}`;
 }

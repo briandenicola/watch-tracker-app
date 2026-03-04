@@ -26,7 +26,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   const [purchasePrice, setPurchasePrice] = useState(initial?.purchasePrice?.toString() ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [linkUrl, setLinkUrl] = useState(initial?.linkUrl ?? '');
-  const [linkText, setLinkText] = useState(initial?.linkText ?? '');
+  const [linkText, setLinkText] = useState(initial?.linkText ?? 'Product Page');
   const [files, setFiles] = useState<File[]>([]);
 
   // Additional detail fields
@@ -75,7 +75,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       ...(powerReserveHours && { powerReserveHours: Number(powerReserveHours) }),
       ...(serialNumber && { serialNumber }),
       ...(linkUrl && { linkUrl }),
-      ...(linkText && { linkText }),
+      ...(linkUrl && linkText && { linkText }),
     };
     onSubmit(data, files);
   }

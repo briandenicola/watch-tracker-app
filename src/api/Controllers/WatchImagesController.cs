@@ -37,4 +37,11 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
         var result = await imageService.DeleteAsync(imageId, UserId);
         return result ? NoContent() : NotFound();
     }
+
+    [HttpPut("{imageId}/cover")]
+    public async Task<IActionResult> SetCover(int watchId, int imageId)
+    {
+        var result = await imageService.SetCoverAsync(watchId, imageId, UserId);
+        return result ? NoContent() : NotFound();
+    }
 }

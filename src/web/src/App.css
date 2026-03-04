@@ -315,6 +315,12 @@
   text-decoration: none;
 }
 
+.watch-card-title {
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+
 .watch-card h3 {
   margin-bottom: 0.25rem;
 }
@@ -484,6 +490,53 @@
   object-fit: cover;
   border-radius: 6px;
   margin-bottom: 0.75rem;
+}
+
+/* Cover image picker */
+.cover-image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cover-image-option {
+  position: relative;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+  width: 100px;
+  height: 100px;
+}
+
+.cover-image-option img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-image-option.active {
+  border-color: var(--accent);
+}
+
+.cover-image-option:hover {
+  border-color: var(--accent-hover, var(--accent));
+}
+
+.cover-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.15rem 0;
 }
 
 .file-count {

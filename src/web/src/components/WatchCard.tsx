@@ -8,12 +8,7 @@ export default function WatchCard({ watch }: { watch: Watch }) {
       {watch.imageUrls.length > 0 && (
         <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} className="watch-card-image" />
       )}
-      <h3>{watch.brand}</h3>
-      <p className="watch-model">{watch.model}</p>
-      <div className="watch-meta">
-        <span>{watch.movementType}</span>
-        {watch.caseSizeMm && <span>{watch.caseSizeMm}mm</span>}
-      </div>
+      <p className="watch-card-title">{watch.brand} {watch.model}</p>
     </Link>
   );
 }

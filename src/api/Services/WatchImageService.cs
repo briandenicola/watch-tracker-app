@@ -68,4 +68,26 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env) : 
 
         return true;
     }
+
+    public async Task<bool> SetCoverAsync(int watchId, int imageId, int userId)
+    {
+        var watch = await context.Watches
+            .Include(w => w.Images)
+            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId);
+
+        if (watch is null) return false;
+
+        var target = watch.Images.FirstOrDefault(i => i.Id == imageId);
+        if (target is null) return false;
+
+        target.SortOrder = -1;
+        foreach (var img in watch.Images.Where(i => i.Id != imageId).OrderBy(i => i.SortOrder))
+        {
+            img.SortOrder++;
+        }
+        target.SortOrder = 0;
+
+        await context.SaveChangesAsync();
+        return true;
+    }
 }

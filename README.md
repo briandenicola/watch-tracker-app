@@ -2,7 +2,7 @@
 
 > **Note:** This application is 100% vibe coded. It's exclusively for me to learn and experiment with GitHub Copilot CLI.
 
-WatchTracker is a full-stack web application for cataloging and managing your personal watch collection. Track details like brand, model, movement type, band type, and images — with optional AI-powered watch analysis via the Anthropic API. Every watch is scoped to your authenticated account using JWT-based authentication.
+WatchTracker is a full-stack web application for cataloging and managing your personal watch collection. Track details like brand, model, movement type, band type, purchase info, and images — with optional AI-powered watch analysis via the Anthropic API. Every watch is scoped to your authenticated account using JWT-based authentication.
 
 On first launch, a setup wizard walks you through creating an admin account and configuring application settings.
 
@@ -56,6 +56,21 @@ When the app launches for the first time, the setup wizard at `/setup` will guid
 | `task docker-build`| Build the Docker container image         |
 | `task docker-run`  | Run the Docker container locally         |
 | `task db`          | Create and apply EF Core migrations      |
+
+## CI/CD
+
+A GitHub Actions workflow (`.github/workflows/docker-publish.yml`) builds and pushes the Docker image to Docker Hub:
+
+- **Triggers** — Push to `main` branch and manual dispatch
+- **Tags** — Full commit SHA, short commit SHA, and `latest` (on main)
+- **Caching** — Uses GitHub Actions cache for Docker layer caching
+
+### Required Secrets
+
+| Secret | Description |
+| ------ | ----------- |
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | A Docker Hub access token |
 
 ## Deployment
 
@@ -138,6 +153,33 @@ services:
 
 ## Features
 
+### Collection Views
+
+The main collection page supports two view modes:
+
+- **Gallery View** — Card grid showing each watch's cover image with brand and model. Supports infinite scroll (loads 12 at a time), filtering by brand and band type, and sorting by date added, brand, or last worn date (ascending/descending).
+- **Table View** — Sortable table with columns for Brand, Model, Size, Type, Date Added, Last Worn, and Worn Count. All columns are sortable. On mobile screens (≤600px), the table collapses to Brand, Model, and Date Added for readability.
+
+Toggle between views using the ▦/☰ buttons in the toolbar.
+
+### Watch Details
+
+Each watch can store:
+
+- **Core fields** — Brand, model, movement type, case size, band type, purchase date/price
+- **Extended properties** — Crystal type, case shape, crown type, calendar type, country of origin, water resistance, lug width, dial color, bezel type, power reserve, serial/reference number
+- **Link** — A URL with customizable display text (defaults to "Product Page"), shown as a chip on the detail page
+- **Notes** — Markdown-supported notes field, displayed in a scrollable container within the Additional Details accordion
+- **Images** — Multiple image uploads per watch with the ability to choose a cover image for the gallery view
+
+### AI Watch Analysis
+
+Upload photos of a watch and click **🤖 Analyze with AI** to get an AI-powered analysis via the Anthropic API. The analysis is returned in a modal popup rendered as Markdown. If accepted, the analysis is appended to the watch's notes.
+
+### Cover Image Selection
+
+When editing a watch with multiple images, a **Gallery Image** picker lets you choose which image appears as the cover in the gallery view.
+
 ### User Preferences
 
 All authenticated users can access **Settings** (⚙️ in the navigation bar) to configure:
@@ -167,35 +209,39 @@ Admins can manage application-wide settings under **Admin → Settings**, organi
 
 ```
 watch-tracker-app/
+├── .github/
+│   └── workflows/
+│       ├── codeql-analysis.yml   # CodeQL security scanning
+│       └── docker-publish.yml    # Build & push to Docker Hub
 ├── src/
-│   ├── api/                    # .NET 10 Web API
-│   │   ├── Controllers/        # API endpoints
-│   │   ├── DTOs/               # Data transfer objects
-│   │   ├── Models/             # EF Core entities
-│   │   ├── Services/           # Business logic
-│   │   ├── Data/               # DbContext & configuration
-│   │   ├── Migrations/         # EF Core migrations
-│   │   └── Program.cs          # App entry point
-│   └── web/                    # React SPA
+│   ├── api/                      # .NET 10 Web API
+│   │   ├── Controllers/          # API endpoints
+│   │   ├── DTOs/                 # Data transfer objects
+│   │   ├── Models/               # EF Core entities
+│   │   ├── Services/             # Business logic
+│   │   ├── Data/                 # DbContext & configuration
+│   │   ├── Migrations/           # EF Core migrations
+│   │   └── Program.cs            # App entry point
+│   └── web/                      # React SPA
 │       ├── src/
-│       │   ├── api/            # API client & resource functions
-│       │   ├── context/        # React context (auth, preferences)
-│       │   ├── pages/          # Page components
-│       │   └── types/          # TypeScript type definitions
-│       ├── public/             # PWA icons & static assets
+│       │   ├── api/              # API client & resource functions
+│       │   ├── components/       # Reusable components (WatchCard, WatchForm, etc.)
+│       │   ├── context/          # React context (auth, preferences)
+│       │   ├── pages/            # Page components
+│       │   ├── types/            # TypeScript type definitions
+│       │   └── utils/            # Utility functions (gravatar, etc.)
+│       ├── public/               # PWA icons & static assets
 │       ├── index.html
 │       └── vite.config.ts
-├── Dockerfile                  # Multi-stage build (web + API)
-├── Taskfile.yml                # Task runner configuration
-├── docker-compose.yaml         # Container orchestration
+├── Dockerfile                    # Multi-stage build (web + API)
+├── Taskfile.yml                  # Task runner configuration
+├── docker-compose.yaml           # Container orchestration
 └── README.md
 ```
 
 ## Backlog
 Future feature ideas for the app:
 
-- [ ] **Display Updates** - Limit the number of watches shown on the main collection page, with pagination or infinite scroll. Add sorting and filtering options (brand, movement type, band type, etc.).
-- [ ] **Extended Watch Properties** — Capture additional details: crystal type, case shape, crown type, calendar type, country of origin, water resistance, lug width, dial color, bezel type, power reserve, and serial/reference number.
 - [ ] **Maintenance Tracker** — Log service history, battery replacements, and strap changes. Set reminders for the next scheduled service.
 - [ ] **Wishlist** — Track watches you want to buy, with notes, target prices, and links.
 - [ ] **Wear Calendar** — Visual heatmap showing which watches were worn on which days, inspired by GitHub's contribution graph.
