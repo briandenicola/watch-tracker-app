@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getWatches } from '../api/watches';
 import WatchCard from '../components/WatchCard';
 import { usePreferences } from '../context/PreferencesContext';
+import { useAuth } from '../context/AuthContext';
 import type { Watch } from '../types';
 
 const PAGE_SIZE = 12;
@@ -19,6 +20,7 @@ function formatDate(value?: string | null) {
 
 export default function WatchListPage() {
   const { defaultView } = usePreferences();
+  const { user } = useAuth();
   const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -141,7 +143,7 @@ export default function WatchListPage() {
   return (
     <div className="watch-list-page">
       <div className="page-header">
-        <h1>My Watches</h1>
+        <h1>{user?.username ? `${user.username}'s Watches` : 'My Watches'}</h1>
         <Link to="/watches/new" className="btn">Add Watch</Link>
       </div>
 
