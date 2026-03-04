@@ -143,7 +143,7 @@ export default function WatchListPage() {
   return (
     <div className="watch-list-page">
       <div className="page-header">
-        <h1>{user?.username ? `${user.username}'s Watches` : 'My Watches'}</h1>
+        <h1>{user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches'}</h1>
         <Link to="/watches/new" className="btn">Add Watch</Link>
       </div>
 
