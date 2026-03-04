@@ -541,6 +541,14 @@
   line-height: 1.6;
 }
 
+.watch-detail-notes-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light, var(--border-color));
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
 .watch-detail-notes h1,
 .watch-detail-notes h2,
 .watch-detail-notes h3 {
@@ -847,6 +855,30 @@
 .modal-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+/* Analysis modal */
+.analysis-modal {
+  max-width: 600px;
+  width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.analysis-modal h3 {
+  margin: 0 0 0.75rem;
+}
+
+.analysis-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border-light, var(--border-color));
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  max-height: 50vh;
 }
 
 /* Setup Wizard */

@@ -91,10 +91,6 @@ public class WatchAnalysisService(
         var analysis = textBlock.GetProperty("text").GetString()
             ?? throw new InvalidOperationException("No text in Anthropic response.");
 
-        watch.AiAnalysis = analysis;
-        watch.UpdatedAt = DateTime.UtcNow;
-        await context.SaveChangesAsync();
-
         return analysis;
     }
 }

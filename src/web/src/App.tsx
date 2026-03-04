@@ -34,7 +34,7 @@ function App() {
           <nav className={menuOpen ? 'nav-open' : ''}>
             {isAdmin && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
             <Link to="/settings" className="nav-avatar" title={user.username} onClick={() => setMenuOpen(false)}>
-              <img src={user.profileImage || gravatarUrl(user.email, 64)} alt={user.username} className="avatar" />
+              <img src={user.profileImage || gravatarUrl(user.email, 128)} alt={user.username} className="avatar" />
             </Link>
             <button onClick={() => { setMenuOpen(false); logout(); }}>Logout</button>
           </nav>

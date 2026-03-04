@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Markdown from 'react-markdown';
-import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, recordWear } from '../api/watches';
+import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
 import { usePreferences } from '../context/PreferencesContext';
 import type { Watch } from '../types';
@@ -15,6 +15,7 @@ export default function WatchDetailPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState('');
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -42,12 +43,44 @@ export default function WatchDetailPage() {
     setAnalyzeError('');
     try {
       const analysis = await analyzeWatch(watch.id);
-      setWatch({ ...watch, aiAnalysis: analysis });
+      setPendingAnalysis(analysis);
     } catch {
       setAnalyzeError('Analysis failed. Make sure the Anthropic API key is configured.');
     } finally {
       setAnalyzing(false);
     }
+  }
+
+  async function handleAcceptAnalysis() {
+    if (!watch || !pendingAnalysis) return;
+    const newNotes = watch.notes
+      ? `${watch.notes}\n\n---\n\n${pendingAnalysis}`
+      : pendingAnalysis;
+    await updateWatch(watch.id, {
+      brand: watch.brand,
+      model: watch.model,
+      movementType: watch.movementType,
+      caseSizeMm: watch.caseSizeMm,
+      bandType: watch.bandType,
+      purchaseDate: watch.purchaseDate,
+      purchasePrice: watch.purchasePrice,
+      notes: newNotes,
+      crystalType: watch.crystalType,
+      caseShape: watch.caseShape,
+      crownType: watch.crownType,
+      calendarType: watch.calendarType,
+      countryOfOrigin: watch.countryOfOrigin,
+      waterResistance: watch.waterResistance,
+      lugWidthMm: watch.lugWidthMm,
+      dialColor: watch.dialColor,
+      bezelType: watch.bezelType,
+      powerReserveHours: watch.powerReserveHours,
+      serialNumber: watch.serialNumber,
+      linkUrl: watch.linkUrl,
+      linkText: watch.linkText,
+    });
+    setWatch({ ...watch, notes: newNotes });
+    setPendingAnalysis(null);
   }
 
   async function handleRecordWear() {
@@ -89,7 +122,7 @@ export default function WatchDetailPage() {
         )}
       </div>
 
-      {watch.notes && <div className="watch-detail-notes"><Markdown>{watch.notes}</Markdown></div>}
+      {watch.notes && <div className="watch-detail-notes watch-detail-notes-scroll"><Markdown>{watch.notes}</Markdown></div>}
 
       {watch.linkUrl && (
         <p style={{ marginBottom: '1rem' }}>
@@ -137,18 +170,28 @@ export default function WatchDetailPage() {
           <ImageCarousel images={watch.imageUrls} alt={`${watch.brand} ${watch.model}`} />
           <div className="image-actions">
             <button className="btn btn-sm" onClick={handleAnalyze} disabled={analyzing}>
-              {analyzing ? 'Analyzing…' : watch.aiAnalysis ? '🤖 Re-analyze' : '🤖 Analyze with AI'}
+              {analyzing ? 'Analyzing…' : '🤖 Analyze with AI'}
             </button>
             <button className="btn btn-danger btn-sm" onClick={() => handleDeleteImage(watch.imageUrls[0]?.id)}>
               Delete Current Image
             </button>
           </div>
           {analyzeError && <p className="error">{analyzeError}</p>}
-          {watch.aiAnalysis && (
-            <div className="ai-analysis-card">
-              <p>{watch.aiAnalysis}</p>
+        </div>
+      )}
+
+      {pendingAnalysis !== null && (
+        <div className="modal-overlay" onClick={() => setPendingAnalysis(null)}>
+          <div className="modal analysis-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>AI Analysis</h3>
+            <div className="analysis-modal-body">
+              <Markdown>{pendingAnalysis}</Markdown>
             </div>
-          )}
+            <div className="modal-actions">
+              <button className="btn" onClick={handleAcceptAnalysis}>Accept &amp; Save to Notes</button>
+              <button className="btn btn-danger" onClick={() => setPendingAnalysis(null)}>Dismiss</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
