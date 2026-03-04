@@ -660,12 +660,19 @@
   gap: 0.75rem;
 }
 
+/* Watch form page wrapper */
+.watch-form-page {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
 /* Watch form */
 .watch-form {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   max-width: 700px;
+  margin: 0 auto;
 }
 
 .watch-form-group {
@@ -747,6 +754,7 @@
 /* Admin page */
 .admin-page {
   max-width: 900px;
+  margin: 0 auto;
 }
 
 .admin-tabs {

@@ -38,7 +38,7 @@ export default function EditWatchPage() {
   if (!watch) return <p>Watch not found.</p>;
 
   return (
-    <div>
+    <div className="watch-form-page">
       <h1>Edit {watch.brand} {watch.model}</h1>
 
       {watch.imageUrls.length > 1 && (

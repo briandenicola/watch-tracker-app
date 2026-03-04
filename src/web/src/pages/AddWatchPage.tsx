@@ -15,7 +15,7 @@ export default function AddWatchPage() {
   }
 
   return (
-    <div>
+    <div className="watch-form-page">
       <h1>Add Watch</h1>
       <WatchForm onSubmit={handleSubmit} submitLabel="Add Watch" onCancel={() => navigate('/')} />
     </div>
