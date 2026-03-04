@@ -120,17 +120,12 @@ export default function WatchDetailPage() {
         {watch.lastWornDate && (
           <span className="detail-chip"><strong>Last Worn</strong> {fmtDate(watch.lastWornDate)}</span>
         )}
-      </div>
-
-      {watch.notes && <div className="watch-detail-notes watch-detail-notes-scroll"><Markdown>{watch.notes}</Markdown></div>}
-
-      {watch.linkUrl && (
-        <p style={{ marginBottom: '1rem' }}>
-          <a href={watch.linkUrl} target="_blank" rel="noopener noreferrer">
-            {watch.linkText || watch.linkUrl}
+        {watch.linkUrl && (
+          <a href={watch.linkUrl} target="_blank" rel="noopener noreferrer" className="detail-chip" style={{ textDecoration: 'none' }}>
+            <strong>Link</strong> {watch.linkText || watch.linkUrl}
           </a>
-        </p>
-      )}
+        )}
+      </div>
 
       {(() => {
         const extras: { label: string; value: string }[] = [];
@@ -145,7 +140,7 @@ export default function WatchDetailPage() {
         if (watch.bezelType) extras.push({ label: 'Bezel', value: watch.bezelType });
         if (watch.powerReserveHours) extras.push({ label: 'Power Reserve', value: `${watch.powerReserveHours}h` });
         if (watch.serialNumber) extras.push({ label: 'Serial / Ref', value: watch.serialNumber });
-        if (extras.length === 0) return null;
+        if (extras.length === 0 && !watch.notes) return null;
         return (
           <div className="accordion" style={{ marginBottom: '1rem' }}>
             <button type="button" className="accordion-toggle" onClick={() => setDetailsOpen(!detailsOpen)}>
@@ -154,11 +149,21 @@ export default function WatchDetailPage() {
             </button>
             <div className={`accordion-content${detailsOpen ? ' open' : ''}`}>
               <div className="accordion-inner">
-                <div className="watch-detail-chips" style={{ marginTop: '0.75rem' }}>
-                  {extras.map((e) => (
-                    <span key={e.label} className="detail-chip"><strong>{e.label}</strong> {e.value}</span>
-                  ))}
-                </div>
+                {extras.length > 0 && (
+                  <div className="watch-detail-chips" style={{ marginTop: '0.75rem' }}>
+                    {extras.map((e) => (
+                      <span key={e.label} className="detail-chip"><strong>{e.label}</strong> {e.value}</span>
+                    ))}
+                  </div>
+                )}
+                {watch.notes && (
+                  <>
+                    <h3 style={{ marginTop: '0.75rem' }}>Notes</h3>
+                    <div className="watch-detail-notes watch-detail-notes-scroll">
+                      <Markdown>{watch.notes}</Markdown>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
