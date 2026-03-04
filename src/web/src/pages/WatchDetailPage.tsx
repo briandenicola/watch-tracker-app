@@ -141,7 +141,6 @@ export default function WatchDetailPage() {
         if (watch.lugWidthMm) extras.push({ label: 'Lug Width', value: `${watch.lugWidthMm}mm` });
         if (watch.dialColor) extras.push({ label: 'Dial', value: watch.dialColor });
         if (watch.bezelType) extras.push({ label: 'Bezel', value: watch.bezelType });
-        if (watch.powerReserveHours) extras.push({ label: 'Power Reserve', value: `${watch.powerReserveHours}h` });
         if (watch.serialNumber) extras.push({ label: 'Serial / Ref', value: watch.serialNumber });
         if (watch.batteryType) extras.push({ label: 'Battery', value: watch.batteryType });
         if (extras.length === 0 && !watch.notes) return null;

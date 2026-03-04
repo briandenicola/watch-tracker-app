@@ -40,7 +40,6 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   const [dialColor, setDialColor] = useState(initial?.dialColor ?? '');
   const [bandColor, setBandColor] = useState(initial?.bandColor ?? '');
   const [bezelType, setBezelType] = useState(initial?.bezelType ?? '');
-  const [powerReserveHours, setPowerReserveHours] = useState(initial?.powerReserveHours?.toString() ?? '');
   const [serialNumber, setSerialNumber] = useState(initial?.serialNumber ?? '');
   const [batteryTypeSelect, setBatteryTypeSelect] = useState(() => {
     const v = initial?.batteryType ?? '';
@@ -84,7 +83,6 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       ...(lugWidthMm && { lugWidthMm: Number(lugWidthMm) }),
       ...(dialColor && { dialColor }),
       ...(bezelType && { bezelType }),
-      ...(powerReserveHours && { powerReserveHours: Number(powerReserveHours) }),
       ...(serialNumber && { serialNumber }),
       ...(batteryType && { batteryType }),
       ...(linkUrl && { linkUrl }),
@@ -210,10 +208,6 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
               <label>
                 Bezel Type
                 <input value={bezelType} onChange={(e) => setBezelType(e.target.value)} placeholder="e.g. Rotating" />
-              </label>
-              <label>
-                Power Reserve (hours)
-                <input type="number" value={powerReserveHours} onChange={(e) => setPowerReserveHours(e.target.value)} />
               </label>
             </div>
             <div className="watch-form-row">
