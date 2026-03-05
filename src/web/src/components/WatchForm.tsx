@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ChangeEvent } from 'react';
+import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import type { CreateWatch, MovementType } from '../types';
 
 interface WatchFormProps {
@@ -6,13 +6,16 @@ interface WatchFormProps {
   onSubmit: (data: CreateWatch, files: File[]) => void;
   submitLabel?: string;
   onCancel?: () => void;
+  brands?: string[];
 }
 
 const MOVEMENT_TYPES: MovementType[] = ['Automatic', 'Manual', 'Quartz', 'Digital'];
 const BAND_TYPE_OPTIONS = ['Leather Strap', 'Bracelet'];
 
-export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onCancel }: WatchFormProps) {
+export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onCancel, brands = [] }: WatchFormProps) {
   const [brand, setBrand] = useState(initial?.brand ?? '');
+  const [brandFocused, setBrandFocused] = useState(false);
+  const brandRef = useRef<HTMLDivElement>(null);
   const [model, setModel] = useState(initial?.model ?? '');
   const [movementType, setMovementType] = useState<MovementType>(initial?.movementType ?? 'Automatic');
   const [caseSizeMm, setCaseSizeMm] = useState(initial?.caseSizeMm?.toString() ?? '');
@@ -51,6 +54,22 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
     return (v === 'Solar' || v === 'Motion') ? '' : v;
   });
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const filteredBrands = brand.length > 0
+    ? brands.filter((b) => b.toLowerCase().includes(brand.toLowerCase()) && b.toLowerCase() !== brand.toLowerCase())
+    : [];
+  const showBrandSuggestions = brandFocused && filteredBrands.length > 0;
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (brandRef.current && !brandRef.current.contains(e.target as Node)) {
+        setBrandFocused(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files) {
@@ -98,7 +117,26 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
         <div className="watch-form-row">
           <label>
             Brand *
-            <input value={brand} onChange={(e) => setBrand(e.target.value)} required />
+            <div className="autocomplete" ref={brandRef}>
+              <input
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                onFocus={() => setBrandFocused(true)}
+                required
+                autoComplete="off"
+              />
+              {showBrandSuggestions && (
+                <ul className="autocomplete-list">
+                  {filteredBrands.map((b) => (
+                    <li key={b}>
+                      <button type="button" onMouseDown={() => { setBrand(b); setBrandFocused(false); }}>
+                        {b}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </label>
           <label>
             Model *

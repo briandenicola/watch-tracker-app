@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getWatch, updateWatch, uploadWatchImages, setCoverImage, imageUrl } from '../api/watches';
+import { getWatch, updateWatch, uploadWatchImages, setCoverImage, imageUrl, getWatches } from '../api/watches';
 import WatchForm from '../components/WatchForm';
 import type { Watch, CreateWatch } from '../types';
 
@@ -9,6 +9,7 @@ export default function EditWatchPage() {
   const navigate = useNavigate();
   const [watch, setWatch] = useState<Watch | null>(null);
   const [loading, setLoading] = useState(true);
+  const [brands, setBrands] = useState<string[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -17,6 +18,13 @@ export default function EditWatchPage() {
       .catch(() => navigate('/'))
       .finally(() => setLoading(false));
   }, [id, navigate]);
+
+  useEffect(() => {
+    getWatches().then((watches) => {
+      const unique = [...new Set(watches.map((w) => w.brand))].sort();
+      setBrands(unique);
+    }).catch(() => {});
+  }, []);
 
   async function handleSubmit(data: CreateWatch, files: File[]) {
     if (!id) return;
@@ -63,7 +71,7 @@ export default function EditWatchPage() {
         </fieldset>
       )}
 
-      <WatchForm initial={watch} onSubmit={handleSubmit} submitLabel="Update Watch" />
+      <WatchForm initial={watch} onSubmit={handleSubmit} submitLabel="Update Watch" brands={brands} />
     </div>
   );
 }

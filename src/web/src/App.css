@@ -666,6 +666,46 @@
   margin: 0 auto;
 }
 
+/* Autocomplete */
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  box-shadow: 0 4px 8px var(--shadow);
+}
+
+.autocomplete-list li button {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text-primary);
+}
+
+.autocomplete-list li button:hover {
+  background: var(--input-bg);
+  color: var(--accent);
+}
+
 /* Watch form */
 .watch-form {
   display: flex;
