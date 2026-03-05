@@ -52,6 +52,7 @@ public class WatchService(AppDbContext context) : IWatchService
             BatteryType = dto.BatteryType,
             LinkUrl = dto.LinkUrl,
             LinkText = dto.LinkText,
+            IsWishList = dto.IsWishList,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -93,6 +94,7 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.BatteryType = dto.BatteryType;
         watch.LinkUrl = dto.LinkUrl;
         watch.LinkText = dto.LinkText;
+        watch.IsWishList = dto.IsWishList;
         watch.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
@@ -183,6 +185,7 @@ public class WatchService(AppDbContext context) : IWatchService
         BatteryType = watch.BatteryType,
         LinkUrl = watch.LinkUrl,
         LinkText = watch.LinkText,
+        IsWishList = watch.IsWishList,
         ImageUrls = watch.Images.OrderBy(i => i.SortOrder).Select(i => new WatchImageDto
         {
             Id = i.Id,

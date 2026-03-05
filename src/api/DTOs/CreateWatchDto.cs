@@ -27,4 +27,5 @@ public class CreateWatchDto
     public string? BatteryType { get; set; }
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
+    public bool IsWishList { get; set; }
 }

@@ -80,6 +80,7 @@ export default function WatchDetailPage() {
       batteryType: watch.batteryType,
       linkUrl: watch.linkUrl,
       linkText: watch.linkText,
+      isWishList: watch.isWishList,
     });
     setWatch({ ...watch, notes: newNotes });
     setPendingAnalysis(null);

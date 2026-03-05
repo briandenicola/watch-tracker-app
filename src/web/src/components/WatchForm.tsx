@@ -17,6 +17,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
   const [brandFocused, setBrandFocused] = useState(false);
   const brandRef = useRef<HTMLDivElement>(null);
   const [model, setModel] = useState(initial?.model ?? '');
+  const [isWishList, setIsWishList] = useState(initial?.isWishList ?? false);
   const [movementType, setMovementType] = useState<MovementType>(initial?.movementType ?? 'Automatic');
   const [caseSizeMm, setCaseSizeMm] = useState(initial?.caseSizeMm?.toString() ?? '');
 
@@ -106,6 +107,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       ...(batteryType && { batteryType }),
       ...(linkUrl && { linkUrl }),
       ...(linkUrl && linkText && { linkText }),
+      isWishList,
     };
     onSubmit(data, files);
   }
@@ -156,6 +158,11 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
             Case Size (mm)
             <input type="number" value={caseSizeMm} onChange={(e) => setCaseSizeMm(e.target.value)} />
           </label>
+        </div>
+        <label className="watch-form-checkbox">
+          <input type="checkbox" checked={isWishList} onChange={(e) => setIsWishList(e.target.checked)} />
+          Wish List Item
+        </label>
         </div>
         <div className="watch-form-row">
           <label>

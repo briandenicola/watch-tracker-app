@@ -34,6 +34,7 @@ export interface Watch {
   batteryType?: string;
   linkUrl?: string;
   linkText?: string;
+  isWishList: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +63,7 @@ export interface CreateWatch {
   batteryType?: string;
   linkUrl?: string;
   linkText?: string;
+  isWishList?: boolean;
 }
 
 export type UpdateWatch = CreateWatch;

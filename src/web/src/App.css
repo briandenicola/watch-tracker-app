@@ -660,6 +660,33 @@
   gap: 0.75rem;
 }
 
+/* Checkbox label in forms */
+.watch-form-checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.watch-form-checkbox input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Wish list toggle */
+.btn-wish-active {
+  background: #eab308;
+  border-color: #eab308;
+}
+
+.btn-wish-active:hover {
+  background: #ca8a04;
+}
+
 /* Watch form page wrapper */
 .watch-form-page {
   max-width: 700px;

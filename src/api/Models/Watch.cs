@@ -29,6 +29,7 @@ public class Watch
     public string? BatteryType { get; set; }
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
+    public bool IsWishList { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; } = null!;

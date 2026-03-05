@@ -27,6 +27,7 @@ export default function WatchListPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
   const [brandFilter, setBrandFilter] = useState('');
   const [bandTypeFilter, setBandTypeFilter] = useState('');
+  const [showWishList, setShowWishList] = useState(false);
   const [sort, setSort] = useState<SortOption>('dateAdded');
   const [gallerySortDir, setGallerySortDir] = useState<SortDir>('desc');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -68,11 +69,11 @@ export default function WatchListPage() {
   );
 
   const baseFiltered = useMemo(() => {
-    let result = watches;
+    let result = watches.filter((w) => showWishList ? w.isWishList : !w.isWishList);
     if (brandFilter) result = result.filter((w) => w.brand === brandFilter);
     if (bandTypeFilter) result = result.filter((w) => w.bandType === bandTypeFilter);
     return result;
-  }, [watches, brandFilter, bandTypeFilter]);
+  }, [watches, brandFilter, bandTypeFilter, showWishList]);
 
   // Gallery sort (used for gallery view)
   const galleryList = useMemo(() => {
@@ -177,6 +178,14 @@ export default function WatchListPage() {
               >{gallerySortDir === 'asc' ? '▲' : '▼'}</button>
             </>
           )}
+
+          <button
+            className={`btn btn-sm${showWishList ? ' btn-wish-active' : ''}`}
+            onClick={() => { setShowWishList((v) => !v); setVisibleCount(PAGE_SIZE); }}
+            type="button"
+          >
+            {showWishList ? '⭐ Wish List' : '☆ Wish List'}
+          </button>
 
           <div className="view-toggle">
             <button
