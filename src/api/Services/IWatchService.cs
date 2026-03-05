@@ -10,4 +10,5 @@ public interface IWatchService
     Task<WatchDto?> UpdateAsync(int id, UpdateWatchDto dto, int userId);
     Task<bool> DeleteAsync(int id, int userId);
     Task<WatchDto?> RecordWearAsync(int id, int userId);
+    Task<IEnumerable<WearLogDto>> GetWearLogsAsync(int userId);
 }

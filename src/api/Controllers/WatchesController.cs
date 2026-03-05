@@ -69,4 +69,11 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
         var watch = await watchService.RecordWearAsync(id, UserId);
         return watch is null ? NotFound() : Ok(watch);
     }
+
+    [HttpGet("wear-logs")]
+    public async Task<ActionResult<IEnumerable<WearLogDto>>> GetWearLogs()
+    {
+        var logs = await watchService.GetWearLogsAsync(UserId);
+        return Ok(logs);
+    }
 }

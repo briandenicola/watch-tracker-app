@@ -21,6 +21,11 @@
   --role-admin-text: #1d4ed8;
   --role-std-bg: #f3f4f6;
   --carousel-img-bg: #f5f5f5;
+  --heatmap-0: #ebedf0;
+  --heatmap-1: #9be9a8;
+  --heatmap-2: #40c463;
+  --heatmap-3: #30a14e;
+  --heatmap-4: #216e39;
 }
 
 [data-theme="dark"] {
@@ -46,6 +51,11 @@
   --role-admin-text: #60a5fa;
   --role-std-bg: #2a2a2a;
   --carousel-img-bg: #1a1a1a;
+  --heatmap-0: #161b22;
+  --heatmap-1: #0e4429;
+  --heatmap-2: #006d32;
+  --heatmap-3: #26a641;
+  --heatmap-4: #39d353;
 }
 
 *,

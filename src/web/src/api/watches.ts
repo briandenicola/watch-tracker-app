@@ -1,5 +1,5 @@
 import client from './client';
-import type { Watch, CreateWatch, UpdateWatch, WatchImage } from '../types';
+import type { Watch, CreateWatch, UpdateWatch, WatchImage, WearLog } from '../types';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL !== undefined
   ? import.meta.env.VITE_API_BASE_URL
@@ -56,5 +56,10 @@ export async function analyzeWatch(id: number): Promise<string> {
 
 export async function recordWear(id: number): Promise<Watch> {
   const { data } = await client.post<Watch>(`/watches/${id}/wear`);
+  return data;
+}
+
+export async function getWearLogs(): Promise<WearLog[]> {
+  const { data } = await client.get<WearLog[]>('/watches/wear-logs');
   return data;
 }

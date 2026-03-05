@@ -10,6 +10,7 @@ import WatchDetailPage from './pages/WatchDetailPage';
 import AddWatchPage from './pages/AddWatchPage';
 import EditWatchPage from './pages/EditWatchPage';
 import AdminPage from './pages/AdminPage';
+import StatsPage from './pages/StatsPage';
 import SettingsModal from './components/SettingsModal';
 import { useAuth } from './context/AuthContext';
 import { gravatarUrl } from './utils/gravatar';
@@ -34,6 +35,7 @@ function App() {
           </div>
           <nav className={menuOpen ? 'nav-open' : ''}>
             {isAdmin && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
+            <Link to="/stats" className="nav-link" onClick={() => setMenuOpen(false)}>Stats</Link>
             <button className="nav-avatar" title={user.username} onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
               <img src={user.profileImage || gravatarUrl(user.email, 128)} alt={user.username} className="avatar" />
             </button>
@@ -58,6 +60,7 @@ function App() {
                 <Route path="/watches/new" element={<AddWatchPage />} />
                 <Route path="/watches/:id/edit" element={<EditWatchPage />} />
                 <Route path="/watches/:id" element={<WatchDetailPage />} />
+                <Route path="/stats" element={<StatsPage />} />
               </Route>
               <Route element={<AdminProtectedRoute />}>
                 <Route path="/admin" element={<AdminPage />} />

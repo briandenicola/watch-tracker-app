@@ -95,6 +95,14 @@ export interface UserDto {
   createdAt: string;
 }
 
+export interface WearLog {
+  id: number;
+  watchId: number;
+  watchBrand: string;
+  watchModel: string;
+  wornDate: string;
+}
+
 export interface AppSettingDto {
   key: string;
   value: string;

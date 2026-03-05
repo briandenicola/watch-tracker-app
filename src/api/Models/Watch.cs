@@ -33,6 +33,7 @@ public class Watch
     public int UserId { get; set; }
     public User User { get; set; } = null!;
     public ICollection<WatchImage> Images { get; set; } = [];
+    public ICollection<WearLog> WearLogs { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

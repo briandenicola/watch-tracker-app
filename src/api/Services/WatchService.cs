@@ -125,9 +125,33 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.LastWornDate = DateTime.UtcNow;
         watch.UpdatedAt = DateTime.UtcNow;
 
+        context.WearLogs.Add(new WearLog
+        {
+            WatchId = watch.Id,
+            UserId = userId,
+            WornDate = DateTime.UtcNow,
+        });
+
         await context.SaveChangesAsync();
 
         return MapToDto(watch);
+    }
+
+    public async Task<IEnumerable<WearLogDto>> GetWearLogsAsync(int userId)
+    {
+        return await context.WearLogs
+            .Include(wl => wl.Watch)
+            .Where(wl => wl.UserId == userId)
+            .OrderByDescending(wl => wl.WornDate)
+            .Select(wl => new WearLogDto
+            {
+                Id = wl.Id,
+                WatchId = wl.WatchId,
+                WatchBrand = wl.Watch.Brand,
+                WatchModel = wl.Watch.Model,
+                WornDate = wl.WornDate,
+            })
+            .ToListAsync();
     }
 
     private static WatchDto MapToDto(Watch watch) => new()

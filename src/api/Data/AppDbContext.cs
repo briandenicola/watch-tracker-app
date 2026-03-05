@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Watch> Watches => Set<Watch>();
     public DbSet<User> Users => Set<User>();
     public DbSet<WatchImage> WatchImages => Set<WatchImage>();
+    public DbSet<WearLog> WearLogs => Set<WearLog>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -41,6 +42,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasMany(w => w.Images)
                 .WithOne(i => i.Watch)
                 .HasForeignKey(i => i.WatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(w => w.WearLogs)
+                .WithOne(wl => wl.Watch)
+                .HasForeignKey(wl => wl.WatchId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
