@@ -159,10 +159,6 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
             <input type="number" value={caseSizeMm} onChange={(e) => setCaseSizeMm(e.target.value)} />
           </label>
         </div>
-        <label className="watch-form-checkbox">
-          <input type="checkbox" checked={isWishList} onChange={(e) => setIsWishList(e.target.checked)} />
-          Wish List Item
-        </label>
         <div className="watch-form-row">
           <label>
             Band Type
@@ -185,6 +181,10 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
 
       <fieldset className="watch-form-group">
         <legend>Purchase Info</legend>
+        <label className="watch-form-checkbox">
+          <input type="checkbox" checked={isWishList} onChange={(e) => setIsWishList(e.target.checked)} />
+          <span>Wish List Item</span>
+        </label>
         <div className="watch-form-row">
           <label>
             Purchase Date
