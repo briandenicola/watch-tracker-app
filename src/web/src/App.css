@@ -190,6 +190,11 @@
   margin-bottom: 1.5rem;
 }
 
+.page-header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .watch-toolbar {
   display: flex;
   flex-wrap: wrap;
