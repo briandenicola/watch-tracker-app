@@ -701,6 +701,14 @@
   background: #ca8a04;
 }
 
+.btn-purchased {
+  background: #16a34a;
+}
+
+.btn-purchased:hover {
+  background: #15803d;
+}
+
 /* Watch form page wrapper */
 .watch-form-page {
   max-width: 700px;

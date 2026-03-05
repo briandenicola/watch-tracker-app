@@ -145,7 +145,10 @@ export default function WatchListPage() {
     <div className="watch-list-page">
       <div className="page-header">
         <h1>{user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches'}</h1>
-        <Link to="/watches/new" className="btn">Add Watch</Link>
+        {showWishList
+          ? <Link to="/wishlist/new" className="btn">⭐ Add to Wish List</Link>
+          : <Link to="/watches/new" className="btn">Add Watch</Link>
+        }
       </div>
 
       {watches.length > 0 && (
@@ -229,7 +232,7 @@ export default function WatchListPage() {
             </thead>
             <tbody>
               {tableList.map((w) => (
-                <tr key={w.id} onClick={() => navigate(`/watches/${w.id}`)} className="watch-table-row">
+                <tr key={w.id} onClick={() => navigate(w.isWishList ? `/wishlist/${w.id}/edit` : `/watches/${w.id}`)} className="watch-table-row">
                   <td>{w.brand}</td>
                   <td>{w.model}</td>
                   <td className="hide-mobile">{w.caseSizeMm ? `${w.caseSizeMm}mm` : '—'}</td>

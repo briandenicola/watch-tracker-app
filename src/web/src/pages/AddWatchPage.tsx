@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createWatch, uploadWatchImages, getWatches } from '../api/watches';
 import WatchForm from '../components/WatchForm';
 import type { CreateWatch } from '../types';
 
 export default function AddWatchPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [brands, setBrands] = useState<string[]>([]);
+
+  const initialBrand = searchParams.get('brand') ?? '';
+  const initialModel = searchParams.get('model') ?? '';
 
   useEffect(() => {
     getWatches().then((watches) => {
@@ -26,7 +30,13 @@ export default function AddWatchPage() {
   return (
     <div className="watch-form-page">
       <h1>Add Watch</h1>
-      <WatchForm onSubmit={handleSubmit} submitLabel="Add Watch" onCancel={() => navigate('/')} brands={brands} />
+      <WatchForm
+        initial={initialBrand ? { brand: initialBrand, model: initialModel } : undefined}
+        onSubmit={handleSubmit}
+        submitLabel="Add Watch"
+        onCancel={() => navigate('/')}
+        brands={brands}
+      />
     </div>
   );
 }

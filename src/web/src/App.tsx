@@ -11,6 +11,8 @@ import AddWatchPage from './pages/AddWatchPage';
 import EditWatchPage from './pages/EditWatchPage';
 import AdminPage from './pages/AdminPage';
 import StatsPage from './pages/StatsPage';
+import AddWishListPage from './pages/AddWishListPage';
+import EditWishListPage from './pages/EditWishListPage';
 import SettingsModal from './components/SettingsModal';
 import { useAuth } from './context/AuthContext';
 import { gravatarUrl } from './utils/gravatar';
@@ -61,6 +63,8 @@ function App() {
                 <Route path="/watches/:id/edit" element={<EditWatchPage />} />
                 <Route path="/watches/:id" element={<WatchDetailPage />} />
                 <Route path="/stats" element={<StatsPage />} />
+                <Route path="/wishlist/new" element={<AddWishListPage />} />
+                <Route path="/wishlist/:id/edit" element={<EditWishListPage />} />
               </Route>
               <Route element={<AdminProtectedRoute />}>
                 <Route path="/admin" element={<AdminPage />} />

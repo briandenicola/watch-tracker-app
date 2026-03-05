@@ -1,0 +1,98 @@
+import { useState, useEffect, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { createWatch, getWatches } from '../api/watches';
+
+export default function AddWishListPage() {
+  const navigate = useNavigate();
+  const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
+  const [price, setPrice] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [brands, setBrands] = useState<string[]>([]);
+  const [brandFocused, setBrandFocused] = useState(false);
+
+  useEffect(() => {
+    getWatches().then((watches) => {
+      const unique = [...new Set(watches.map((w) => w.brand))].sort();
+      setBrands(unique);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    function handleClick() { setBrandFocused(false); }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filteredBrands = brand.length > 0
+    ? brands.filter((b) => b.toLowerCase().includes(brand.toLowerCase()) && b.toLowerCase() !== brand.toLowerCase())
+    : [];
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    await createWatch({
+      brand,
+      model,
+      movementType: 'Automatic',
+      isWishList: true,
+      ...(price && { purchasePrice: Number(price) }),
+      ...(linkUrl && { linkUrl }),
+    });
+    navigate('/');
+  }
+
+  return (
+    <div className="watch-form-page">
+      <h1>⭐ Add to Wish List</h1>
+      <form className="watch-form" onSubmit={handleSubmit}>
+        <fieldset className="watch-form-group">
+          <legend>Wish List Watch</legend>
+          <div className="watch-form-row">
+            <label>
+              Brand *
+              <div className="autocomplete" onMouseDown={(e) => e.stopPropagation()}>
+                <input
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  onFocus={() => setBrandFocused(true)}
+                  required
+                  autoComplete="off"
+                />
+                {brandFocused && filteredBrands.length > 0 && (
+                  <ul className="autocomplete-list">
+                    {filteredBrands.map((b) => (
+                      <li key={b}>
+                        <button type="button" onMouseDown={() => { setBrand(b); setBrandFocused(false); }}>
+                          {b}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </label>
+            <label>
+              Model *
+              <input value={model} onChange={(e) => setModel(e.target.value)} required />
+            </label>
+          </div>
+          <div className="watch-form-row">
+            <label>
+              Estimated Price
+              <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+            </label>
+            <label>
+              Link / URL
+              <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://…" />
+            </label>
+          </div>
+        </fieldset>
+
+        <div className="watch-form-actions">
+          <button type="submit">Add to Wish List</button>
+          <button type="button" className="btn btn-danger" onClick={() => navigate('/')}>Cancel</button>
+        </div>
+      </form>
+    </div>
+  );
+}
