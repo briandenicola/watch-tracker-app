@@ -163,7 +163,6 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
           <input type="checkbox" checked={isWishList} onChange={(e) => setIsWishList(e.target.checked)} />
           Wish List Item
         </label>
-        </div>
         <div className="watch-form-row">
           <label>
             Band Type
