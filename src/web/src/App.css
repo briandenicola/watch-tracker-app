@@ -185,14 +185,45 @@
 /* Watch list */
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
   margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  white-space: nowrap;
 }
 
 .page-header-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.page-header-actions .btn {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header h1 {
+    text-align: center;
+  }
+
+  .page-header-actions {
+    justify-content: stretch;
+  }
+
+  .page-header-actions .btn {
+    flex: 1;
+  }
 }
 
 .watch-toolbar {
@@ -234,7 +265,6 @@
   border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
-  margin-left: auto;
 }
 
 .view-toggle-btn {

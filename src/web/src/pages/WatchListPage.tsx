@@ -146,13 +146,26 @@ export default function WatchListPage() {
       <div className="page-header">
         <h1>{user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches'}</h1>
         <div className="page-header-actions">
-          <Link to="/wishlist/new" className="btn btn-wish-active">⭐ Add to Wish List</Link>
+          <Link to="/wishlist/new" className="btn btn-wish-active">Add to Wish List</Link>
           <Link to="/watches/new" className="btn">Add Watch</Link>
         </div>
       </div>
 
       {watches.length > 0 && (
         <div className="watch-toolbar">
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn${viewMode === 'gallery' ? ' active' : ''}`}
+              onClick={() => setViewMode('gallery')}
+              title="Gallery view"
+            >▦</button>
+            <button
+              className={`view-toggle-btn${viewMode === 'table' ? ' active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="Table view"
+            >☰</button>
+          </div>
+
           <select value={brandFilter} onChange={(e) => handleBrandChange(e.target.value)}>
             <option value="">All Brands</option>
             {brands.map((b) => (
@@ -187,21 +200,8 @@ export default function WatchListPage() {
             onClick={() => { setShowWishList((v) => !v); setVisibleCount(PAGE_SIZE); }}
             type="button"
           >
-            {showWishList ? '⭐ Wish List' : '☆ Wish List'}
+            {showWishList ? 'Wish List' : 'Wish List'}
           </button>
-
-          <div className="view-toggle">
-            <button
-              className={`view-toggle-btn${viewMode === 'gallery' ? ' active' : ''}`}
-              onClick={() => setViewMode('gallery')}
-              title="Gallery view"
-            >▦</button>
-            <button
-              className={`view-toggle-btn${viewMode === 'table' ? ' active' : ''}`}
-              onClick={() => setViewMode('table')}
-              title="Table view"
-            >☰</button>
-          </div>
         </div>
       )}
 

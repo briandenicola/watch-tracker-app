@@ -43,7 +43,7 @@ export default function AddWishListPage() {
 
   return (
     <div className="watch-form-page">
-      <h1>⭐ Add to Wish List</h1>
+      <h1>Add to Wish List</h1>
       <form className="watch-form" onSubmit={handleSubmit}>
         <fieldset className="watch-form-group">
           <legend>Wish List Watch</legend>

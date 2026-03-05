@@ -60,7 +60,7 @@ export default function EditWishListPage() {
 
   return (
     <div className="watch-form-page">
-      <h1>⭐ Edit Wish List Item</h1>
+      <h1>Edit Wish List Item</h1>
       <form className="watch-form" onSubmit={handleSave}>
         <fieldset className="watch-form-group">
           <legend>Wish List Watch</legend>
