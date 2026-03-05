@@ -671,6 +671,10 @@
   position: relative;
 }
 
+.autocomplete input {
+  width: 100%;
+}
+
 .autocomplete-list {
   position: absolute;
   top: 100%;
