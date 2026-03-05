@@ -5,25 +5,24 @@ import { imageUrl } from '../api/watches';
 export default function WatchCard({ watch }: { watch: Watch }) {
   if (watch.isWishList) {
     return (
-      <div className="watch-card wishlist-card">
-        <Link to={`/wishlist/${watch.id}/edit`}>
-          {watch.imageUrls.length > 0 && (
-            <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} className="watch-card-image" />
-          )}
-        </Link>
+      <Link to={`/wishlist/${watch.id}/edit`} className="watch-card wishlist-card">
+        {watch.imageUrls.length > 0 && (
+          <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} className="watch-card-image" />
+        )}
         {watch.linkUrl ? (
-          <a href={watch.linkUrl} target="_blank" rel="noopener noreferrer" className="watch-card-title wishlist-link">
+          <span
+            className="watch-card-title wishlist-link"
+            onClick={(e) => { e.preventDefault(); window.open(watch.linkUrl!, '_blank', 'noopener,noreferrer'); }}
+          >
             {watch.brand} {watch.model}
-          </a>
+          </span>
         ) : (
-          <Link to={`/wishlist/${watch.id}/edit`} className="watch-card-title">
-            {watch.brand} {watch.model}
-          </Link>
+          <p className="watch-card-title">{watch.brand} {watch.model}</p>
         )}
         {watch.purchasePrice != null && (
           <p className="wishlist-price">${watch.purchasePrice.toFixed(2)}</p>
         )}
-      </div>
+      </Link>
     );
   }
 
