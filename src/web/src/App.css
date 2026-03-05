@@ -495,7 +495,7 @@
 /* Watch card image */
 .watch-card-image {
   width: 100%;
-  height: 160px;
+  height: 320px;
   object-fit: cover;
   border-radius: 6px;
   margin-bottom: 0.75rem;
