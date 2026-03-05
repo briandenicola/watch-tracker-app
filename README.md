@@ -4,6 +4,8 @@
 
 WatchTracker is a full-stack web application for cataloging and managing your personal watch collection. Track details like brand, model, movement type, band type, purchase info, and images — with optional AI-powered watch analysis via the Anthropic API. Every watch is scoped to your authenticated account using JWT-based authentication.
 
+It also includes a **wish list** for tracking watches you want to buy, a **stats dashboard** with a GitHub-style wear heatmap, and **wear logging** to track each time you wear a watch.
+
 On first launch, a setup wizard walks you through creating an admin account and configuring application settings.
 
 ## Architecture
@@ -160,7 +162,25 @@ The main collection page supports two view modes:
 - **Gallery View** — Card grid showing each watch's cover image with brand and model. Supports infinite scroll (loads 12 at a time), filtering by brand and band type, and sorting by date added, brand, or last worn date (ascending/descending).
 - **Table View** — Sortable table with columns for Brand, Model, Size, Type, Date Added, Last Worn, and Worn Count. All columns are sortable. On mobile screens (≤600px), the table collapses to Brand, Model, and Date Added for readability.
 
-Toggle between views using the ▦/☰ buttons in the toolbar.
+Toggle between views using the ▦/☰ buttons in the toolbar. The Brand field on the Add/Edit Watch forms includes an autocomplete dropdown populated from existing brands in your collection.
+
+### Wish List
+
+Track watches you'd like to buy without cluttering your main collection:
+
+- **Add to Wish List** — Simplified form collecting brand, model, estimated price, product page URL, and an image URL. The image is downloaded from the URL and stored locally.
+- **Wish List Gallery** — Toggle the "Wish List" button in the toolbar to view your wish list. Cards show the watch image (click to edit) and the brand/model as a link to the product page.
+- **Edit Wish List Item** — Update details, replace the image, delete the item, or mark it as **Purchased** which redirects to the Add Watch page with the brand and model pre-filled.
+
+Wish list items are stored in the same database table as watches but are hidden from the main collection by default.
+
+### Wear Tracking & Stats
+
+Each time you click **Wore Today** on a watch detail page, an individual wear event is logged (in addition to the aggregate counters). The **Stats** page (accessible from the navigation bar) shows:
+
+- **Summary cards** — Total wears and unique watches worn
+- **Wear Heatmap** — A GitHub-style 365-day heatmap showing wear frequency per day, with 4 intensity levels and dark/light theme support
+- **Wear Timeline** — Chronological list of the 30 most recent wear events, each linking to the watch detail page
 
 ### Watch Details
 
@@ -182,10 +202,15 @@ When editing a watch with multiple images, a **Gallery Image** picker lets you c
 
 ### User Preferences
 
-All authenticated users can access **Settings** (⚙️ in the navigation bar) to configure:
+All authenticated users can access **Settings** (click your avatar in the navigation bar) to configure:
 
+- **My Account** — Change your display username and profile photo. Your email address is shown but not editable.
+- **Change Password** — Update your account password.
 - **Theme** — Switch between light and dark mode. Defaults to the OS preference and persists in the browser.
+- **Default View** — Choose between gallery and table as the default collection view.
 - **Time Zone** — Select your time zone for date/time display. Defaults to your browser's time zone.
+
+Settings are displayed in a modal popup rather than a separate page.
 
 ### Admin Settings
 
@@ -243,8 +268,6 @@ watch-tracker-app/
 Future feature ideas for the app:
 
 - [ ] **Maintenance Tracker** — Log service history, battery replacements, and strap changes. Set reminders for the next scheduled service.
-- [ ] **Wishlist** — Track watches you want to buy, with notes, target prices, and links.
-- [ ] **Wear Calendar** — Visual heatmap showing which watches were worn on which days, inspired by GitHub's contribution graph.
 - [ ] **Watch Comparison** — Side-by-side spec comparison of any two watches in your collection.
 - [ ] **Collection Statistics** — Dashboard with total collection value, most-worn watch, brand breakdown charts, average price, and wearing streaks.
 - [ ] **Collection Timeline** — Visual timeline of when each watch was acquired, showing how the collection grew over time.
