@@ -44,4 +44,18 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
         var result = await imageService.SetCoverAsync(watchId, imageId, UserId);
         return result ? NoContent() : NotFound();
     }
+
+    [HttpPost("import-url")]
+    public async Task<ActionResult<WatchImageDto>> ImportFromUrl(int watchId, [FromBody] ImportImageUrlDto dto)
+    {
+        try
+        {
+            var image = await imageService.ImportFromUrlAsync(watchId, UserId, dto.Url);
+            return image is null ? BadRequest("Could not download image.") : Ok(image);
+        }
+        catch
+        {
+            return BadRequest("Failed to download image from the provided URL.");
+        }
+    }
 }

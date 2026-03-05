@@ -726,6 +726,43 @@
   font-size: 0.95rem;
 }
 
+/* Wish list card */
+.wishlist-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.wishlist-card a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.wishlist-link {
+  color: var(--accent) !important;
+}
+
+.wishlist-link:hover {
+  text-decoration: underline !important;
+}
+
+.wishlist-price {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.wishlist-image-preview {
+  max-width: 300px;
+  margin: 0 auto 1.25rem;
+}
+
+.wishlist-image-preview img {
+  width: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
 /* Wish list toggle */
 .btn-wish-active {
   background: #eab308;

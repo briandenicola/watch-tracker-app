@@ -59,6 +59,11 @@ export async function recordWear(id: number): Promise<Watch> {
   return data;
 }
 
+export async function importImageFromUrl(watchId: number, url: string): Promise<WatchImage> {
+  const { data } = await client.post<WatchImage>(`/watches/${watchId}/images/import-url`, { url });
+  return data;
+}
+
 export async function getWearLogs(): Promise<WearLog[]> {
   const { data } = await client.get<WearLog[]>('/watches/wear-logs');
   return data;

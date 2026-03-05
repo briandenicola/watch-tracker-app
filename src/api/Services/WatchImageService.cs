@@ -5,9 +5,17 @@ using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
-public class WatchImageService(AppDbContext context, IWebHostEnvironment env) : IWatchImageService
+public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IHttpClientFactory httpClientFactory) : IWatchImageService
 {
     private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+    private static readonly Dictionary<string, string> MimeToExt = new()
+    {
+        ["image/jpeg"] = ".jpg",
+        ["image/png"] = ".png",
+        ["image/webp"] = ".webp",
+        ["image/gif"] = ".gif",
+    };
 
     public async Task<List<WatchImageDto>> UploadAsync(int watchId, int userId, IEnumerable<IFormFile> files)
     {
@@ -49,6 +57,58 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env) : 
         }
 
         return result;
+    }
+
+    public async Task<WatchImageDto?> ImportFromUrlAsync(int watchId, int userId, string imageUrl)
+    {
+        var watch = await context.Watches
+            .Include(w => w.Images)
+            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId);
+
+        if (watch is null) return null;
+
+        var httpClient = httpClientFactory.CreateClient();
+        using var response = await httpClient.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+        if (!AllowedTypes.Contains(contentType))
+        {
+            // Try to infer from URL extension
+            var urlExt = Path.GetExtension(new Uri(imageUrl).AbsolutePath).ToLowerInvariant();
+            contentType = urlExt switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                _ => contentType,
+            };
+            if (!AllowedTypes.Contains(contentType)) return null;
+        }
+
+        var ext = MimeToExt.GetValueOrDefault(contentType, ".jpg");
+        var fileName = $"{Guid.NewGuid()}{ext}";
+        var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
+        Directory.CreateDirectory(uploadsDir);
+        var filePath = Path.Combine(uploadsDir, fileName);
+
+        await using var fileStream = new FileStream(filePath, FileMode.Create);
+        await response.Content.CopyToAsync(fileStream);
+
+        var maxSort = watch.Images.Count > 0 ? watch.Images.Max(i => i.SortOrder) : -1;
+        var image = new WatchImage
+        {
+            WatchId = watchId,
+            FileName = fileName,
+            ContentType = contentType,
+            SortOrder = ++maxSort,
+        };
+
+        context.WatchImages.Add(image);
+        await context.SaveChangesAsync();
+
+        return new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" };
     }
 
     public async Task<bool> DeleteAsync(int imageId, int userId)

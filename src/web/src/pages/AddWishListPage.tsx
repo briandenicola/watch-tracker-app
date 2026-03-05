@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createWatch, getWatches } from '../api/watches';
+import { createWatch, getWatches, importImageFromUrl } from '../api/watches';
 
 export default function AddWishListPage() {
   const navigate = useNavigate();
@@ -8,8 +8,10 @@ export default function AddWishListPage() {
   const [model, setModel] = useState('');
   const [price, setPrice] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const [brands, setBrands] = useState<string[]>([]);
   const [brandFocused, setBrandFocused] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     getWatches().then((watches) => {
@@ -30,15 +32,23 @@ export default function AddWishListPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    await createWatch({
-      brand,
-      model,
-      movementType: 'Automatic',
-      isWishList: true,
-      ...(price && { purchasePrice: Number(price) }),
-      ...(linkUrl && { linkUrl }),
-    });
-    navigate('/');
+    setSubmitting(true);
+    try {
+      const watch = await createWatch({
+        brand,
+        model,
+        movementType: 'Automatic',
+        isWishList: true,
+        ...(price && { purchasePrice: Number(price) }),
+        ...(linkUrl && { linkUrl }),
+      });
+      if (imageUrlInput) {
+        try { await importImageFromUrl(watch.id, imageUrlInput); } catch { /* ignore image errors */ }
+      }
+      navigate('/');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -82,14 +92,18 @@ export default function AddWishListPage() {
               <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
             </label>
             <label>
-              Link / URL
+              Product Page URL
               <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://…" />
             </label>
           </div>
+          <label>
+            Image URL
+            <input type="url" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} placeholder="https://…/image.jpg" />
+          </label>
         </fieldset>
 
         <div className="watch-form-actions">
-          <button type="submit">Add to Wish List</button>
+          <button type="submit" disabled={submitting}>{submitting ? 'Saving…' : 'Add to Wish List'}</button>
           <button type="button" className="btn btn-danger" onClick={() => navigate('/')}>Cancel</button>
         </div>
       </form>

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getWatch, updateWatch, deleteWatch } from '../api/watches';
+import { getWatch, updateWatch, deleteWatch, importImageFromUrl, deleteWatchImage, imageUrl } from '../api/watches';
 import type { Watch } from '../types';
 
 export default function EditWishListPage() {
@@ -13,6 +13,8 @@ export default function EditWishListPage() {
   const [model, setModel] = useState('');
   const [price, setPrice] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -30,16 +32,28 @@ export default function EditWishListPage() {
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
-    if (!id) return;
-    await updateWatch(Number(id), {
-      brand,
-      model,
-      movementType: watch?.movementType ?? 'Automatic',
-      isWishList: true,
-      ...(price && { purchasePrice: Number(price) }),
-      ...(linkUrl && { linkUrl }),
-    });
-    navigate('/');
+    if (!id || !watch) return;
+    setSaving(true);
+    try {
+      await updateWatch(Number(id), {
+        brand,
+        model,
+        movementType: watch.movementType ?? 'Automatic',
+        isWishList: true,
+        ...(price && { purchasePrice: Number(price) }),
+        ...(linkUrl && { linkUrl }),
+      });
+      if (imageUrlInput) {
+        // Remove existing images before importing new one
+        for (const img of watch.imageUrls) {
+          try { await deleteWatchImage(watch.id, img.id); } catch { /* ignore */ }
+        }
+        try { await importImageFromUrl(watch.id, imageUrlInput); } catch { /* ignore */ }
+      }
+      navigate('/');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
@@ -61,6 +75,13 @@ export default function EditWishListPage() {
   return (
     <div className="watch-form-page">
       <h1>Edit Wish List Item</h1>
+
+      {watch.imageUrls.length > 0 && (
+        <div className="wishlist-image-preview">
+          <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} />
+        </div>
+      )}
+
       <form className="watch-form" onSubmit={handleSave}>
         <fieldset className="watch-form-group">
           <legend>Wish List Watch</legend>
@@ -80,16 +101,20 @@ export default function EditWishListPage() {
               <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
             </label>
             <label>
-              Link / URL
+              Product Page URL
               <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://…" />
             </label>
           </div>
+          <label>
+            {watch.imageUrls.length > 0 ? 'Replace Image URL' : 'Image URL'}
+            <input type="url" value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} placeholder="https://…/image.jpg" />
+          </label>
         </fieldset>
 
         <div className="watch-form-actions">
-          <button type="submit">Save</button>
+          <button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
           <button type="button" className="btn btn-purchased" onClick={handlePurchased}>
-            🎉 Purchased!
+            Purchased!
           </button>
           <button type="button" className="btn btn-danger" onClick={handleDelete}>Delete</button>
         </div>
