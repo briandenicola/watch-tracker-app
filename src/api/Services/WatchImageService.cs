@@ -68,24 +68,18 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         if (watch is null) return null;
 
         var httpClient = httpClientFactory.CreateClient();
-        using var response = await httpClient.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead);
+        using var response = await httpClient.GetAsync(imageUrl);
         response.EnsureSuccessStatusCode();
 
-        var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
-        if (!AllowedTypes.Contains(contentType))
-        {
-            // Try to infer from URL extension
-            var urlExt = Path.GetExtension(new Uri(imageUrl).AbsolutePath).ToLowerInvariant();
-            contentType = urlExt switch
-            {
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".webp" => "image/webp",
-                ".gif" => "image/gif",
-                _ => contentType,
-            };
-            if (!AllowedTypes.Contains(contentType)) return null;
-        }
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+
+        // Detect type from magic bytes first, then Content-Type header, then URL extension
+        var contentType = DetectImageType(bytes)
+            ?? response.Content.Headers.ContentType?.MediaType
+            ?? InferFromUrl(imageUrl);
+
+        if (contentType is null || !AllowedTypes.Contains(contentType))
+            return null;
 
         var ext = MimeToExt.GetValueOrDefault(contentType, ".jpg");
         var fileName = $"{Guid.NewGuid()}{ext}";
@@ -93,8 +87,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         Directory.CreateDirectory(uploadsDir);
         var filePath = Path.Combine(uploadsDir, fileName);
 
-        await using var fileStream = new FileStream(filePath, FileMode.Create);
-        await response.Content.CopyToAsync(fileStream);
+        await File.WriteAllBytesAsync(filePath, bytes);
 
         var maxSort = watch.Images.Count > 0 ? watch.Images.Max(i => i.SortOrder) : -1;
         var image = new WatchImage
@@ -109,6 +102,47 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         await context.SaveChangesAsync();
 
         return new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" };
+    }
+
+    private static string? DetectImageType(byte[] data)
+    {
+        if (data.Length < 12) return null;
+
+        // JPEG: FF D8 FF
+        if (data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF)
+            return "image/jpeg";
+
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47)
+            return "image/png";
+
+        // GIF: 47 49 46 38
+        if (data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x38)
+            return "image/gif";
+
+        // WebP: RIFF....WEBP
+        if (data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
+            && data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50)
+            return "image/webp";
+
+        return null;
+    }
+
+    private static string? InferFromUrl(string imageUrl)
+    {
+        try
+        {
+            var ext = Path.GetExtension(new Uri(imageUrl).AbsolutePath).ToLowerInvariant();
+            return ext switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                _ => null,
+            };
+        }
+        catch { return null; }
     }
 
     public async Task<bool> DeleteAsync(int imageId, int userId)
