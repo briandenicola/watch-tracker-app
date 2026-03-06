@@ -342,6 +342,79 @@
   gap: 1rem;
 }
 
+/* Swipe Gallery (PWA mode) */
+.swipe-gallery {
+  position: relative;
+  width: 100%;
+}
+
+.swipe-gallery-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 0;
+}
+
+.swipe-gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+.swipe-gallery-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+}
+
+.swipe-gallery-slide .watch-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.swipe-gallery-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem 0 0.5rem;
+}
+
+.swipe-gallery-arrow {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.swipe-gallery-arrow:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.swipe-gallery-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.swipe-gallery-counter {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  min-width: 4rem;
+  text-align: center;
+}
+
 .watch-card {
   display: block;
   padding: 1.25rem;

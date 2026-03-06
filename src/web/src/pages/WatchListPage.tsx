@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getWatches } from '../api/watches';
 import WatchCard from '../components/WatchCard';
+import SwipeGallery from '../components/SwipeGallery';
 import { usePreferences } from '../context/PreferencesContext';
 import { useAuth } from '../context/AuthContext';
+import useIsPwa from '../hooks/useIsPwa';
 import type { Watch } from '../types';
 
 const PAGE_SIZE = 12;
@@ -21,6 +23,7 @@ function formatDate(value?: string | null) {
 export default function WatchListPage() {
   const { defaultView } = usePreferences();
   const { user } = useAuth();
+  const isPwa = useIsPwa();
   const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -208,14 +211,22 @@ export default function WatchListPage() {
       {baseFiltered.length === 0 ? (
         <p>{watches.length === 0 ? 'No watches yet. Add your first one!' : 'No watches match the selected filters.'}</p>
       ) : viewMode === 'gallery' ? (
-        <>
-          <div className="watch-grid">
-            {visible.map((w) => (
+        isPwa ? (
+          <SwipeGallery>
+            {galleryList.map((w) => (
               <WatchCard key={w.id} watch={w} />
             ))}
-          </div>
-          {hasMore && <div ref={sentinelRef} className="scroll-sentinel" />}
-        </>
+          </SwipeGallery>
+        ) : (
+          <>
+            <div className="watch-grid">
+              {visible.map((w) => (
+                <WatchCard key={w.id} watch={w} />
+              ))}
+            </div>
+            {hasMore && <div ref={sentinelRef} className="scroll-sentinel" />}
+          </>
+        )
       ) : (
         <div className="watch-table-wrap">
           <table className="watch-table">
