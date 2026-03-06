@@ -5,9 +5,9 @@ import { usePreferences } from '../context/PreferencesContext';
 import type { WearLog } from '../types';
 
 const CLOUD_COLORS = [
-  '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
-  '#1abc9c', '#e67e22', '#2980b9', '#c0392b', '#16a085',
-  '#8e44ad', '#d35400', '#27ae60', '#2c3e50', '#f1c40f',
+  '#1b2a4a', '#8b7355', '#2d4a3e', '#6b4c3b', '#4a3728',
+  '#3d5a80', '#a08060', '#1a3c34', '#7a6352', '#2c3e50',
+  '#5c6b7a', '#96784b', '#3a4f41', '#8c7056', '#4b5d6e',
 ];
 
 interface CloudWord {
@@ -15,7 +15,7 @@ interface CloudWord {
   count: number;
   size: number;
   color: string;
-  rotate: number;
+  opacity: number;
 }
 
 export default function StatsPage() {
@@ -42,19 +42,19 @@ export default function StatsPage() {
 
     const max = entries[0][1];
     const min = entries[entries.length - 1][1];
-    const minSize = 0.85;
-    const maxSize = 3.5;
+    const minSize = 0.9;
+    const maxSize = 3;
 
     return entries.map(([text, count], i) => {
       const ratio = max === min ? 1 : (count - min) / (max - min);
       const size = minSize + ratio * (maxSize - minSize);
-      const rotate = (i % 5 === 0) ? (Math.random() > 0.5 ? 12 : -12) : 0;
+      const opacity = 0.5 + ratio * 0.5;
       return {
         text,
         count,
         size,
         color: CLOUD_COLORS[i % CLOUD_COLORS.length],
-        rotate,
+        opacity,
       };
     });
   }, [logs]);
@@ -111,7 +111,7 @@ export default function StatsPage() {
                 style={{
                   fontSize: `${w.size}rem`,
                   color: w.color,
-                  transform: w.rotate ? `rotate(${w.rotate}deg)` : undefined,
+                  opacity: w.opacity,
                 }}
                 title={`${w.text}: worn ${w.count} time${w.count !== 1 ? 's' : ''}`}
               >
