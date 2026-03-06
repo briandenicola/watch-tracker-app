@@ -1350,73 +1350,33 @@
   font-style: italic;
 }
 
-/* Heatmap */
-.heatmap-scroll {
-  overflow-x: auto;
-}
-
-.heatmap {
+/* Word cloud */
+.word-cloud {
   display: flex;
-  gap: 4px;
-}
-
-.heatmap-day-labels {
-  display: grid;
-  grid-template-rows: repeat(7, 14px);
-  gap: 3px;
-  padding-top: 20px;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-align: right;
-  padding-right: 6px;
-}
-
-.heatmap-grid-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-
-.heatmap-month-labels {
-  display: grid;
-  gap: 3px;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  height: 17px;
-  grid-template-columns: repeat(53, 14px);
-}
-
-.heatmap-grid {
-  display: grid;
-  grid-template-rows: repeat(7, 14px);
-  grid-auto-flow: column;
-  gap: 3px;
-}
-
-.heatmap-cell {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  background: var(--heatmap-0, #ebedf0);
-}
-
-.heatmap-cell.level-1 { background: var(--heatmap-1, #9be9a8); }
-.heatmap-cell.level-2 { background: var(--heatmap-2, #40c463); }
-.heatmap-cell.level-3 { background: var(--heatmap-3, #30a14e); }
-.heatmap-cell.level-4 { background: var(--heatmap-4, #216e39); }
-
-.heatmap-legend {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  justify-content: flex-end;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 2rem 1rem;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px var(--shadow);
+  min-height: 200px;
 }
 
-.heatmap-legend .heatmap-cell {
-  width: 12px;
-  height: 12px;
+.word-cloud-word {
+  font-family: 'Baloo 2', cursive, sans-serif;
+  font-weight: 700;
+  display: inline-block;
+  cursor: default;
+  transition: transform 0.2s, opacity 0.2s;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.word-cloud-word:hover {
+  transform: scale(1.12);
+  opacity: 0.85;
 }
 
 /* Wear timeline */
@@ -1427,6 +1387,8 @@
   border-left: 2px solid var(--border-color);
   margin-left: 8px;
   padding-left: 0;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .wear-timeline-entry {

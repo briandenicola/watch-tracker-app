@@ -4,30 +4,18 @@ import { getWearLogs } from '../api/watches';
 import { usePreferences } from '../context/PreferencesContext';
 import type { WearLog } from '../types';
 
-function toDateKey(iso: string) {
-  return iso.slice(0, 10);
-}
+const CLOUD_COLORS = [
+  '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+  '#1abc9c', '#e67e22', '#2980b9', '#c0392b', '#16a085',
+  '#8e44ad', '#d35400', '#27ae60', '#2c3e50', '#f1c40f',
+];
 
-function getDaysBetween(start: Date, end: Date) {
-  const days: string[] = [];
-  const d = new Date(start);
-  while (d <= end) {
-    days.push(d.toISOString().slice(0, 10));
-    d.setDate(d.getDate() + 1);
-  }
-  return days;
-}
-
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function getLevel(count: number, max: number): number {
-  if (count === 0) return 0;
-  if (max <= 1) return 4;
-  const ratio = count / max;
-  if (ratio <= 0.25) return 1;
-  if (ratio <= 0.5) return 2;
-  if (ratio <= 0.75) return 3;
-  return 4;
+interface CloudWord {
+  text: string;
+  count: number;
+  size: number;
+  color: string;
+  rotate: number;
 }
 
 export default function StatsPage() {
@@ -42,52 +30,49 @@ export default function StatsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const { days, countMap, maxCount, monthMarkers } = useMemo(() => {
-    const end = new Date();
-    end.setHours(0, 0, 0, 0);
-    const start = new Date(end);
-    start.setDate(start.getDate() - 364);
-    // Align start to Sunday
-    start.setDate(start.getDate() - start.getDay());
-
-    const allDays = getDaysBetween(start, end);
-    const map: Record<string, number> = {};
+  const words: CloudWord[] = useMemo(() => {
+    const counts: Record<string, number> = {};
     for (const log of logs) {
-      const key = toDateKey(log.wornDate);
-      map[key] = (map[key] ?? 0) + 1;
-    }
-    const max = Math.max(0, ...Object.values(map));
-
-    // Month markers for column headers
-    const markers: { label: string; col: number }[] = [];
-    let lastMonth = -1;
-    for (let i = 0; i < allDays.length; i++) {
-      const d = new Date(allDays[i] + 'T00:00:00');
-      const month = d.getMonth();
-      if (month !== lastMonth) {
-        // Column = week index
-        markers.push({ label: MONTH_LABELS[month], col: Math.floor(i / 7) });
-        lastMonth = month;
-      }
+      const key = `${log.watchBrand} ${log.watchModel}`;
+      counts[key] = (counts[key] ?? 0) + 1;
     }
 
-    return { days: allDays, countMap: map, maxCount: max, monthMarkers: markers };
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    if (entries.length === 0) return [];
+
+    const max = entries[0][1];
+    const min = entries[entries.length - 1][1];
+    const minSize = 0.85;
+    const maxSize = 3.5;
+
+    return entries.map(([text, count], i) => {
+      const ratio = max === min ? 1 : (count - min) / (max - min);
+      const size = minSize + ratio * (maxSize - minSize);
+      const rotate = (i % 5 === 0) ? (Math.random() > 0.5 ? 12 : -12) : 0;
+      return {
+        text,
+        count,
+        size,
+        color: CLOUD_COLORS[i % CLOUD_COLORS.length],
+        rotate,
+      };
+    });
   }, [logs]);
 
-  // Build week columns for the grid
-  const weeks = useMemo(() => {
-    const result: string[][] = [];
-    for (let i = 0; i < days.length; i += 7) {
-      result.push(days.slice(i, i + 7));
+  // Shuffle words for a natural cloud layout
+  const shuffledWords = useMemo(() => {
+    const arr = [...words];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return result;
-  }, [days]);
+    return arr;
+  }, [words]);
 
   const totalWears = logs.length;
   const uniqueWatches = new Set(logs.map((l) => l.watchId)).size;
 
-  // Recent timeline (last 30 entries)
-  const timeline = useMemo(() => logs.slice(0, 30), [logs]);
+  const timeline = logs;
 
   function fmtDate(iso: string) {
     return new Date(iso).toLocaleDateString('en-US', { timeZone: timezone, month: 'short', day: 'numeric', year: 'numeric' });
@@ -98,7 +83,7 @@ export default function StatsPage() {
   return (
     <div className="stats-page">
       <div className="page-header">
-        <h1>📊 Wear Stats</h1>
+        <h1>Wear Stats</h1>
         <Link to="/" className="btn btn-sm">← Back</Link>
       </div>
 
@@ -114,60 +99,33 @@ export default function StatsPage() {
       </div>
 
       <section className="stats-section">
-        <h2>Wear Heatmap</h2>
-        <div className="heatmap-scroll">
-          <div className="heatmap">
-            <div className="heatmap-day-labels">
-              <span></span>
-              <span>Mon</span>
-              <span></span>
-              <span>Wed</span>
-              <span></span>
-              <span>Fri</span>
-              <span></span>
-            </div>
-            <div className="heatmap-grid-wrapper">
-              <div className="heatmap-month-labels">
-                {monthMarkers.map((m, i) => (
-                  <span key={i} style={{ gridColumnStart: m.col + 1 }}>{m.label}</span>
-                ))}
-              </div>
-              <div className="heatmap-grid" style={{ gridTemplateColumns: `repeat(${weeks.length}, 14px)` }}>
-                {weeks.map((week, wi) =>
-                  week.map((day, di) => {
-                    const count = countMap[day] ?? 0;
-                    const level = getLevel(count, maxCount);
-                    const d = new Date(day + 'T00:00:00');
-                    const title = `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}: ${count} wear${count !== 1 ? 's' : ''}`;
-                    return (
-                      <div
-                        key={`${wi}-${di}`}
-                        className={`heatmap-cell level-${level}`}
-                        title={title}
-                        style={{ gridColumn: wi + 1, gridRow: di + 1 }}
-                      />
-                    );
-                  })
-                )}
-              </div>
-            </div>
+        <h2>Wear Cloud</h2>
+        {shuffledWords.length === 0 ? (
+          <p className="stats-empty">No wear events recorded yet. Hit "Wore Today" on a watch to get started!</p>
+        ) : (
+          <div className="word-cloud">
+            {shuffledWords.map((w) => (
+              <span
+                key={w.text}
+                className="word-cloud-word"
+                style={{
+                  fontSize: `${w.size}rem`,
+                  color: w.color,
+                  transform: w.rotate ? `rotate(${w.rotate}deg)` : undefined,
+                }}
+                title={`${w.text}: worn ${w.count} time${w.count !== 1 ? 's' : ''}`}
+              >
+                {w.text}
+              </span>
+            ))}
           </div>
-          <div className="heatmap-legend">
-            <span>Less</span>
-            <div className="heatmap-cell level-0" />
-            <div className="heatmap-cell level-1" />
-            <div className="heatmap-cell level-2" />
-            <div className="heatmap-cell level-3" />
-            <div className="heatmap-cell level-4" />
-            <span>More</span>
-          </div>
-        </div>
+        )}
       </section>
 
       <section className="stats-section">
         <h2>Recent Wear Timeline</h2>
         {timeline.length === 0 ? (
-          <p className="stats-empty">No wear events recorded yet. Hit "⌚ Wore Today" on a watch to get started!</p>
+          <p className="stats-empty">No wear events recorded yet.</p>
         ) : (
           <div className="wear-timeline">
             {timeline.map((log) => (
