@@ -600,6 +600,12 @@
   font-size: 0.8rem;
 }
 
+.btn-sm.active {
+  background: var(--bg-surface);
+  border-color: var(--text);
+  color: var(--text);
+}
+
 /* Watch card image */
 .watch-card-image {
   width: 100%;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getWatches } from '../api/watches';
 import WatchCard from '../components/WatchCard';
 import SwipeGallery from '../components/SwipeGallery';
@@ -24,13 +24,14 @@ export default function WatchListPage() {
   const { defaultView } = usePreferences();
   const { user } = useAuth();
   const isPwa = useIsPwa();
+  const [searchParams] = useSearchParams();
   const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
   const [brandFilter, setBrandFilter] = useState('');
   const [bandTypeFilter, setBandTypeFilter] = useState('');
-  const [showWishList, setShowWishList] = useState(false);
+  const [showWishList, setShowWishList] = useState(searchParams.has('wishlist'));
   const [sort, setSort] = useState<SortOption>('dateAdded');
   const [gallerySortDir, setGallerySortDir] = useState<SortDir>('desc');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -149,7 +150,7 @@ export default function WatchListPage() {
       <div className="page-header">
         <h1>{user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches'}</h1>
         <div className="page-header-actions">
-          <Link to="/wishlist/new" className="btn btn-wish-active">Add to Wish List</Link>
+          <Link to="/wishlist/new" className="btn">Add to Wish List</Link>
           <Link to="/watches/new" className="btn">Add Watch</Link>
         </div>
       </div>
@@ -199,7 +200,7 @@ export default function WatchListPage() {
           )}
 
           <button
-            className={`btn btn-sm${showWishList ? ' btn-wish-active' : ''}`}
+            className={`btn btn-sm${showWishList ? ' active' : ''}`}
             onClick={() => { setShowWishList((v) => !v); setVisibleCount(PAGE_SIZE); }}
             type="button"
           >

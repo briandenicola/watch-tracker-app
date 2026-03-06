@@ -26,7 +26,7 @@ export default function EditWishListPage() {
         setPrice(w.purchasePrice?.toString() ?? '');
         setLinkUrl(w.linkUrl ?? '');
       })
-      .catch(() => navigate('/'))
+      .catch(() => navigate('/?wishlist'))
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
@@ -50,7 +50,7 @@ export default function EditWishListPage() {
         }
         try { await importImageFromUrl(watch.id, imageUrlInput); } catch { /* ignore */ }
       }
-      navigate('/');
+      navigate('/?wishlist');
     } finally {
       setSaving(false);
     }
@@ -59,7 +59,7 @@ export default function EditWishListPage() {
   async function handleDelete() {
     if (!watch || !confirm('Remove this item from your wish list?')) return;
     await deleteWatch(watch.id);
-    navigate('/');
+    navigate('/?wishlist');
   }
 
   function handlePurchased() {

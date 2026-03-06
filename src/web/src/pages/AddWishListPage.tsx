@@ -45,7 +45,7 @@ export default function AddWishListPage() {
       if (imageUrlInput) {
         try { await importImageFromUrl(watch.id, imageUrlInput); } catch { /* ignore image errors */ }
       }
-      navigate('/');
+      navigate('/?wishlist');
     } finally {
       setSubmitting(false);
     }
