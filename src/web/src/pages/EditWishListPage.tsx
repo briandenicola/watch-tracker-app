@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getWatch, updateWatch, deleteWatch, importImageFromUrl, deleteWatchImage, imageUrl } from '../api/watches';
 import type { Watch } from '../types';
 
@@ -74,6 +74,7 @@ export default function EditWishListPage() {
 
   return (
     <div className="watch-form-page">
+      <Link to="/?wishlist" className="back-link">← Back to Wish List</Link>
       <h1>Edit Wish List Item</h1>
 
       {watch.imageUrls.length > 0 && (
