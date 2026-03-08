@@ -156,6 +156,29 @@ public class WatchService(AppDbContext context) : IWatchService
             .ToListAsync();
     }
 
+    public async Task<bool> DeleteWearLogAsync(int logId, int userId)
+    {
+        var log = await context.WearLogs
+            .Include(wl => wl.Watch)
+            .FirstOrDefaultAsync(wl => wl.Id == logId && wl.UserId == userId);
+
+        if (log is null) return false;
+
+        // Decrement the watch's TimesWorn counter
+        log.Watch.TimesWorn = Math.Max(0, log.Watch.TimesWorn - 1);
+
+        // If this was the most recent wear, update LastWornDate to the next most recent
+        var nextMostRecent = await context.WearLogs
+            .Where(wl => wl.WatchId == log.WatchId && wl.Id != logId)
+            .OrderByDescending(wl => wl.WornDate)
+            .FirstOrDefaultAsync();
+        log.Watch.LastWornDate = nextMostRecent?.WornDate;
+
+        context.WearLogs.Remove(log);
+        await context.SaveChangesAsync();
+        return true;
+    }
+
     private static WatchDto MapToDto(Watch watch) => new()
     {
         Id = watch.Id,

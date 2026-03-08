@@ -1398,7 +1398,6 @@
   gap: 0.75rem;
   padding: 0.5rem 0 0.5rem 1rem;
   position: relative;
-  text-decoration: none;
   color: inherit;
   transition: background 0.1s;
   border-radius: 0 6px 6px 0;
@@ -1406,7 +1405,6 @@
 
 .wear-timeline-entry:hover {
   background: var(--input-bg);
-  text-decoration: none;
 }
 
 .wear-timeline-dot {
@@ -1424,6 +1422,35 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
+.wear-timeline-content:hover {
+  text-decoration: none;
+}
+
+.wear-timeline-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.wear-timeline-entry:hover .wear-timeline-delete {
+  opacity: 1;
+}
+
+.wear-timeline-delete:hover {
+  color: var(--danger);
+  background: var(--bg-surface);
 }
 
 .wear-timeline-date {
@@ -1500,6 +1527,12 @@
   margin-top: 0.75rem;
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+.data-management-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
 }
 
 .theme-toggle {

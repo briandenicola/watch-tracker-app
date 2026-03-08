@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
 import { useAuth } from '../context/AuthContext';
 import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage, deleteProfileImage } from '../api/auth';
+import { exportData, importData } from '../api/data';
 import { gravatarUrl } from '../utils/gravatar';
 
 interface SettingsModalProps {
@@ -24,6 +25,12 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
+
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+  const [importError, setImportError] = useState('');
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Sync username when user changes or modal opens
   useEffect(() => {
@@ -91,6 +98,37 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       setPwError('Current password is incorrect.');
     } finally {
       setPwLoading(false);
+    }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const blob = await exportData();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'watch-collection-export.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleImport(file: File) {
+    setImporting(true);
+    setImportResult(null);
+    setImportError('');
+    try {
+      const result = await importData(file);
+      setImportResult(`Imported ${result.watchesImported} watches, ${result.imagesImported} images, ${result.wearLogsImported} wear logs.`);
+    } catch {
+      setImportError('Import failed. Make sure the file is a valid export ZIP.');
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -255,6 +293,32 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
               <p className="settings-hint">
                 Current time: {new Date().toLocaleTimeString('en-US', { timeZone: timezone, timeZoneName: 'short' })}
               </p>
+            </fieldset>
+
+            <fieldset className="watch-form-group">
+              <legend>Data Management</legend>
+              <p className="settings-hint">Export your entire collection (watches, images, and wear history) as a ZIP file, or import from a previous export.</p>
+              <div className="data-management-actions">
+                <button type="button" className="btn" onClick={handleExport} disabled={exporting}>
+                  {exporting ? 'Exporting…' : 'Export Collection'}
+                </button>
+                <button type="button" className="btn" onClick={() => importInputRef.current?.click()} disabled={importing}>
+                  {importing ? 'Importing…' : 'Import Collection'}
+                </button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".zip"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImport(file);
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+              {importResult && <span className="save-success">✓ {importResult}</span>}
+              {importError && <p className="error">{importError}</p>}
             </fieldset>
           </div>
         </div>

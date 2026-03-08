@@ -1,20 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getWearLogs } from '../api/watches';
+import { getWearLogs, deleteWearLog } from '../api/watches';
 import { usePreferences } from '../context/PreferencesContext';
 import type { WearLog } from '../types';
 
-const CLOUD_COLORS = [
-  '#1b2a4a', '#8b7355', '#2d4a3e', '#6b4c3b', '#4a3728',
-  '#3d5a80', '#a08060', '#1a3c34', '#7a6352', '#2c3e50',
-  '#5c6b7a', '#96784b', '#3a4f41', '#8c7056', '#4b5d6e',
-];
+const CLOUD_VAR_COUNT = 10;
 
 interface CloudWord {
   text: string;
   count: number;
   size: number;
-  color: string;
+  colorVar: string;
   opacity: number;
 }
 
@@ -53,7 +49,7 @@ export default function StatsPage() {
         text,
         count,
         size,
-        color: CLOUD_COLORS[i % CLOUD_COLORS.length],
+        colorVar: `var(--cloud-${(i % CLOUD_VAR_COUNT) + 1})`,
         opacity,
       };
     });
@@ -76,6 +72,14 @@ export default function StatsPage() {
 
   function fmtDate(iso: string) {
     return new Date(iso).toLocaleDateString('en-US', { timeZone: timezone, month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  async function handleDeleteLog(logId: number) {
+    if (!confirm('Remove this wear entry?')) return;
+    try {
+      await deleteWearLog(logId);
+      setLogs((prev) => prev.filter((l) => l.id !== logId));
+    } catch { /* ignore */ }
   }
 
   if (loading) return <p>Loading…</p>;
@@ -110,7 +114,7 @@ export default function StatsPage() {
                 className="word-cloud-word"
                 style={{
                   fontSize: `${w.size}rem`,
-                  color: w.color,
+                  color: w.colorVar,
                   opacity: w.opacity,
                 }}
                 title={`${w.text}: worn ${w.count} time${w.count !== 1 ? 's' : ''}`}
@@ -129,13 +133,20 @@ export default function StatsPage() {
         ) : (
           <div className="wear-timeline">
             {timeline.map((log) => (
-              <Link to={`/watches/${log.watchId}`} key={log.id} className="wear-timeline-entry">
+              <div key={log.id} className="wear-timeline-entry">
                 <span className="wear-timeline-dot" />
-                <div className="wear-timeline-content">
+                <Link to={`/watches/${log.watchId}`} className="wear-timeline-content">
                   <strong>{log.watchBrand} {log.watchModel}</strong>
                   <span className="wear-timeline-date">{fmtDate(log.wornDate)}</span>
-                </div>
-              </Link>
+                </Link>
+                <button
+                  className="wear-timeline-delete"
+                  onClick={() => handleDeleteLog(log.id)}
+                  title="Remove this wear entry"
+                >
+                  ✕
+                </button>
+              </div>
             ))}
           </div>
         )}

@@ -76,4 +76,11 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
         var logs = await watchService.GetWearLogsAsync(UserId);
         return Ok(logs);
     }
+
+    [HttpDelete("wear-logs/{logId}")]
+    public async Task<IActionResult> DeleteWearLog(int logId)
+    {
+        var deleted = await watchService.DeleteWearLogAsync(logId, UserId);
+        return deleted ? NoContent() : NotFound();
+    }
 }
