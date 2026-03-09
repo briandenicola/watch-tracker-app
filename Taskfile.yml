@@ -63,7 +63,7 @@ tasks:
       COMMIT_SHA:
         sh: git rev-parse --short HEAD
     cmds:
-      - docker build -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} .
+      - docker build -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} -t {{.DOCKER_REPO}}/watch-tracker-app:latest .
 
   docker-push:
     desc: Build the Docker container image
@@ -71,7 +71,7 @@ tasks:
       COMMIT_SHA:
         sh: git rev-parse --short HEAD
     cmds:
-      - docker push {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}}
+      - docker push -t {{.DOCKER_REPO}}/watch-tracker-app:{{.COMMIT_SHA}} -t {{.DOCKER_REPO}}/watch-tracker-app:latest
 
   docker-run:
     desc: Run the Docker container locally
