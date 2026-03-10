@@ -269,9 +269,9 @@ Future feature ideas for the app:
 
 - [ ] **Maintenance Tracker** — Log service history, battery replacements, and strap changes. Set reminders for the next scheduled service.
 - [ ] **Watch Comparison** — Side-by-side spec comparison of any two watches in your collection.
-- [ ] **Collection Statistics** — Dashboard with total collection value, most-worn watch, brand breakdown charts, average price, and wearing streaks.
-- [ ] **Collection Timeline** — Visual timeline of when each watch was acquired, showing how the collection grew over time.
-- [ ] **Export / Import** — Export your collection as CSV or JSON. Import watches from a spreadsheet.
+- [X] **Collection Statistics** — Dashboard with total collection value, most-worn watch, brand breakdown charts, average price, and wearing streaks.
+- [X] **Collection Timeline** — Visual timeline of when each watch was acquired, showing how the collection grew over time.
+- [X] **Export / Import** — Export your collection as CSV or JSON. Import watches from a spreadsheet.
 
 
 ## License
