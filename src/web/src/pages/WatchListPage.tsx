@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getWatches } from '../api/watches';
 import WatchCard from '../components/WatchCard';
 import SwipeGallery from '../components/SwipeGallery';
+import PullToRefresh from '../components/PullToRefresh';
 import { usePreferences } from '../context/PreferencesContext';
 import { useAuth } from '../context/AuthContext';
 import useIsPwa from '../hooks/useIsPwa';
@@ -50,6 +51,11 @@ export default function WatchListPage() {
       .then(setWatches)
       .catch(() => setWatches([]))
       .finally(() => setLoading(false));
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    const fresh = await getWatches().catch(() => [] as Watch[]);
+    setWatches(fresh);
   }, []);
 
   // Close popover on outside click
@@ -234,38 +240,40 @@ export default function WatchListPage() {
           </div>
         </div>
 
-        {baseFiltered.length === 0 ? (
-          <p>{watches.length === 0 ? 'No watches yet. Add your first one!' : 'No watches match the selected filters.'}</p>
-        ) : viewMode === 'gallery' ? (
-          <SwipeGallery>
-            {galleryList.map((w) => (
-              <WatchCard key={w.id} watch={w} />
-            ))}
-          </SwipeGallery>
-        ) : (
-          <div className="watch-table-wrap">
-            <table className="watch-table">
-              <thead>
-                <tr>
-                  <th onClick={() => handleTableSort('brand')}>Brand{sortIndicator('brand')}</th>
-                  <th onClick={() => handleTableSort('model')}>Model{sortIndicator('model')}</th>
-                  <th onClick={() => handleTableSort('createdAt')}>Added{sortIndicator('createdAt')}</th>
-                  <th onClick={() => handleTableSort('timesWorn')}>Worn{sortIndicator('timesWorn')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableList.map((w) => (
-                  <tr key={w.id} onClick={() => navigate(w.isWishList ? `/wishlist/${w.id}/edit` : `/watches/${w.id}`)} className="watch-table-row">
-                    <td>{w.brand}</td>
-                    <td>{w.model}</td>
-                    <td>{formatDate(w.createdAt)}</td>
-                    <td>{w.timesWorn}</td>
+        <PullToRefresh onRefresh={handleRefresh}>
+          {baseFiltered.length === 0 ? (
+            <p>{watches.length === 0 ? 'No watches yet. Add your first one!' : 'No watches match the selected filters.'}</p>
+          ) : viewMode === 'gallery' ? (
+            <SwipeGallery>
+              {galleryList.map((w) => (
+                <WatchCard key={w.id} watch={w} />
+              ))}
+            </SwipeGallery>
+          ) : (
+            <div className="watch-table-wrap">
+              <table className="watch-table">
+                <thead>
+                  <tr>
+                    <th onClick={() => handleTableSort('brand')}>Brand{sortIndicator('brand')}</th>
+                    <th onClick={() => handleTableSort('model')}>Model{sortIndicator('model')}</th>
+                    <th onClick={() => handleTableSort('createdAt')}>Added{sortIndicator('createdAt')}</th>
+                    <th onClick={() => handleTableSort('timesWorn')}>Worn{sortIndicator('timesWorn')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {tableList.map((w) => (
+                    <tr key={w.id} onClick={() => navigate(w.isWishList ? `/wishlist/${w.id}/edit` : `/watches/${w.id}`)} className="watch-table-row">
+                      <td>{w.brand}</td>
+                      <td>{w.model}</td>
+                      <td>{formatDate(w.createdAt)}</td>
+                      <td>{w.timesWorn}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </PullToRefresh>
       </div>
     );
   }

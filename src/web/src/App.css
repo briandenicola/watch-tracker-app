@@ -328,6 +328,44 @@
   background: var(--input-bg);
 }
 
+/* Pull to refresh */
+.pull-to-refresh {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pull-to-refresh-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+  transition: height 0.2s ease, opacity 0.2s ease;
+  padding-bottom: 0.5rem;
+}
+
+.pull-to-refresh-spinner {
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  transition: transform 0.1s linear;
+  line-height: 1;
+}
+
+.pull-to-refresh-spinner.spinning {
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+@keyframes ptr-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.pull-to-refresh-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
 .watch-toolbar {
   display: flex;
   flex-wrap: wrap;
