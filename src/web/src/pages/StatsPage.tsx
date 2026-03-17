@@ -161,7 +161,12 @@ export default function StatsPage() {
                 />
                 <button
                   className="wear-timeline-edit"
-                  onClick={() => dateInputRefs.current[log.id]?.showPicker()}
+                  onClick={() => {
+                    const input = dateInputRefs.current[log.id];
+                    if (!input) return;
+                    input.focus();
+                    input.showPicker();
+                  }}
                   title="Change date"
                 >
                   ✎
