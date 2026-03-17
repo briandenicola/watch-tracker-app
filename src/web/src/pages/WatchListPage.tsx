@@ -39,6 +39,9 @@ export default function WatchListPage() {
   const [tableSort, setTableSort] = useState<TableSortField>('createdAt');
   const [tableSortDir, setTableSortDir] = useState<SortDir>('desc');
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const sentinelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -48,6 +51,18 @@ export default function WatchListPage() {
       .catch(() => setWatches([]))
       .finally(() => setLoading(false));
   }, []);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   const handleBrandChange = (v: string) => { setBrandFilter(v); setVisibleCount(PAGE_SIZE); };
   const handleBandTypeChange = (v: string) => { setBandTypeFilter(v); setVisibleCount(PAGE_SIZE); };
@@ -79,7 +94,6 @@ export default function WatchListPage() {
     return result;
   }, [watches, brandFilter, bandTypeFilter, showWishList]);
 
-  // Gallery sort (used for gallery view)
   const galleryList = useMemo(() => {
     const result = [...baseFiltered];
     const dir = gallerySortDir === 'asc' ? 1 : -1;
@@ -93,7 +107,6 @@ export default function WatchListPage() {
     return result;
   }, [baseFiltered, sort, gallerySortDir]);
 
-  // Table sort (independent, all columns sortable)
   const tableList = useMemo(() => {
     const result = [...baseFiltered];
     const dir = tableSortDir === 'asc' ? 1 : -1;
@@ -126,7 +139,6 @@ export default function WatchListPage() {
     setVisibleCount((c) => Math.min(c + PAGE_SIZE, galleryList.length));
   }, [galleryList.length]);
 
-  // Infinite scroll via IntersectionObserver
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -143,12 +155,126 @@ export default function WatchListPage() {
   const sortIndicator = (field: TableSortField) =>
     tableSort === field ? (tableSortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
+  const title = user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches';
+
   if (loading) return <p>Loading…</p>;
 
+  // PWA mode: compact header with hamburger menu
+  if (isPwa) {
+    return (
+      <div className="watch-list-page">
+        <div className="pwa-header">
+          <h1>{title}</h1>
+          <div className="pwa-menu-wrapper" ref={menuRef}>
+            <button
+              className="pwa-hamburger"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Menu"
+            >
+              <span /><span /><span />
+            </button>
+            {menuOpen && (
+              <div className="pwa-popover">
+                <div className="pwa-popover-section">
+                  <Link to="/watches/new" className="btn pwa-popover-btn" onClick={() => setMenuOpen(false)}>Add Watch</Link>
+                  <Link to="/wishlist/new" className="btn pwa-popover-btn" onClick={() => setMenuOpen(false)}>Add to Wish List</Link>
+                </div>
+
+                <div className="pwa-popover-section">
+                  <label className="pwa-popover-label">View</label>
+                  <div className="view-toggle">
+                    <button
+                      className={`view-toggle-btn${viewMode === 'gallery' ? ' active' : ''}`}
+                      onClick={() => { setViewMode('gallery'); }}
+                    >▦ Gallery</button>
+                    <button
+                      className={`view-toggle-btn${viewMode === 'table' ? ' active' : ''}`}
+                      onClick={() => { setViewMode('table'); }}
+                    >☰ Table</button>
+                  </div>
+                </div>
+
+                <div className="pwa-popover-section">
+                  <label className="pwa-popover-label">Filters</label>
+                  <select value={brandFilter} onChange={(e) => handleBrandChange(e.target.value)}>
+                    <option value="">All Brands</option>
+                    {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                  <select value={bandTypeFilter} onChange={(e) => handleBandTypeChange(e.target.value)}>
+                    <option value="">All Band Types</option>
+                    {bandTypes.map((bt) => <option key={bt} value={bt}>{bt}</option>)}
+                  </select>
+                  <button
+                    className={`btn btn-sm pwa-popover-btn${showWishList ? ' active' : ''}`}
+                    onClick={() => { setShowWishList((v) => !v); setVisibleCount(PAGE_SIZE); }}
+                    type="button"
+                  >
+                    Wish List
+                  </button>
+                </div>
+
+                {viewMode === 'gallery' && (
+                  <div className="pwa-popover-section">
+                    <label className="pwa-popover-label">Sort</label>
+                    <div className="pwa-sort-row">
+                      <select value={sort} onChange={(e) => handleSortChange(e.target.value as SortOption)}>
+                        <option value="dateAdded">Date Added</option>
+                        <option value="brand">Brand</option>
+                        <option value="lastWorn">Last Worn</option>
+                      </select>
+                      <button
+                        className="btn-sort-dir"
+                        onClick={() => { setGallerySortDir((d) => (d === 'asc' ? 'desc' : 'asc')); setVisibleCount(PAGE_SIZE); }}
+                      >{gallerySortDir === 'asc' ? '▲' : '▼'}</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {baseFiltered.length === 0 ? (
+          <p>{watches.length === 0 ? 'No watches yet. Add your first one!' : 'No watches match the selected filters.'}</p>
+        ) : viewMode === 'gallery' ? (
+          <SwipeGallery>
+            {galleryList.map((w) => (
+              <WatchCard key={w.id} watch={w} />
+            ))}
+          </SwipeGallery>
+        ) : (
+          <div className="watch-table-wrap">
+            <table className="watch-table">
+              <thead>
+                <tr>
+                  <th onClick={() => handleTableSort('brand')}>Brand{sortIndicator('brand')}</th>
+                  <th onClick={() => handleTableSort('model')}>Model{sortIndicator('model')}</th>
+                  <th onClick={() => handleTableSort('createdAt')}>Added{sortIndicator('createdAt')}</th>
+                  <th onClick={() => handleTableSort('timesWorn')}>Worn{sortIndicator('timesWorn')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableList.map((w) => (
+                  <tr key={w.id} onClick={() => navigate(w.isWishList ? `/wishlist/${w.id}/edit` : `/watches/${w.id}`)} className="watch-table-row">
+                    <td>{w.brand}</td>
+                    <td>{w.model}</td>
+                    <td>{formatDate(w.createdAt)}</td>
+                    <td>{w.timesWorn}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Standard browser mode
   return (
     <div className="watch-list-page">
       <div className="page-header">
-        <h1>{user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches'}</h1>
+        <h1>{title}</h1>
         <div className="page-header-actions">
           <Link to="/wishlist/new" className="btn">Add to Wish List</Link>
           <Link to="/watches/new" className="btn">Add Watch</Link>
@@ -212,22 +338,14 @@ export default function WatchListPage() {
       {baseFiltered.length === 0 ? (
         <p>{watches.length === 0 ? 'No watches yet. Add your first one!' : 'No watches match the selected filters.'}</p>
       ) : viewMode === 'gallery' ? (
-        isPwa ? (
-          <SwipeGallery>
-            {galleryList.map((w) => (
+        <>
+          <div className="watch-grid">
+            {visible.map((w) => (
               <WatchCard key={w.id} watch={w} />
             ))}
-          </SwipeGallery>
-        ) : (
-          <>
-            <div className="watch-grid">
-              {visible.map((w) => (
-                <WatchCard key={w.id} watch={w} />
-              ))}
-            </div>
-            {hasMore && <div ref={sentinelRef} className="scroll-sentinel" />}
-          </>
-        )
+          </div>
+          {hasMore && <div ref={sentinelRef} className="scroll-sentinel" />}
+        </>
       ) : (
         <div className="watch-table-wrap">
           <table className="watch-table">
