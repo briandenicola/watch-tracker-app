@@ -84,7 +84,20 @@ export default function StatsPage() {
 
   const dateInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
+  function resetDateInput(logId: number) {
+    const input = dateInputRefs.current[logId];
+    if (input) {
+      input.style.position = '';
+      input.style.opacity = '';
+      input.style.pointerEvents = '';
+      input.style.width = '';
+      input.style.height = '';
+      input.style.clip = '';
+    }
+  }
+
   async function handleDateChange(logId: number, newDate: string) {
+    resetDateInput(logId);
     if (!newDate) return;
     try {
       await updateWearLogDate(logId, newDate);
@@ -158,14 +171,22 @@ export default function StatsPage() {
                   className="wear-timeline-date-input"
                   value={log.wornDate.slice(0, 10)}
                   onChange={(e) => handleDateChange(log.id, e.target.value)}
+                  onBlur={() => resetDateInput(log.id)}
                 />
                 <button
                   className="wear-timeline-edit"
                   onClick={() => {
                     const input = dateInputRefs.current[log.id];
                     if (!input) return;
+                    input.style.position = 'absolute';
+                    input.style.opacity = '0';
+                    input.style.pointerEvents = 'auto';
+                    input.style.width = 'auto';
+                    input.style.height = 'auto';
+                    input.style.clip = 'auto';
                     input.focus();
-                    input.showPicker();
+                    input.click();
+                    try { input.showPicker(); } catch { /* not supported */ }
                   }}
                   title="Change date"
                 >
