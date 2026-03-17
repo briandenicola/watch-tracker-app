@@ -83,4 +83,11 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
         var deleted = await watchService.DeleteWearLogAsync(logId, UserId);
         return deleted ? NoContent() : NotFound();
     }
+
+    [HttpPut("wear-logs/{logId}")]
+    public async Task<IActionResult> UpdateWearLogDate(int logId, [FromBody] UpdateWearLogDateDto dto)
+    {
+        var updated = await watchService.UpdateWearLogDateAsync(logId, UserId, dto.WornDate);
+        return updated ? NoContent() : NotFound();
+    }
 }

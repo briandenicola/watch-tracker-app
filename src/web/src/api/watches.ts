@@ -72,3 +72,7 @@ export async function getWearLogs(): Promise<WearLog[]> {
 export async function deleteWearLog(logId: number): Promise<void> {
   await client.delete(`/watches/wear-logs/${logId}`);
 }
+
+export async function updateWearLogDate(logId: number, wornDate: string): Promise<void> {
+  await client.put(`/watches/wear-logs/${logId}`, { wornDate });
+}

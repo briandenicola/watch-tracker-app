@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getWearLogs, deleteWearLog } from '../api/watches';
+import { getWearLogs, deleteWearLog, updateWearLogDate } from '../api/watches';
 import { usePreferences } from '../context/PreferencesContext';
 import type { WearLog } from '../types';
 
@@ -82,6 +82,19 @@ export default function StatsPage() {
     } catch { /* ignore */ }
   }
 
+  const dateInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  async function handleDateChange(logId: number, newDate: string) {
+    if (!newDate) return;
+    try {
+      await updateWearLogDate(logId, newDate);
+      setLogs((prev) =>
+        prev.map((l) => l.id === logId ? { ...l, wornDate: newDate } : l)
+          .sort((a, b) => new Date(b.wornDate).getTime() - new Date(a.wornDate).getTime())
+      );
+    } catch { /* ignore */ }
+  }
+
   if (loading) return <p>Loading…</p>;
 
   return (
@@ -139,6 +152,20 @@ export default function StatsPage() {
                   <strong>{log.watchBrand} {log.watchModel}</strong>
                   <span className="wear-timeline-date">{fmtDate(log.wornDate)}</span>
                 </Link>
+                <input
+                  type="date"
+                  ref={(el) => { dateInputRefs.current[log.id] = el; }}
+                  className="wear-timeline-date-input"
+                  value={log.wornDate.slice(0, 10)}
+                  onChange={(e) => handleDateChange(log.id, e.target.value)}
+                />
+                <button
+                  className="wear-timeline-edit"
+                  onClick={() => dateInputRefs.current[log.id]?.showPicker()}
+                  title="Change date"
+                >
+                  ✎
+                </button>
                 <button
                   className="wear-timeline-delete"
                   onClick={() => handleDeleteLog(log.id)}

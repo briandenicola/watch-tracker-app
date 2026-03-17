@@ -1533,6 +1533,37 @@
   text-decoration: none;
 }
 
+.wear-timeline-date-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wear-timeline-edit {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.wear-timeline-entry:hover .wear-timeline-edit {
+  opacity: 1;
+}
+
+.wear-timeline-edit:hover {
+  color: var(--accent);
+  background: var(--bg-surface);
+}
+
 .wear-timeline-delete {
   background: none;
   border: none;
