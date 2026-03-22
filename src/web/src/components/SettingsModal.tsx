@@ -3,6 +3,7 @@ import { usePreferences } from '../context/PreferencesContext';
 import { useAuth } from '../context/AuthContext';
 import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage, deleteProfileImage } from '../api/auth';
 import { exportData, importData } from '../api/data';
+import { getApiKeys, createApiKey, deleteApiKey, type ApiKeyDto, type ApiKeyCreatedDto } from '../api/apikeys';
 import { gravatarUrl } from '../utils/gravatar';
 
 interface SettingsModalProps {
@@ -32,10 +33,27 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [importError, setImportError] = useState('');
   const importInputRef = useRef<HTMLInputElement>(null);
 
+  const [apiKeys, setApiKeys] = useState<ApiKeyDto[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [createdKey, setCreatedKey] = useState<ApiKeyCreatedDto | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
+  const [keyLoading, setKeyLoading] = useState(false);
+  const [keyDeleting, setKeyDeleting] = useState<number | null>(null);
+
   // Sync username when user changes or modal opens
   useEffect(() => {
     if (open) setUsername(user?.username ?? '');
   }, [open, user?.username]);
+
+  // Load API keys when modal opens
+  useEffect(() => {
+    if (open) {
+      getApiKeys().then(setApiKeys).catch(() => {});
+    } else {
+      setCreatedKey(null);
+      setKeyCopied(false);
+    }
+  }, [open]);
 
   // Close on Escape
   useEffect(() => {
@@ -130,6 +148,42 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
     } finally {
       setImporting(false);
     }
+  }
+
+  async function handleCreateApiKey(e: FormEvent) {
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    setKeyLoading(true);
+    try {
+      const result = await createApiKey(newKeyName.trim());
+      setCreatedKey(result);
+      setKeyCopied(false);
+      setNewKeyName('');
+      setApiKeys((prev) => [{ id: result.id, name: result.name, createdAt: result.createdAt, lastUsedAt: null }, ...prev]);
+    } catch {
+      alert('Failed to create API key.');
+    } finally {
+      setKeyLoading(false);
+    }
+  }
+
+  async function handleDeleteApiKey(id: number) {
+    setKeyDeleting(id);
+    try {
+      await deleteApiKey(id);
+      setApiKeys((prev) => prev.filter((k) => k.id !== id));
+      if (createdKey?.id === id) setCreatedKey(null);
+    } catch {
+      alert('Failed to delete API key.');
+    } finally {
+      setKeyDeleting(null);
+    }
+  }
+
+  async function handleCopyKey(key: string) {
+    await navigator.clipboard.writeText(key);
+    setKeyCopied(true);
+    setTimeout(() => setKeyCopied(false), 3000);
   }
 
   if (!open) return null;
@@ -319,6 +373,73 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
               </div>
               {importResult && <span className="save-success">✓ {importResult}</span>}
               {importError && <p className="error">{importError}</p>}
+            </fieldset>
+
+            <fieldset className="watch-form-group">
+              <legend>API Keys</legend>
+              <p className="settings-hint">
+                Create API keys to access your collection from external applications. Use the <code>X-API-Key</code> header to authenticate requests.
+              </p>
+
+              <form className="api-key-create" onSubmit={handleCreateApiKey}>
+                <input
+                  type="text"
+                  placeholder="Key name (e.g. Home Assistant)"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  required
+                />
+                <button type="submit" className="btn" disabled={keyLoading}>
+                  {keyLoading ? 'Creating…' : 'Create Key'}
+                </button>
+              </form>
+
+              {createdKey && (
+                <div className="api-key-created-banner">
+                  <p><strong>Save this key now — it won't be shown again:</strong></p>
+                  <div className="api-key-value">
+                    <code>{createdKey.key}</code>
+                    <button type="button" className="btn btn-sm" onClick={() => handleCopyKey(createdKey.key)}>
+                      {keyCopied ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {apiKeys.length > 0 && (
+                <table className="api-key-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Created</th>
+                      <th>Last Used</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apiKeys.map((k) => (
+                      <tr key={k.id}>
+                        <td>{k.name}</td>
+                        <td>{new Date(k.createdAt).toLocaleDateString()}</td>
+                        <td>{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString() : 'Never'}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            disabled={keyDeleting === k.id}
+                            onClick={() => handleDeleteApiKey(k.id)}
+                          >
+                            {keyDeleting === k.id ? '…' : 'Delete'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {apiKeys.length === 0 && !createdKey && (
+                <p className="settings-hint">No API keys yet.</p>
+              )}
             </fieldset>
           </div>
         </div>

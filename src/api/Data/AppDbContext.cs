@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WatchImage> WatchImages => Set<WatchImage>();
     public DbSet<WearLog> WearLogs => Set<WearLog>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,6 +25,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<AppSetting>(entity =>
         {
             entity.HasKey(a => a.Key);
+        });
+
+        modelBuilder.Entity<ApiKey>(entity =>
+        {
+            entity.HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(a => a.KeyHash).IsUnique();
         });
 
         modelBuilder.Entity<Watch>(entity =>
