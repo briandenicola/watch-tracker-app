@@ -385,12 +385,13 @@ h1, h2, h3 {
   right: 0;
   z-index: 200;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-around;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-color);
   height: calc(64px + env(safe-area-inset-bottom, 0px));
   padding: 0;
+  padding-top: 6px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -410,8 +411,8 @@ h1, h2, h3 {
 }
 
 .pwa-tab-item svg {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
 }
 
 .pwa-tab-item.active {
