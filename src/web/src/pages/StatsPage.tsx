@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getWearLogs, deleteWearLog, updateWearLogDate } from '../api/watches';
 import { usePreferences } from '../context/PreferencesContext';
+import useIsPwa from '../hooks/useIsPwa';
 import type { WearLog } from '../types';
 
 const CLOUD_VAR_COUNT = 10;
@@ -18,6 +19,7 @@ export default function StatsPage() {
   const [logs, setLogs] = useState<WearLog[]>([]);
   const [loading, setLoading] = useState(true);
   const { timezone } = usePreferences();
+  const isPwa = useIsPwa();
 
   useEffect(() => {
     getWearLogs()
@@ -114,7 +116,7 @@ export default function StatsPage() {
     <div className="stats-page">
       <div className="page-header">
         <h1>Wear Stats</h1>
-        <Link to="/" className="btn btn-sm">← Back</Link>
+        {!isPwa && <Link to="/" className="btn btn-sm">← Back</Link>}
       </div>
 
       <div className="stats-summary">

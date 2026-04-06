@@ -1695,6 +1695,7 @@ h1, h2, h3 {
 
 .stats-summary {
   display: flex;
+  justify-content: center;
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
