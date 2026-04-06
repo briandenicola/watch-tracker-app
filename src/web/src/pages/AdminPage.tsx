@@ -15,6 +15,10 @@ export default function AdminPage() {
         <button className={`admin-tab${tab === 'settings' ? ' active' : ''}`} onClick={() => setTab('settings')}>Settings</button>
       </div>
       {tab === 'users' ? <UsersPanel /> : <SettingsPanel />}
+      <div className="build-info">
+        <span>Build: {__BUILD_SHA__}</span>
+        <span>{new Date(__BUILD_DATE__).toLocaleString()}</span>
+      </div>
     </div>
   );
 }

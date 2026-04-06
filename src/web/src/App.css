@@ -2126,3 +2126,16 @@ h1, h2, h3 {
 .api-key-table td:last-child {
   text-align: right;
 }
+
+/* Build info */
+.build-info {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
