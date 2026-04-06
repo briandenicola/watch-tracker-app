@@ -389,7 +389,7 @@ h1, h2, h3 {
   justify-content: space-around;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-color);
-  height: 64px;
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
   padding: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -1299,6 +1299,7 @@ h1, h2, h3 {
 .admin-page {
   max-width: 900px;
   margin: 0 auto;
+  padding: 0.75rem 0.5rem;
 }
 
 .admin-tabs {
