@@ -99,6 +99,27 @@ h1, h2, h3 {
     display: none !important;
   }
 
+  .pwa-app-header {
+    justify-content: center;
+    padding: 0.9rem 1.5rem;
+    padding-top: calc(0.9rem + env(safe-area-inset-top, 0px));
+  }
+
+  .pwa-app-header .app-header-left {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .pwa-app-header .app-title {
+    font-size: 1.6rem;
+    letter-spacing: 0.06em;
+  }
+
+  .pwa-app-header .pwa-title-avatar {
+    position: absolute;
+    left: 1rem;
+  }
+
   .container {
     padding: 0 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
     min-height: calc(100dvh - 44px);
