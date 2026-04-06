@@ -298,6 +298,14 @@ h1, h2, h3 {
   flex-shrink: 0;
 }
 
+.pwa-menu-titlebar {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  right: 0.75rem;
+  z-index: 150;
+  margin-top: 0.35rem;
+}
+
 .pwa-hamburger {
   display: flex;
   flex-direction: column;
@@ -306,10 +314,14 @@ h1, h2, h3 {
   width: 36px;
   height: 36px;
   padding: 6px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: none;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.pwa-menu-titlebar .pwa-hamburger span {
+  background: #fff;
 }
 
 .pwa-hamburger span {

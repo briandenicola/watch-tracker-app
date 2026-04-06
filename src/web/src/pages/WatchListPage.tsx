@@ -176,69 +176,66 @@ export default function WatchListPage() {
   if (isPwa) {
     return (
       <div className="watch-list-page">
-        <div className="pwa-header">
-          <h1>{title}</h1>
-          <div className="pwa-menu-wrapper" ref={menuRef}>
-            <button
-              className="pwa-hamburger"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Menu"
-            >
-              <span /><span /><span />
-            </button>
-            {menuOpen && (
-              <div className="pwa-popover">
-                <div className="pwa-popover-section">
-                  <label className="pwa-popover-label">View</label>
-                  <div className="view-toggle">
-                    <button
-                      className={`view-toggle-btn${viewMode === 'gallery' ? ' active' : ''}`}
-                      onClick={() => { setViewMode('gallery'); }}
-                    >▦ Gallery</button>
-                    <button
-                      className={`view-toggle-btn${viewMode === 'table' ? ' active' : ''}`}
-                      onClick={() => { setViewMode('table'); }}
-                    >☰ Table</button>
-                  </div>
-                </div>
-
-                <div className="pwa-popover-section">
-                  <label className="pwa-popover-label">Filters</label>
-                  <select value={brandFilter} onChange={(e) => handleBrandChange(e.target.value)}>
-                    <option value="">All Brands</option>
-                    {brands.map((b) => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                  <select value={bandTypeFilter} onChange={(e) => handleBandTypeChange(e.target.value)}>
-                    <option value="">All Band Types</option>
-                    {bandTypes.map((bt) => <option key={bt} value={bt}>{bt}</option>)}
-                  </select>
-                </div>
-
-                {viewMode === 'gallery' && (
-                  <div className="pwa-popover-section">
-                    <label className="pwa-popover-label">Sort</label>
-                    <div className="pwa-sort-row">
-                      <select value={sort} onChange={(e) => handleSortChange(e.target.value as SortOption)}>
-                        <option value="dateAdded">Date Added</option>
-                        <option value="brand">Brand</option>
-                        <option value="lastWorn">Last Worn</option>
-                      </select>
-                      <button
-                        className="btn-sort-dir"
-                        onClick={() => { setGallerySortDir((d) => (d === 'asc' ? 'desc' : 'asc')); setVisibleCount(PAGE_SIZE); }}
-                      >{gallerySortDir === 'asc' ? '▲' : '▼'}</button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="pwa-popover-section">
-                  <button className="btn pwa-popover-btn pwa-logout-btn" onClick={() => { setMenuOpen(false); logout(); }}>
-                    Log Out
-                  </button>
+        <div className="pwa-menu-wrapper pwa-menu-titlebar" ref={menuRef}>
+          <button
+            className="pwa-hamburger"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Menu"
+          >
+            <span /><span /><span />
+          </button>
+          {menuOpen && (
+            <div className="pwa-popover">
+              <div className="pwa-popover-section">
+                <label className="pwa-popover-label">View</label>
+                <div className="view-toggle">
+                  <button
+                    className={`view-toggle-btn${viewMode === 'gallery' ? ' active' : ''}`}
+                    onClick={() => { setViewMode('gallery'); }}
+                  >▦ Gallery</button>
+                  <button
+                    className={`view-toggle-btn${viewMode === 'table' ? ' active' : ''}`}
+                    onClick={() => { setViewMode('table'); }}
+                  >☰ Table</button>
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="pwa-popover-section">
+                <label className="pwa-popover-label">Filters</label>
+                <select value={brandFilter} onChange={(e) => handleBrandChange(e.target.value)}>
+                  <option value="">All Brands</option>
+                  {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <select value={bandTypeFilter} onChange={(e) => handleBandTypeChange(e.target.value)}>
+                  <option value="">All Band Types</option>
+                  {bandTypes.map((bt) => <option key={bt} value={bt}>{bt}</option>)}
+                </select>
+              </div>
+
+              {viewMode === 'gallery' && (
+                <div className="pwa-popover-section">
+                  <label className="pwa-popover-label">Sort</label>
+                  <div className="pwa-sort-row">
+                    <select value={sort} onChange={(e) => handleSortChange(e.target.value as SortOption)}>
+                      <option value="dateAdded">Date Added</option>
+                      <option value="brand">Brand</option>
+                      <option value="lastWorn">Last Worn</option>
+                    </select>
+                    <button
+                      className="btn-sort-dir"
+                      onClick={() => { setGallerySortDir((d) => (d === 'asc' ? 'desc' : 'asc')); setVisibleCount(PAGE_SIZE); }}
+                    >{gallerySortDir === 'asc' ? '▲' : '▼'}</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="pwa-popover-section">
+                <button className="btn pwa-popover-btn pwa-logout-btn" onClick={() => { setMenuOpen(false); logout(); }}>
+                  Log Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <PullToRefresh onRefresh={handleRefresh}>
