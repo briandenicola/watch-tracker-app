@@ -12,6 +12,7 @@ import AddWatchPage from './pages/AddWatchPage';
 import EditWatchPage from './pages/EditWatchPage';
 import AdminPage from './pages/AdminPage';
 import StatsPage from './pages/StatsPage';
+import SettingsPage from './pages/SettingsPage';
 import AddWishListPage from './pages/AddWishListPage';
 import EditWishListPage from './pages/EditWishListPage';
 import SettingsModal from './components/SettingsModal';
@@ -77,6 +78,7 @@ function App() {
                 <Route path="/watches/:id/edit" element={<EditWatchPage />} />
                 <Route path="/watches/:id" element={<WatchDetailPage />} />
                 <Route path="/stats" element={<StatsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/wishlist/new" element={<AddWishListPage />} />
                 <Route path="/wishlist/:id/edit" element={<EditWishListPage />} />
               </Route>
@@ -87,10 +89,8 @@ function App() {
           )}
         </Routes>
       </main>
-      {user && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
-      {user && !needsSetup && isPwa && (
-        <PwaBottomBar onOpenSettings={() => setSettingsOpen(true)} />
-      )}
+      {user && !isPwa && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
+      {user && !needsSetup && isPwa && <PwaBottomBar />}
     </BrowserRouter>
   );
 }

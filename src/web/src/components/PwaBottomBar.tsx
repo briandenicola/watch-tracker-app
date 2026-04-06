@@ -1,11 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-interface Props {
-  onOpenSettings: () => void;
-}
-
-export default function PwaBottomBar({ onOpenSettings }: Props) {
+export default function PwaBottomBar() {
   const { isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -14,17 +10,15 @@ export default function PwaBottomBar({ onOpenSettings }: Props) {
 
   return (
     <nav className="pwa-bottom-bar">
-      {isAdmin && (
-        <button
-          className={`pwa-tab-item${path === '/admin' ? ' active' : ''}`}
-          onClick={() => navigate('/admin')}
-          aria-label="Admin"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-        </button>
-      )}
+      <button
+        className={`pwa-tab-item${isWishList ? ' active' : ''}`}
+        onClick={() => navigate('/?wishlist')}
+        aria-label="Wish List"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill={isWishList ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      </button>
       <button
         className={`pwa-tab-item${path === '/stats' ? ' active' : ''}`}
         onClick={() => navigate('/stats')}
@@ -49,8 +43,8 @@ export default function PwaBottomBar({ onOpenSettings }: Props) {
         </button>
       </div>
       <button
-        className="pwa-tab-item"
-        onClick={onOpenSettings}
+        className={`pwa-tab-item${path === '/settings' ? ' active' : ''}`}
+        onClick={() => navigate('/settings')}
         aria-label="Settings"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -58,15 +52,17 @@ export default function PwaBottomBar({ onOpenSettings }: Props) {
           <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
         </svg>
       </button>
-      <button
-        className={`pwa-tab-item${isWishList ? ' active' : ''}`}
-        onClick={() => navigate('/?wishlist')}
-        aria-label="Wish List"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill={isWishList ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      </button>
+      {isAdmin && (
+        <button
+          className={`pwa-tab-item${path === '/admin' ? ' active' : ''}`}
+          onClick={() => navigate('/admin')}
+          aria-label="Admin"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </button>
+      )}
     </nav>
   );
 }

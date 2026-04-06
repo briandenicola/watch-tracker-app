@@ -2127,6 +2127,16 @@ h1, h2, h3 {
   text-align: right;
 }
 
+/* Settings page (full-page layout) */
+.settings-page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.settings-page h1 {
+  margin-bottom: 1.5rem;
+}
+
 /* Build info */
 .build-info {
   display: flex;
