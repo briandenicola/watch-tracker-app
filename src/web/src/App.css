@@ -100,7 +100,7 @@ h1, h2, h3 {
   }
 
   .container {
-    padding: 0 0 calc(64px + env(safe-area-inset-bottom, 0px)) 0;
+    padding: 0 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
   }
 }
 
@@ -659,7 +659,7 @@ h1, h2, h3 {
   object-fit: contain;
   background: var(--bg-surface);
   border-radius: 0;
-  margin-bottom: 0;
+  margin: 5px;
   padding: 0;
 }
 
