@@ -8,7 +8,7 @@ import { getApiKeys, createApiKey, deleteApiKey, type ApiKeyDto, type ApiKeyCrea
 import { gravatarUrl } from '../utils/gravatar';
 
 export default function SettingsPage() {
-  const { theme, setTheme, timezone, setTimezone, defaultView, setDefaultView, defaultLanding, setDefaultLanding } = usePreferences();
+  const { theme, setTheme, timezone, setTimezone, defaultView, setDefaultView, defaultLanding, setDefaultLanding, defaultSort, setDefaultSort, defaultSortDir, setDefaultSortDir } = usePreferences();
   const { user, isAdmin, updateProfileImage, updateUsername } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -315,6 +315,56 @@ export default function SettingsPage() {
                 type="button"
               >
                 ⭐ Wish List
+              </button>
+            </div>
+          </div>
+          <div className="settings-row">
+            <label htmlFor="sort-select">Default Sort</label>
+            <div className="theme-toggle">
+              <button
+                className={`theme-btn${defaultSort === 'dateAdded' ? ' active' : ''}`}
+                onClick={() => setDefaultSort('dateAdded')}
+                aria-pressed={defaultSort === 'dateAdded'}
+                type="button"
+              >
+                📅 Date
+              </button>
+              <button
+                className={`theme-btn${defaultSort === 'brand' ? ' active' : ''}`}
+                onClick={() => setDefaultSort('brand')}
+                aria-pressed={defaultSort === 'brand'}
+                type="button"
+              >
+                🏷️ Brand
+              </button>
+              <button
+                className={`theme-btn${defaultSort === 'lastWorn' ? ' active' : ''}`}
+                onClick={() => setDefaultSort('lastWorn')}
+                aria-pressed={defaultSort === 'lastWorn'}
+                type="button"
+              >
+                👔 Worn
+              </button>
+            </div>
+          </div>
+          <div className="settings-row">
+            <label htmlFor="sortdir-select">Sort Direction</label>
+            <div className="theme-toggle">
+              <button
+                className={`theme-btn${defaultSortDir === 'desc' ? ' active' : ''}`}
+                onClick={() => setDefaultSortDir('desc')}
+                aria-pressed={defaultSortDir === 'desc'}
+                type="button"
+              >
+                ▼ Newest
+              </button>
+              <button
+                className={`theme-btn${defaultSortDir === 'asc' ? ' active' : ''}`}
+                onClick={() => setDefaultSortDir('asc')}
+                aria-pressed={defaultSortDir === 'asc'}
+                type="button"
+              >
+                ▲ Oldest
               </button>
             </div>
           </div>

@@ -22,7 +22,7 @@ function formatDate(value?: string | null) {
 }
 
 export default function WatchListPage() {
-  const { defaultView, defaultLanding } = usePreferences();
+  const { defaultView, defaultLanding, defaultSort, defaultSortDir } = usePreferences();
   const { user, logout } = useAuth();
   const isPwa = useIsPwa();
   const navigate = useNavigate();
@@ -48,8 +48,8 @@ export default function WatchListPage() {
   useEffect(() => {
     setShowWishList(searchParams.has('wishlist'));
   }, [searchParams]);
-  const [sort, setSort] = useState<SortOption>('dateAdded');
-  const [gallerySortDir, setGallerySortDir] = useState<SortDir>('desc');
+  const [sort, setSort] = useState<SortOption>(defaultSort);
+  const [gallerySortDir, setGallerySortDir] = useState<SortDir>(defaultSortDir);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const [tableSort, setTableSort] = useState<TableSortField>('createdAt');
