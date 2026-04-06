@@ -59,7 +59,6 @@ export default function WatchListPage() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     getWatches()
