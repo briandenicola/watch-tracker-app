@@ -22,9 +22,10 @@ function formatDate(value?: string | null) {
 }
 
 export default function WatchListPage() {
-  const { defaultView } = usePreferences();
+  const { defaultView, defaultLanding } = usePreferences();
   const { user, logout } = useAuth();
   const isPwa = useIsPwa();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,16 @@ export default function WatchListPage() {
   const [brandFilter, setBrandFilter] = useState('');
   const [bandTypeFilter, setBandTypeFilter] = useState('');
   const [showWishList, setShowWishList] = useState(searchParams.has('wishlist'));
+
+  // On first load, redirect to preferred landing page if no explicit param
+  const didApplyLanding = useRef(false);
+  useEffect(() => {
+    if (didApplyLanding.current) return;
+    didApplyLanding.current = true;
+    if (defaultLanding === 'wishlist' && !searchParams.has('wishlist') && window.location.search === '') {
+      navigate('/?wishlist', { replace: true });
+    }
+  }, [defaultLanding, searchParams, navigate]);
 
   useEffect(() => {
     setShowWishList(searchParams.has('wishlist'));

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 
 export type Theme = 'light' | 'dark';
 export type DefaultView = 'gallery' | 'table';
+export type DefaultLanding = 'watches' | 'wishlist';
 
 interface PreferencesContextType {
   theme: Theme;
@@ -10,6 +11,8 @@ interface PreferencesContextType {
   setTimezone: (tz: string) => void;
   defaultView: DefaultView;
   setDefaultView: (view: DefaultView) => void;
+  defaultLanding: DefaultLanding;
+  setDefaultLanding: (landing: DefaultLanding) => void;
 }
 
 const PreferencesContext = createContext<PreferencesContextType | null>(null);
@@ -17,6 +20,7 @@ const PreferencesContext = createContext<PreferencesContextType | null>(null);
 const THEME_KEY = 'watch-tracker-theme';
 const TZ_KEY = 'watch-tracker-timezone';
 const VIEW_KEY = 'watch-tracker-default-view';
+const LANDING_KEY = 'watch-tracker-default-landing';
 
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem(THEME_KEY);
@@ -34,10 +38,17 @@ function getInitialView(): DefaultView {
   return 'gallery';
 }
 
+function getInitialLanding(): DefaultLanding {
+  const stored = localStorage.getItem(LANDING_KEY);
+  if (stored === 'watches' || stored === 'wishlist') return stored;
+  return 'watches';
+}
+
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [timezone, setTimezoneState] = useState<string>(getInitialTimezone);
   const [defaultView, setDefaultViewState] = useState<DefaultView>(getInitialView);
+  const [defaultLanding, setDefaultLandingState] = useState<DefaultLanding>(getInitialLanding);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -52,12 +63,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(VIEW_KEY, defaultView);
   }, [defaultView]);
 
+  useEffect(() => {
+    localStorage.setItem(LANDING_KEY, defaultLanding);
+  }, [defaultLanding]);
+
   const setTheme = (t: Theme) => setThemeState(t);
   const setTimezone = (tz: string) => setTimezoneState(tz);
   const setDefaultView = (v: DefaultView) => setDefaultViewState(v);
+  const setDefaultLanding = (l: DefaultLanding) => setDefaultLandingState(l);
 
   return (
-    <PreferencesContext.Provider value={{ theme, setTheme, timezone, setTimezone, defaultView, setDefaultView }}>
+    <PreferencesContext.Provider value={{ theme, setTheme, timezone, setTimezone, defaultView, setDefaultView, defaultLanding, setDefaultLanding }}>
       {children}
     </PreferencesContext.Provider>
   );

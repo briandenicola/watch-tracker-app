@@ -8,7 +8,7 @@ import { getApiKeys, createApiKey, deleteApiKey, type ApiKeyDto, type ApiKeyCrea
 import { gravatarUrl } from '../utils/gravatar';
 
 export default function SettingsPage() {
-  const { theme, setTheme, timezone, setTimezone, defaultView, setDefaultView } = usePreferences();
+  const { theme, setTheme, timezone, setTimezone, defaultView, setDefaultView, defaultLanding, setDefaultLanding } = usePreferences();
   const { user, isAdmin, updateProfileImage, updateUsername } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -294,6 +294,27 @@ export default function SettingsPage() {
                 type="button"
               >
                 ☰ Table
+              </button>
+            </div>
+          </div>
+          <div className="settings-row">
+            <label htmlFor="landing-select">Default Page</label>
+            <div className="theme-toggle">
+              <button
+                className={`theme-btn${defaultLanding === 'watches' ? ' active' : ''}`}
+                onClick={() => setDefaultLanding('watches')}
+                aria-pressed={defaultLanding === 'watches'}
+                type="button"
+              >
+                ⌚ Watches
+              </button>
+              <button
+                className={`theme-btn${defaultLanding === 'wishlist' ? ' active' : ''}`}
+                onClick={() => setDefaultLanding('wishlist')}
+                aria-pressed={defaultLanding === 'wishlist'}
+                type="button"
+              >
+                ⭐ Wish List
               </button>
             </div>
           </div>
