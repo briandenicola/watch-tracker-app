@@ -682,8 +682,8 @@ h1, h2, h3 {
 .swipe-gallery-slide .watch-card-image {
   height: calc(100dvh - 180px);
   max-height: 680px;
-  object-fit: cover;
-  background: transparent;
+  object-fit: contain;
+  background: var(--bg-primary);
   border-radius: 0;
   margin: 8px 5px 0;
   padding: 0;
