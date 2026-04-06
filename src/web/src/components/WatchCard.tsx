@@ -7,7 +7,9 @@ export default function WatchCard({ watch }: { watch: Watch }) {
     return (
       <Link to={`/wishlist/${watch.id}/edit`} className="watch-card wishlist-card">
         {watch.imageUrls.length > 0 && (
-          <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} className="watch-card-image" />
+          <div className="watch-card-image-wrap">
+            <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} className="watch-card-image" />
+          </div>
         )}
         {watch.linkUrl ? (
           <span
@@ -29,7 +31,9 @@ export default function WatchCard({ watch }: { watch: Watch }) {
   return (
     <Link to={`/watches/${watch.id}`} className="watch-card">
       {watch.imageUrls.length > 0 && (
-        <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} className="watch-card-image" />
+        <div className="watch-card-image-wrap">
+          <img src={imageUrl(watch.imageUrls[0].url)} alt={`${watch.brand} ${watch.model}`} className="watch-card-image" />
+        </div>
       )}
       <p className="watch-card-title">{watch.brand} {watch.model}</p>
     </Link>

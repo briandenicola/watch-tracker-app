@@ -708,13 +708,23 @@ h1, h2, h3 {
   order: -1;
 }
 
-.swipe-gallery-slide .watch-card-image {
-  height: calc(100dvh - 180px);
-  max-height: 680px;
-  object-fit: contain;
-  background: var(--bg-primary);
-  border-radius: 0;
+.swipe-gallery-slide .watch-card-image-wrap {
+  width: 100%;
+  aspect-ratio: 3 / 4;
   margin: 8px 5px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.swipe-gallery-slide .watch-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0;
+  margin: 0;
   padding: 0;
 }
 
@@ -957,12 +967,18 @@ h1, h2, h3 {
 }
 
 /* Watch card image */
+.watch-card-image-wrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
 .watch-card-image {
   width: 100%;
   height: 320px;
   object-fit: cover;
-  border-radius: 6px;
-  margin-bottom: 0.75rem;
+  display: block;
 }
 
 /* Cover image picker */
