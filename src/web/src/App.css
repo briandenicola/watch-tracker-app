@@ -87,7 +87,11 @@ h1, h2, h3 {
   }
 
   .app-header {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
   }
 
   /* When bottom bar is present, hide the global hamburger/nav */
@@ -121,7 +125,7 @@ h1, h2, h3 {
   }
 
   .container {
-    padding: 0 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
+    padding: calc(56px + env(safe-area-inset-top, 0px)) 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
     min-height: calc(100dvh - 44px);
   }
 
