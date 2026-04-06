@@ -101,6 +101,7 @@ h1, h2, h3 {
 
   .container {
     padding: 0 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
+    min-height: calc(100dvh - 44px);
   }
 
   /* Consistent page titles in PWA mode */
