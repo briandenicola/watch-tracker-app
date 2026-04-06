@@ -101,6 +101,7 @@ h1, h2, h3 {
 
   .container {
     padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    padding-top: 0.5rem;
   }
 }
 
@@ -270,7 +271,7 @@ h1, h2, h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.15rem;
 }
 
 .pwa-header h1 {
@@ -627,7 +628,7 @@ h1, h2, h3 {
 .swipe-gallery-slide {
   flex: 0 0 100%;
   scroll-snap-align: center;
-  padding: 0 0.25rem;
+  padding: 0;
   box-sizing: border-box;
   display: flex;
   justify-content: center;
@@ -636,7 +637,7 @@ h1, h2, h3 {
 .swipe-gallery-slide .watch-card {
   width: 100%;
   max-width: none;
-  padding: 0 0.25rem;
+  padding: 0 4px;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -649,7 +650,7 @@ h1, h2, h3 {
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.05em;
-  padding: 0 0 0.3rem;
+  padding: 0 0 2px;
   order: -1;
 }
 
@@ -658,7 +659,7 @@ h1, h2, h3 {
   max-height: 720px;
   object-fit: contain;
   background: var(--bg-surface);
-  border-radius: 8px;
+  border-radius: 4px;
   margin-bottom: 0;
 }
 
