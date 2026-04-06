@@ -100,7 +100,7 @@ h1, h2, h3 {
   }
 
   .container {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -389,8 +389,9 @@ h1, h2, h3 {
   justify-content: space-around;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-color);
-  padding: 0.25rem 0;
-  padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));
+  height: 44px;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .pwa-tab-item {
@@ -402,14 +403,15 @@ h1, h2, h3 {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 0.3rem 0;
+  padding: 0;
+  height: 100%;
   transition: color 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
 
 .pwa-tab-item svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
 }
 
 .pwa-tab-item.active {
@@ -638,15 +640,8 @@ h1, h2, h3 {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-}
-
-.swipe-gallery-slide .watch-card-image {
-  height: calc(100dvh - 200px);
-  max-height: 680px;
-  object-fit: contain;
-  background: var(--bg-surface);
-  border-radius: 8px;
-  margin-bottom: 0.4rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .swipe-gallery-slide .watch-card-title {
@@ -654,7 +649,17 @@ h1, h2, h3 {
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.05em;
-  padding: 0.15rem 0;
+  padding: 0 0 0.3rem;
+  order: -1;
+}
+
+.swipe-gallery-slide .watch-card-image {
+  height: calc(100dvh - 150px);
+  max-height: 720px;
+  object-fit: contain;
+  background: var(--bg-surface);
+  border-radius: 8px;
+  margin-bottom: 0;
 }
 
 .swipe-gallery-controls {
