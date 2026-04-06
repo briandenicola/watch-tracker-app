@@ -504,7 +504,7 @@
 .swipe-gallery-slide {
   flex: 0 0 100%;
   scroll-snap-align: center;
-  padding: 0 1rem;
+  padding: 0 0.25rem;
   box-sizing: border-box;
   display: flex;
   justify-content: center;
@@ -512,7 +512,23 @@
 
 .swipe-gallery-slide .watch-card {
   width: 100%;
-  max-width: 400px;
+  max-width: none;
+  padding: 0.5rem;
+  border-radius: 12px;
+}
+
+.swipe-gallery-slide .watch-card-image {
+  height: calc(100dvh - 160px);
+  max-height: 720px;
+  object-fit: contain;
+  background: var(--bg-surface);
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.swipe-gallery-slide .watch-card-title {
+  font-size: 1.1rem;
+  padding: 0.25rem 0;
 }
 
 .swipe-gallery-controls {
@@ -520,7 +536,7 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  padding: 1rem 0 0.5rem;
+  padding: 0.5rem 0 0.25rem;
 }
 
 .swipe-gallery-arrow {
