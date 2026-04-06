@@ -242,7 +242,10 @@ export default function WatchListPage() {
           {baseFiltered.length === 0 ? (
             <p>{watches.length === 0 ? 'No watches yet. Add your first one!' : 'No watches match the selected filters.'}</p>
           ) : viewMode === 'gallery' ? (
-            <SwipeGallery>
+            <SwipeGallery
+              initialIndex={Number(sessionStorage.getItem(isWishList ? 'wishGalleryIdx' : 'galleryIdx') || '0')}
+              onIndexChange={(i) => sessionStorage.setItem(isWishList ? 'wishGalleryIdx' : 'galleryIdx', String(i))}
+            >
               {galleryList.map((w) => (
                 <WatchCard key={w.id} watch={w} />
               ))}

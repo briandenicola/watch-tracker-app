@@ -3,20 +3,36 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 interface Props {
   children: ReactNode[];
   className?: string;
+  initialIndex?: number;
+  onIndexChange?: (index: number) => void;
 }
 
-export default function SwipeGallery({ children, className }: Props) {
+export default function SwipeGallery({ children, className, initialIndex = 0, onIndexChange }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const total = children.length;
+  const didInitScroll = useRef(false);
 
   const updateActiveIndex = useCallback(() => {
     const el = scrollRef.current;
     if (!el || total === 0) return;
     const cardWidth = el.scrollWidth / total;
     const idx = Math.round(el.scrollLeft / cardWidth);
-    setActiveIndex(Math.max(0, Math.min(idx, total - 1)));
-  }, [total]);
+    const clamped = Math.max(0, Math.min(idx, total - 1));
+    setActiveIndex(clamped);
+    onIndexChange?.(clamped);
+  }, [total, onIndexChange]);
+
+  // Scroll to initial index on mount
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || total === 0 || didInitScroll.current) return;
+    if (initialIndex > 0 && initialIndex < total) {
+      const cardWidth = el.scrollWidth / total;
+      el.scrollTo({ left: cardWidth * initialIndex, behavior: 'instant' });
+    }
+    didInitScroll.current = true;
+  }, [initialIndex, total]);
 
   useEffect(() => {
     const el = scrollRef.current;

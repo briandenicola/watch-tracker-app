@@ -4,12 +4,14 @@ import Markdown from 'react-markdown';
 import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
 import { usePreferences } from '../context/PreferencesContext';
+import useIsPwa from '../hooks/useIsPwa';
 import type { Watch } from '../types';
 
 export default function WatchDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { timezone } = usePreferences();
+  const isPwa = useIsPwa();
   const [watch, setWatch] = useState<Watch | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -101,7 +103,7 @@ export default function WatchDetailPage() {
 
   return (
     <div className="watch-detail">
-      <Link to="/" className="back-link">← Back</Link>
+      {!isPwa && <Link to="/" className="back-link">← Back</Link>}
       <div className="watch-detail-header">
         <h1>{watch.brand} {watch.model}</h1>
         <div className="watch-detail-header-actions">
