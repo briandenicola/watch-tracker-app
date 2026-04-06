@@ -100,8 +100,7 @@ h1, h2, h3 {
   }
 
   .container {
-    padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
-    padding-top: 0.5rem;
+    padding: 0 0 calc(64px + env(safe-area-inset-bottom, 0px)) 0;
   }
 }
 
@@ -271,7 +270,7 @@ h1, h2, h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0;
 }
 
 .pwa-header h1 {
@@ -390,7 +389,7 @@ h1, h2, h3 {
   justify-content: space-around;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-color);
-  height: 54px;
+  height: 64px;
   padding: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -637,7 +636,7 @@ h1, h2, h3 {
 .swipe-gallery-slide .watch-card {
   width: 100%;
   max-width: none;
-  padding: 0 4px;
+  padding: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -650,7 +649,7 @@ h1, h2, h3 {
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.05em;
-  padding: 0 0 2px;
+  padding: 0;
   order: -1;
 }
 
@@ -659,8 +658,9 @@ h1, h2, h3 {
   max-height: 720px;
   object-fit: contain;
   background: var(--bg-surface);
-  border-radius: 4px;
+  border-radius: 0;
   margin-bottom: 0;
+  padding: 0;
 }
 
 .swipe-gallery-controls {
