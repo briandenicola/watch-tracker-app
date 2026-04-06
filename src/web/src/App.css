@@ -1324,6 +1324,26 @@ h1, h2, h3 {
 .admin-page {
   max-width: 900px;
   margin: 0 auto;
+  overflow-x: hidden;
+}
+
+@media (display-mode: standalone) {
+  .admin-page .settings-form {
+    max-width: 100%;
+  }
+
+  .admin-page .watch-form-group {
+    padding: 0.75rem;
+  }
+
+  .admin-page .settings-inline-field {
+    flex-wrap: wrap;
+  }
+
+  .admin-page .settings-inline-field input {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .admin-tabs {
