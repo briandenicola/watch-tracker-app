@@ -167,8 +167,7 @@ export default function SettingsPage() {
   return (
     <div className="settings-page">
       <div className="settings-page-header">
-        <h1>Settings</h1>
-        {isAdmin && <Link to="/admin" className="btn btn-sm">Admin Panel</Link>}
+        <h1>Settings {isAdmin && <Link to="/admin" className="settings-admin-link">Admin →</Link>}</h1>
       </div>
 
       <form className="settings-form" onSubmit={handleSaveAccount}>

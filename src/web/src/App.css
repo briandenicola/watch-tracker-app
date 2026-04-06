@@ -2180,14 +2180,27 @@ h1, h2, h3 {
 }
 
 .settings-page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 1.5rem;
 }
 
 .settings-page-header h1 {
   margin: 0;
+}
+
+.settings-admin-link {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  margin-left: 0.75rem;
+  vertical-align: middle;
+}
+
+.settings-admin-link:hover {
+  color: var(--accent);
+  text-decoration: none;
 }
 
 /* Build info */
