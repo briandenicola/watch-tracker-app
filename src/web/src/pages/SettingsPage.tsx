@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { usePreferences } from '../context/PreferencesContext';
 import { useAuth } from '../context/AuthContext';
 import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage, deleteProfileImage } from '../api/auth';
@@ -8,7 +9,7 @@ import { gravatarUrl } from '../utils/gravatar';
 
 export default function SettingsPage() {
   const { theme, setTheme, timezone, setTimezone, defaultView, setDefaultView } = usePreferences();
-  const { user, updateProfileImage, updateUsername } = useAuth();
+  const { user, isAdmin, updateProfileImage, updateUsername } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [username, setUsername] = useState(user?.username ?? '');
@@ -165,7 +166,10 @@ export default function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <h1>Settings</h1>
+      <div className="settings-page-header">
+        <h1>Settings</h1>
+        {isAdmin && <Link to="/admin" className="btn btn-sm">Admin Panel</Link>}
+      </div>
 
       <form className="settings-form" onSubmit={handleSaveAccount}>
         <fieldset className="watch-form-group">
