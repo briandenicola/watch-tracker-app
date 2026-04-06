@@ -83,6 +83,19 @@
   .app-header {
     position: relative;
   }
+
+  /* When bottom bar is present, hide the global hamburger/nav */
+  .pwa-app-header .hamburger {
+    display: none;
+  }
+
+  .pwa-app-header nav {
+    display: none !important;
+  }
+
+  .container {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .app-title {
@@ -115,6 +128,16 @@
 
 .avatar:hover {
   border-color: #fff;
+}
+
+/* PWA title bar avatar */
+.pwa-title-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .btn {
@@ -328,6 +351,75 @@
   background: var(--input-bg);
 }
 
+/* PWA logout button */
+.pwa-logout-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+/* PWA Bottom Tab Bar */
+.pwa-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  padding: 0.4rem 0;
+  padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
+}
+
+.pwa-tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.4rem 0;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-tab-item.active {
+  color: var(--accent);
+}
+
+.pwa-tab-add-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.pwa-tab-add {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: 4px solid var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-35%);
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-tab-add:active {
+  transform: translateY(-35%) scale(0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Pull to refresh */
 .pull-to-refresh {
   touch-action: pan-y;
@@ -518,8 +610,8 @@
 }
 
 .swipe-gallery-slide .watch-card-image {
-  height: calc(100dvh - 160px);
-  max-height: 720px;
+  height: calc(100dvh - 240px);
+  max-height: 640px;
   object-fit: contain;
   background: var(--bg-surface);
   border-radius: 12px;

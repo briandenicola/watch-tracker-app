@@ -23,7 +23,7 @@ function formatDate(value?: string | null) {
 
 export default function WatchListPage() {
   const { defaultView } = usePreferences();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isPwa = useIsPwa();
   const [searchParams] = useSearchParams();
   const [watches, setWatches] = useState<Watch[]>([]);
@@ -33,6 +33,10 @@ export default function WatchListPage() {
   const [brandFilter, setBrandFilter] = useState('');
   const [bandTypeFilter, setBandTypeFilter] = useState('');
   const [showWishList, setShowWishList] = useState(searchParams.has('wishlist'));
+
+  useEffect(() => {
+    setShowWishList(searchParams.has('wishlist'));
+  }, [searchParams]);
   const [sort, setSort] = useState<SortOption>('dateAdded');
   const [gallerySortDir, setGallerySortDir] = useState<SortDir>('desc');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -182,11 +186,6 @@ export default function WatchListPage() {
             {menuOpen && (
               <div className="pwa-popover">
                 <div className="pwa-popover-section">
-                  <Link to="/watches/new" className="btn pwa-popover-btn" onClick={() => setMenuOpen(false)}>Add Watch</Link>
-                  <Link to="/wishlist/new" className="btn pwa-popover-btn" onClick={() => setMenuOpen(false)}>Add to Wish List</Link>
-                </div>
-
-                <div className="pwa-popover-section">
                   <label className="pwa-popover-label">View</label>
                   <div className="view-toggle">
                     <button
@@ -210,13 +209,6 @@ export default function WatchListPage() {
                     <option value="">All Band Types</option>
                     {bandTypes.map((bt) => <option key={bt} value={bt}>{bt}</option>)}
                   </select>
-                  <button
-                    className={`btn btn-sm pwa-popover-btn${showWishList ? ' active' : ''}`}
-                    onClick={() => { setShowWishList((v) => !v); setVisibleCount(PAGE_SIZE); }}
-                    type="button"
-                  >
-                    Wish List
-                  </button>
                 </div>
 
                 {viewMode === 'gallery' && (
@@ -235,6 +227,12 @@ export default function WatchListPage() {
                     </div>
                   </div>
                 )}
+
+                <div className="pwa-popover-section">
+                  <button className="btn pwa-popover-btn pwa-logout-btn" onClick={() => { setMenuOpen(false); logout(); }}>
+                    Log Out
+                  </button>
+                </div>
               </div>
             )}
           </div>

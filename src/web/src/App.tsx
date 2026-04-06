@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
+import PwaBottomBar from './components/PwaBottomBar';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import SetupPage from './pages/SetupPage';
@@ -16,33 +17,46 @@ import EditWishListPage from './pages/EditWishListPage';
 import SettingsModal from './components/SettingsModal';
 import { useAuth } from './context/AuthContext';
 import { gravatarUrl } from './utils/gravatar';
+import useIsPwa from './hooks/useIsPwa';
 import './App.css';
 
 function App() {
   const { user, isAdmin, needsSetup, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const isPwa = useIsPwa();
 
   if (needsSetup === null) return <p>Loading…</p>;
 
   return (
     <BrowserRouter>
       {user && !needsSetup && (
-        <header className="app-header">
+        <header className={`app-header${isPwa ? ' pwa-app-header' : ''}`}>
           <div className="app-header-left">
+            {isPwa && (
+              <img
+                src={user.profileImage || gravatarUrl(user.email, 64)}
+                alt={user.username}
+                className="pwa-title-avatar"
+              />
+            )}
             <Link to="/" className="app-title">⌚ Watch Tracker</Link>
-            <button className="hamburger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
-              <span /><span /><span />
-            </button>
+            {!isPwa && (
+              <button className="hamburger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
+                <span /><span /><span />
+              </button>
+            )}
           </div>
-          <nav className={menuOpen ? 'nav-open' : ''}>
-            {isAdmin && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
-            <Link to="/stats" className="nav-link" onClick={() => setMenuOpen(false)}>Stats</Link>
-            <button className="nav-avatar" title={user.username} onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
-              <img src={user.profileImage || gravatarUrl(user.email, 128)} alt={user.username} className="avatar" />
-            </button>
-            <button onClick={() => { setMenuOpen(false); logout(); }}>Logout</button>
-          </nav>
+          {!isPwa && (
+            <nav className={menuOpen ? 'nav-open' : ''}>
+              {isAdmin && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
+              <Link to="/stats" className="nav-link" onClick={() => setMenuOpen(false)}>Stats</Link>
+              <button className="nav-avatar" title={user.username} onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
+                <img src={user.profileImage || gravatarUrl(user.email, 128)} alt={user.username} className="avatar" />
+              </button>
+              <button onClick={() => { setMenuOpen(false); logout(); }}>Logout</button>
+            </nav>
+          )}
         </header>
       )}
       <main className="container">
@@ -74,6 +88,9 @@ function App() {
         </Routes>
       </main>
       {user && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
+      {user && !needsSetup && isPwa && (
+        <PwaBottomBar onOpenSettings={() => setSettingsOpen(true)} />
+      )}
     </BrowserRouter>
   );
 }
