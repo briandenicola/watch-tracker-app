@@ -166,8 +166,9 @@ export default function WatchListPage() {
     tableSort === field ? (tableSortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
   const isWishList = location.search.includes('wishlist');
+  const pwaTitle = isWishList ? 'Watch Tracker — Wish List' : '';
   const title = isWishList
-    ? (user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Wish List` : 'My Wish List')
+    ? 'Watch Tracker — Wish List'
     : (user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches');
 
   if (loading) return <p>Loading…</p>;
@@ -237,6 +238,8 @@ export default function WatchListPage() {
             </div>
           )}
         </div>
+
+        {isWishList && <h1>{pwaTitle}</h1>}
 
         <PullToRefresh onRefresh={handleRefresh}>
           {baseFiltered.length === 0 ? (
