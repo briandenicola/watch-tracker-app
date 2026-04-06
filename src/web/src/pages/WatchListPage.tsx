@@ -165,7 +165,10 @@ export default function WatchListPage() {
   const sortIndicator = (field: TableSortField) =>
     tableSort === field ? (tableSortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
-  const title = user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches';
+  const isWishList = location.search.includes('wishlist');
+  const title = isWishList
+    ? (user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Wish List` : 'My Wish List')
+    : (user?.username ? `${user.username.charAt(0).toUpperCase() + user.username.slice(1)}'s Watches` : 'My Watches');
 
   if (loading) return <p>Loading…</p>;
 

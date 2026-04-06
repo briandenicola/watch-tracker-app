@@ -33,8 +33,8 @@ export default function PwaBottomBar() {
       <div className="pwa-tab-add-wrapper">
         <button
           className="pwa-tab-add"
-          onClick={() => navigate('/watches/new')}
-          aria-label="Add Watch"
+          onClick={() => navigate(isWishList ? '/wishlist/new' : '/watches/new')}
+          aria-label={isWishList ? 'Add to Wish List' : 'Add Watch'}
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" />
