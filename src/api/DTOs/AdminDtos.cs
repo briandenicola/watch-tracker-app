@@ -23,3 +23,8 @@ public class AppSettingDto
     public required string Key { get; set; }
     public required string Value { get; set; }
 }
+
+public class OllamaUrlDto
+{
+    public required string Url { get; set; }
+}

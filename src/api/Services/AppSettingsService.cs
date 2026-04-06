@@ -12,6 +12,9 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string LockoutDurationMinutes = "LockoutDurationMinutes";
         public const string AiAnalysisPrompt = "AiAnalysisPrompt";
         public const string LogLevel = "LogLevel";
+        public const string AiProvider = "AiProvider";
+        public const string OllamaUrl = "OllamaUrl";
+        public const string OllamaModel = "OllamaModel";
     }
 
     private static readonly Dictionary<string, string> Defaults = new()
@@ -19,7 +22,10 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.MaxFailedAttempts] = "5",
         [Keys.LockoutDurationMinutes] = "15",
         [Keys.LogLevel] = "Information",
-        [Keys.AiAnalysisPrompt] = "You are a watch expert. Analyze this watch image and provide a detailed description including the brand, model (if identifiable), movement type, case material, approximate case size, dial color, and any notable features or complications. Be concise but informative."
+        [Keys.AiAnalysisPrompt] = "You are a watch expert. Analyze this watch image and provide a detailed description including the brand, model (if identifiable), movement type, case material, approximate case size, dial color, and any notable features or complications. Be concise but informative.",
+        [Keys.AiProvider] = "Anthropic",
+        [Keys.OllamaUrl] = "http://localhost:11434",
+        [Keys.OllamaModel] = ""
     };
 
     public async Task<string> GetAsync(string key, string defaultValue = "")

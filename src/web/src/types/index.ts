@@ -109,3 +109,7 @@ export interface AppSettingDto {
   key: string;
   value: string;
 }
+
+export interface OllamaModel {
+  name: string;
+}

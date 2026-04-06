@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { getUsers, unlockUser, resetUserPassword, getSettings, updateSettings } from '../api/admin';
+import { getUsers, unlockUser, resetUserPassword, getSettings, updateSettings, getOllamaModels } from '../api/admin';
 import type { UserDto } from '../types';
 
 type Tab = 'users' | 'settings';
@@ -117,10 +117,32 @@ function SettingsPanel() {
   const [saved, setSaved] = useState(false);
   const [resettingKey, setResettingKey] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
+  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [ollamaLoading, setOllamaLoading] = useState(false);
+  const [ollamaError, setOllamaError] = useState('');
 
   useEffect(() => {
-    getSettings().then(setSettings).finally(() => setLoading(false));
+    getSettings().then((s) => {
+      setSettings(s);
+      if (s['AiProvider'] === 'Ollama' && s['OllamaUrl']) {
+        loadOllamaModels(s['OllamaUrl']);
+      }
+    }).finally(() => setLoading(false));
   }, []);
+
+  async function loadOllamaModels(url: string) {
+    setOllamaLoading(true);
+    setOllamaError('');
+    try {
+      const models = await getOllamaModels(url);
+      setOllamaModels(models);
+    } catch {
+      setOllamaError('Failed to connect to Ollama. Check the URL and try again.');
+      setOllamaModels([]);
+    } finally {
+      setOllamaLoading(false);
+    }
+  }
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
@@ -140,6 +162,7 @@ function SettingsPanel() {
 
   if (loading) return <p>Loading…</p>;
 
+  const provider = settings['AiProvider'] ?? 'Anthropic';
   const maskedKey = settings['AnthropicApiKey'] ?? '';
 
   return (
@@ -147,24 +170,90 @@ function SettingsPanel() {
       <fieldset className="watch-form-group">
         <legend>AI Configuration</legend>
         <label>
-          Anthropic API Key
-          {!resettingKey ? (
-            <div className="settings-inline-field">
-              <input type="text" value={maskedKey} disabled />
-              <button type="button" className="btn btn-sm" onClick={() => setResettingKey(true)}>Reset</button>
-            </div>
-          ) : (
-            <div className="settings-inline-field">
-              <input
-                type="password"
-                value={newApiKey}
-                onChange={(e) => setNewApiKey(e.target.value)}
-                placeholder="sk-ant-..."
-              />
-              <button type="button" className="btn btn-sm" onClick={() => { setResettingKey(false); setNewApiKey(''); }}>Cancel</button>
-            </div>
-          )}
+          AI Provider
+          <select
+            value={provider}
+            onChange={(e) => {
+              setSettings({ ...settings, AiProvider: e.target.value });
+              if (e.target.value === 'Ollama' && settings['OllamaUrl']) {
+                loadOllamaModels(settings['OllamaUrl']);
+              }
+            }}
+          >
+            <option value="Anthropic">Anthropic</option>
+            <option value="Ollama">Ollama</option>
+          </select>
         </label>
+
+        {provider === 'Anthropic' && (
+          <label>
+            Anthropic API Key
+            {!resettingKey ? (
+              <div className="settings-inline-field">
+                <input type="text" value={maskedKey} disabled />
+                <button type="button" className="btn btn-sm" onClick={() => setResettingKey(true)}>Reset</button>
+              </div>
+            ) : (
+              <div className="settings-inline-field">
+                <input
+                  type="password"
+                  value={newApiKey}
+                  onChange={(e) => setNewApiKey(e.target.value)}
+                  placeholder="sk-ant-..."
+                />
+                <button type="button" className="btn btn-sm" onClick={() => { setResettingKey(false); setNewApiKey(''); }}>Cancel</button>
+              </div>
+            )}
+          </label>
+        )}
+
+        {provider === 'Ollama' && (
+          <>
+            <label>
+              Ollama URL
+              <div className="settings-inline-field">
+                <input
+                  type="url"
+                  value={settings['OllamaUrl'] ?? 'http://localhost:11434'}
+                  onChange={(e) => setSettings({ ...settings, OllamaUrl: e.target.value })}
+                  placeholder="http://localhost:11434"
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={ollamaLoading}
+                  onClick={() => loadOllamaModels(settings['OllamaUrl'] ?? 'http://localhost:11434')}
+                >
+                  {ollamaLoading ? 'Loading…' : 'Load Models'}
+                </button>
+              </div>
+              {ollamaError && <small className="error">{ollamaError}</small>}
+            </label>
+            <label>
+              Ollama Model
+              {ollamaModels.length > 0 ? (
+                <select
+                  value={settings['OllamaModel'] ?? ''}
+                  onChange={(e) => setSettings({ ...settings, OllamaModel: e.target.value })}
+                >
+                  <option value="">Select a model…</option>
+                  {ollamaModels.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={settings['OllamaModel'] ?? ''}
+                  onChange={(e) => setSettings({ ...settings, OllamaModel: e.target.value })}
+                  placeholder="e.g. llava, llava:13b"
+                />
+              )}
+              <small>Use a vision-capable model (e.g. llava, llava:13b, bakllava).</small>
+            </label>
+          </>
+        )}
+
         <label>
           AI Analysis Prompt
           <textarea

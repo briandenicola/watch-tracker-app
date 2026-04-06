@@ -11,6 +11,7 @@ namespace WatchTracker.Api.Controllers;
 public class AdminController(
     IAdminService adminService,
     IAppSettingsService appSettings,
+    IWatchAnalysisService analysisService,
     DynamicConfigurationProvider dynamicConfig,
     ILogger<AdminController> logger) : ControllerBase
 {
@@ -69,5 +70,19 @@ public class AdminController(
         }
 
         return NoContent();
+    }
+
+    [HttpPost("ollama/models")]
+    public async Task<ActionResult<List<string>>> GetOllamaModels([FromBody] OllamaUrlDto dto)
+    {
+        try
+        {
+            var models = await analysisService.GetOllamaModelsAsync(dto.Url);
+            return Ok(models);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

@@ -22,3 +22,8 @@ export async function getSettings(): Promise<Record<string, string>> {
 export async function updateSettings(settings: AppSettingDto[]): Promise<void> {
   await client.put('/admin/settings', settings);
 }
+
+export async function getOllamaModels(url: string): Promise<string[]> {
+  const { data } = await client.post<string[]>('/admin/ollama/models', { url });
+  return data;
+}

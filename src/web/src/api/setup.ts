@@ -9,7 +9,10 @@ export interface SetupData {
   username: string;
   email: string;
   password: string;
+  aiProvider?: string;
   anthropicApiKey?: string;
+  ollamaUrl?: string;
+  ollamaModel?: string;
   aiAnalysisPrompt?: string;
 }
 

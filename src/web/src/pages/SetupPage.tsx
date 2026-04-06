@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { completeSetup } from '../api/setup';
+import { getOllamaModels } from '../api/admin';
 import { useAuth } from '../context/AuthContext';
 
 type Step = 'admin' | 'settings' | 'done';
@@ -18,7 +19,13 @@ export default function SetupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   // Settings fields
+  const [aiProvider, setAiProvider] = useState('Anthropic');
   const [anthropicApiKey, setAnthropicApiKey] = useState('');
+  const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
+  const [ollamaModel, setOllamaModel] = useState('');
+  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [ollamaLoading, setOllamaLoading] = useState(false);
+  const [ollamaError, setOllamaError] = useState('');
   const [aiAnalysisPrompt, setAiAnalysisPrompt] = useState('');
 
   function handleAdminNext(e: FormEvent) {
@@ -35,6 +42,20 @@ export default function SetupPage() {
     setStep('settings');
   }
 
+  async function loadOllamaModels(url: string) {
+    setOllamaLoading(true);
+    setOllamaError('');
+    try {
+      const models = await getOllamaModels(url);
+      setOllamaModels(models);
+    } catch {
+      setOllamaError('Failed to connect to Ollama. Check the URL and try again.');
+      setOllamaModels([]);
+    } finally {
+      setOllamaLoading(false);
+    }
+  }
+
   async function handleFinish(e: FormEvent) {
     e.preventDefault();
     setError('');
@@ -43,7 +64,10 @@ export default function SetupPage() {
         username,
         email,
         password,
-        ...(anthropicApiKey && { anthropicApiKey }),
+        aiProvider,
+        ...(aiProvider === 'Anthropic' && anthropicApiKey && { anthropicApiKey }),
+        ...(aiProvider === 'Ollama' && ollamaUrl && { ollamaUrl }),
+        ...(aiProvider === 'Ollama' && ollamaModel && { ollamaModel }),
         ...(aiAnalysisPrompt && { aiAnalysisPrompt }),
       });
       setTokenAndUser(res.token, { username: res.username, email: res.email, role: res.role });
@@ -100,15 +124,71 @@ export default function SetupPage() {
         <form className="setup-form" onSubmit={handleFinish}>
           <p>Configure optional settings. You can change these later in the admin panel.</p>
           <label>
-            Anthropic API Key
-            <input
-              type="password"
-              value={anthropicApiKey}
-              onChange={(e) => setAnthropicApiKey(e.target.value)}
-              placeholder="sk-ant-..."
-            />
-            <small>Required for AI watch analysis. Can be added later.</small>
+            AI Provider
+            <select value={aiProvider} onChange={(e) => setAiProvider(e.target.value)}>
+              <option value="Anthropic">Anthropic</option>
+              <option value="Ollama">Ollama</option>
+            </select>
           </label>
+
+          {aiProvider === 'Anthropic' && (
+            <label>
+              Anthropic API Key
+              <input
+                type="password"
+                value={anthropicApiKey}
+                onChange={(e) => setAnthropicApiKey(e.target.value)}
+                placeholder="sk-ant-..."
+              />
+              <small>Required for AI watch analysis. Can be added later.</small>
+            </label>
+          )}
+
+          {aiProvider === 'Ollama' && (
+            <>
+              <label>
+                Ollama URL
+                <div className="settings-inline-field">
+                  <input
+                    type="url"
+                    value={ollamaUrl}
+                    onChange={(e) => setOllamaUrl(e.target.value)}
+                    placeholder="http://localhost:11434"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={ollamaLoading}
+                    onClick={() => loadOllamaModels(ollamaUrl)}
+                  >
+                    {ollamaLoading ? 'Loading…' : 'Load Models'}
+                  </button>
+                </div>
+                {ollamaError && <small className="error">{ollamaError}</small>}
+                <small>URL of your Ollama instance. Click "Load Models" to validate.</small>
+              </label>
+              <label>
+                Ollama Model
+                {ollamaModels.length > 0 ? (
+                  <select value={ollamaModel} onChange={(e) => setOllamaModel(e.target.value)}>
+                    <option value="">Select a model…</option>
+                    {ollamaModels.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={ollamaModel}
+                    onChange={(e) => setOllamaModel(e.target.value)}
+                    placeholder="e.g. llava, llava:13b"
+                  />
+                )}
+                <small>Use a vision-capable model (e.g. llava, llava:13b, bakllava).</small>
+              </label>
+            </>
+          )}
+
           <label>
             AI Analysis Prompt
             <textarea

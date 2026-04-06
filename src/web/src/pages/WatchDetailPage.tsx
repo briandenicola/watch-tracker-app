@@ -45,7 +45,7 @@ export default function WatchDetailPage() {
       const analysis = await analyzeWatch(watch.id);
       setPendingAnalysis(analysis);
     } catch {
-      setAnalyzeError('Analysis failed. Make sure the Anthropic API key is configured.');
+      setAnalyzeError('Analysis failed. Check AI provider configuration in the admin panel.');
     } finally {
       setAnalyzing(false);
     }
