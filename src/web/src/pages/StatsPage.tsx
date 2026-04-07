@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getWearLogs, deleteWearLog, updateWearLogDate } from '../api/watches';
+import { getWearLogs, deleteWearLog, updateWearLogDate, getWatches } from '../api/watches';
 import { usePreferences } from '../context/PreferencesContext';
 import useIsPwa from '../hooks/useIsPwa';
-import type { WearLog } from '../types';
+import type { WearLog, Watch } from '../types';
 
 const CLOUD_VAR_COUNT = 10;
 
@@ -17,16 +17,27 @@ interface CloudWord {
 
 export default function StatsPage() {
   const [logs, setLogs] = useState<WearLog[]>([]);
+  const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
   const { timezone } = usePreferences();
   const isPwa = useIsPwa();
 
   useEffect(() => {
-    getWearLogs()
-      .then(setLogs)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      getWearLogs().catch(() => [] as WearLog[]),
+      getWatches().catch(() => [] as Watch[]),
+    ]).then(([wearLogs, allWatches]) => {
+      setLogs(wearLogs);
+      setWatches(allWatches);
+    }).finally(() => setLoading(false));
   }, []);
+
+  const topExpensive = useMemo(() => {
+    return watches
+      .filter((w) => !w.isWishList && w.purchasePrice != null && w.purchasePrice > 0)
+      .sort((a, b) => (b.purchasePrice ?? 0) - (a.purchasePrice ?? 0))
+      .slice(0, 5);
+  }, [watches]);
 
   const words: CloudWord[] = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -129,6 +140,21 @@ export default function StatsPage() {
           <span className="stats-summary-label">Watches Worn</span>
         </div>
       </div>
+
+      {topExpensive.length > 0 && (
+        <section className="stats-section">
+          <h2>Most Valuable</h2>
+          <div className="top-expensive-list">
+            {topExpensive.map((w, i) => (
+              <Link key={w.id} to={`/watches/${w.id}`} className="top-expensive-item">
+                <span className="top-expensive-rank">#{i + 1}</span>
+                <span className="top-expensive-name">{w.brand} {w.model}</span>
+                <span className="top-expensive-price">${w.purchasePrice!.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="stats-section">
         <h2>Wear Cloud</h2>

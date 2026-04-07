@@ -1777,6 +1777,49 @@ h1, h2, h3 {
   font-style: italic;
 }
 
+/* Top expensive ranking */
+.top-expensive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.top-expensive-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.top-expensive-item:hover {
+  background: var(--bg-hover);
+}
+
+.top-expensive-rank {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+  min-width: 2rem;
+}
+
+.top-expensive-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.top-expensive-price {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 /* Word cloud */
 .word-cloud {
   display: flex;
