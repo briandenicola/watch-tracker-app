@@ -70,6 +70,7 @@ export type UpdateWatch = CreateWatch;
 
 export interface AuthResponse {
   token: string;
+  refreshToken?: string;
   username: string;
   email: string;
   role: string;

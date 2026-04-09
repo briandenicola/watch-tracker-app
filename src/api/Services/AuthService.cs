@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -28,7 +29,9 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        return BuildResponse(user);
+        var response = BuildResponse(user);
+        response.RefreshToken = await CreateRefreshTokenAsync(user.Id);
+        return response;
     }
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
@@ -70,19 +73,54 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         user.LockoutEnd = null;
         await context.SaveChangesAsync();
 
-        return BuildResponse(user);
+        var response = BuildResponse(user);
+        response.RefreshToken = await CreateRefreshTokenAsync(user.Id);
+        return response;
+    }
+
+    public async Task<AuthResponseDto?> RefreshAsync(string refreshToken)
+    {
+        var hash = HashToken(refreshToken);
+        var stored = await context.RefreshTokens
+            .Include(rt => rt.User)
+            .FirstOrDefaultAsync(rt => rt.TokenHash == hash);
+
+        if (stored is null || !stored.IsActive)
+            return null;
+
+        // Revoke old token (rotation)
+        stored.RevokedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+
+        // Issue new token pair
+        var response = BuildResponse(stored.User);
+        response.RefreshToken = await CreateRefreshTokenAsync(stored.UserId);
+        return response;
+    }
+
+    public async Task RevokeRefreshTokenAsync(string refreshToken)
+    {
+        var hash = HashToken(refreshToken);
+        var stored = await context.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.TokenHash == hash);
+
+        if (stored is not null)
+        {
+            stored.RevokedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+        }
     }
 
     private AuthResponseDto BuildResponse(User user) => new()
     {
-        Token = GenerateToken(user),
+        Token = GenerateAccessToken(user),
         Username = user.Username,
         Email = user.Email,
         Role = user.Role.ToString(),
         ProfileImage = user.ProfileImage is not null ? $"/uploads/{user.ProfileImage}" : null
     };
 
-    private string GenerateToken(User user)
+    private string GenerateAccessToken(User user)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!));
@@ -100,11 +138,32 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
             issuer: configuration["Jwt:Issuer"],
             audience: configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
+            expires: DateTime.UtcNow.AddMinutes(15),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    private async Task<string> CreateRefreshTokenAsync(int userId)
+    {
+        var tokenBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(tokenBytes);
+        var token = Convert.ToBase64String(tokenBytes);
+
+        context.RefreshTokens.Add(new RefreshToken
+        {
+            TokenHash = HashToken(token),
+            UserId = userId,
+            ExpiresAt = DateTime.UtcNow.AddDays(90),
+            CreatedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+        return token;
+    }
+
+    private static string HashToken(string token) =>
+        Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
     public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto dto)
     {

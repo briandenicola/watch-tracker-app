@@ -16,10 +16,16 @@ public class LoginDto
 public class AuthResponseDto
 {
     public required string Token { get; set; }
+    public string? RefreshToken { get; set; }
     public required string Username { get; set; }
     public required string Email { get; set; }
     public required string Role { get; set; }
     public string? ProfileImage { get; set; }
+}
+
+public class RefreshTokenRequestDto
+{
+    public required string RefreshToken { get; set; }
 }
 
 public class ChangePasswordDto

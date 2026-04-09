@@ -4,12 +4,14 @@ import type { AuthResponse, LoginCredentials, RegisterCredentials } from '../typ
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   const { data } = await client.post<AuthResponse>('/auth/login', credentials);
   localStorage.setItem('token', data.token);
+  if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
   return data;
 }
 
 export async function register(credentials: RegisterCredentials): Promise<AuthResponse> {
   const { data } = await client.post<AuthResponse>('/auth/register', credentials);
   localStorage.setItem('token', data.token);
+  if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
   return data;
 }
 
@@ -37,4 +39,24 @@ export async function uploadProfileImage(file: File): Promise<string> {
 
 export async function deleteProfileImage(): Promise<void> {
   await client.delete('/auth/profile-image');
+}
+
+export async function refreshToken(): Promise<AuthResponse | null> {
+  const rt = localStorage.getItem('refreshToken');
+  if (!rt) return null;
+  const { data } = await client.post<AuthResponse>('/auth/refresh', { refreshToken: rt });
+  localStorage.setItem('token', data.token);
+  if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+  return data;
+}
+
+export async function serverLogout(): Promise<void> {
+  const rt = localStorage.getItem('refreshToken');
+  if (rt) {
+    try {
+      await client.post('/auth/logout', { refreshToken: rt });
+    } catch {
+      // Best-effort — don't block logout if server is unreachable
+    }
+  }
 }

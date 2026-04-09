@@ -1,7 +1,6 @@
 # .NET
 src/api/bin/
 src/api/obj/
-src/api/Migrations/
 *.db
 
 # Node

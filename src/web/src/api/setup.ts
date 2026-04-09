@@ -24,5 +24,6 @@ export async function getSetupStatus(): Promise<SetupStatus> {
 export async function completeSetup(setup: SetupData): Promise<AuthResponse> {
   const { data } = await client.post<AuthResponse>('/setup', setup);
   localStorage.setItem('token', data.token);
+  if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
   return data;
 }

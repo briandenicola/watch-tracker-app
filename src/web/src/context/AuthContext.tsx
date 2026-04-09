@@ -17,8 +17,8 @@ interface AuthContextType {
   needsSetup: boolean | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
-  logout: () => void;
-  setTokenAndUser: (token: string, user: AuthUser) => void;
+  logout: () => Promise<void>;
+  setTokenAndUser: (token: string, user: AuthUser, refreshToken?: string) => void;
   updateProfileImage: (profileImage: string | null) => void;
   updateUsername: (username: string) => void;
 }
@@ -72,14 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ username: res.username, email: res.email, role: res.role, profileImage: res.profileImage });
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await authApi.serverLogout();
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     setToken(null);
     setUser(null);
   }, []);
 
-  const setTokenAndUser = useCallback((newToken: string, newUser: AuthUser) => {
+  const setTokenAndUser = useCallback((newToken: string, newUser: AuthUser, newRefreshToken?: string) => {
     localStorage.setItem('token', newToken);
+    if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
     setToken(newToken);
     setUser(newUser);
     setNeedsSetup(false);

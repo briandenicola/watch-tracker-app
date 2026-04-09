@@ -24,6 +24,22 @@ public class AuthController(IAuthService authService) : ControllerBase
         return result is null ? Unauthorized("Invalid credentials.") : Ok(result);
     }
 
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponseDto>> Refresh(RefreshTokenRequestDto dto)
+    {
+        var result = await authService.RefreshAsync(dto.RefreshToken);
+        return result is null ? Unauthorized("Invalid or expired refresh token.") : Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshTokenRequestDto dto)
+    {
+        await authService.RevokeRefreshTokenAsync(dto.RefreshToken);
+        return NoContent();
+    }
+
     [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)

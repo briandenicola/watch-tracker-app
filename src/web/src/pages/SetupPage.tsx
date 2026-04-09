@@ -70,7 +70,7 @@ export default function SetupPage() {
         ...(aiProvider === 'Ollama' && ollamaModel && { ollamaModel }),
         ...(aiAnalysisPrompt && { aiAnalysisPrompt }),
       });
-      setTokenAndUser(res.token, { username: res.username, email: res.email, role: res.role });
+      setTokenAndUser(res.token, { username: res.username, email: res.email, role: res.role }, res.refreshToken);
       setStep('done');
     } catch {
       setError('Setup failed. Please try again.');
