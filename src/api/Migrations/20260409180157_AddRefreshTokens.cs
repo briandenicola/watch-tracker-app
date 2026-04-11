@@ -11,61 +11,104 @@ namespace WatchTracker.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "AppSettings",
-                columns: table => new
-                {
-                    Key = table.Column<string>(type: "TEXT", nullable: false),
-                    Value = table.Column<string>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AppSettings", x => x.Key);
-                });
+            // Use IF NOT EXISTS for all pre-existing tables so this migration
+            // works on both fresh databases and existing deployments that were
+            // created before migrations were tracked in git.
+            migrationBuilder.Sql("""
+                CREATE TABLE IF NOT EXISTS "AppSettings" (
+                    "Key" TEXT NOT NULL CONSTRAINT "PK_AppSettings" PRIMARY KEY,
+                    "Value" TEXT NOT NULL
+                );
+            """);
 
-            migrationBuilder.CreateTable(
-                name: "Users",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Username = table.Column<string>(type: "TEXT", nullable: false),
-                    Email = table.Column<string>(type: "TEXT", nullable: false),
-                    PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
-                    ProfileImage = table.Column<string>(type: "TEXT", nullable: true),
-                    Role = table.Column<string>(type: "TEXT", nullable: false),
-                    FailedLoginAttempts = table.Column<int>(type: "INTEGER", nullable: false),
-                    LockoutEnd = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Users", x => x.Id);
-                });
+            migrationBuilder.Sql("""
+                CREATE TABLE IF NOT EXISTS "Users" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_Users" PRIMARY KEY AUTOINCREMENT,
+                    "Username" TEXT NOT NULL,
+                    "Email" TEXT NOT NULL,
+                    "PasswordHash" TEXT NOT NULL,
+                    "ProfileImage" TEXT NULL,
+                    "Role" TEXT NOT NULL,
+                    "FailedLoginAttempts" INTEGER NOT NULL,
+                    "LockoutEnd" TEXT NULL,
+                    "CreatedAt" TEXT NOT NULL
+                );
+            """);
 
-            migrationBuilder.CreateTable(
-                name: "ApiKeys",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    KeyHash = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    LastUsedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ApiKeys", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ApiKeys_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+            migrationBuilder.Sql("""
+                CREATE TABLE IF NOT EXISTS "ApiKeys" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_ApiKeys" PRIMARY KEY AUTOINCREMENT,
+                    "UserId" INTEGER NOT NULL,
+                    "Name" TEXT NOT NULL,
+                    "KeyHash" TEXT NOT NULL,
+                    "CreatedAt" TEXT NOT NULL,
+                    "LastUsedAt" TEXT NULL,
+                    CONSTRAINT "FK_ApiKeys_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+                );
+            """);
 
+            migrationBuilder.Sql("""
+                CREATE TABLE IF NOT EXISTS "Watches" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_Watches" PRIMARY KEY AUTOINCREMENT,
+                    "Brand" TEXT NOT NULL,
+                    "Model" TEXT NOT NULL,
+                    "MovementType" TEXT NOT NULL,
+                    "CaseSizeMm" REAL NULL,
+                    "BandType" TEXT NULL,
+                    "BandColor" TEXT NULL,
+                    "PurchaseDate" TEXT NULL,
+                    "PurchasePrice" decimal(18,2) NULL,
+                    "Notes" TEXT NULL,
+                    "AiAnalysis" TEXT NULL,
+                    "LastWornDate" TEXT NULL,
+                    "TimesWorn" INTEGER NOT NULL,
+                    "CrystalType" TEXT NULL,
+                    "CaseShape" TEXT NULL,
+                    "CrownType" TEXT NULL,
+                    "CalendarType" TEXT NULL,
+                    "CountryOfOrigin" TEXT NULL,
+                    "WaterResistance" TEXT NULL,
+                    "LugWidthMm" REAL NULL,
+                    "DialColor" TEXT NULL,
+                    "BezelType" TEXT NULL,
+                    "PowerReserveHours" INTEGER NULL,
+                    "SerialNumber" TEXT NULL,
+                    "BatteryType" TEXT NULL,
+                    "LinkUrl" TEXT NULL,
+                    "LinkText" TEXT NULL,
+                    "IsWishList" INTEGER NOT NULL,
+                    "UserId" INTEGER NOT NULL,
+                    "CreatedAt" TEXT NOT NULL,
+                    "UpdatedAt" TEXT NOT NULL,
+                    CONSTRAINT "FK_Watches_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+                );
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE TABLE IF NOT EXISTS "WatchImages" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_WatchImages" PRIMARY KEY AUTOINCREMENT,
+                    "WatchId" INTEGER NOT NULL,
+                    "FileName" TEXT NOT NULL,
+                    "ContentType" TEXT NOT NULL,
+                    "SortOrder" INTEGER NOT NULL,
+                    "CreatedAt" TEXT NOT NULL,
+                    CONSTRAINT "FK_WatchImages_Watches_WatchId" FOREIGN KEY ("WatchId") REFERENCES "Watches" ("Id") ON DELETE CASCADE
+                );
+            """);
+
+            migrationBuilder.Sql("""
+                CREATE TABLE IF NOT EXISTS "WearLogs" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_WearLogs" PRIMARY KEY AUTOINCREMENT,
+                    "WatchId" INTEGER NOT NULL,
+                    "UserId" INTEGER NOT NULL,
+                    "WornDate" TEXT NOT NULL,
+                    "CreatedAt" TEXT NOT NULL,
+                    CONSTRAINT "FK_WearLogs_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE,
+                    CONSTRAINT "FK_WearLogs_Watches_WatchId" FOREIGN KEY ("WatchId") REFERENCES "Watches" ("Id") ON DELETE CASCADE
+                );
+            """);
+
+            // RefreshTokens is the only truly new table
             migrationBuilder.CreateTable(
                 name: "RefreshTokens",
                 columns: table => new
@@ -89,115 +132,8 @@ namespace WatchTracker.Api.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "Watches",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Brand = table.Column<string>(type: "TEXT", nullable: false),
-                    Model = table.Column<string>(type: "TEXT", nullable: false),
-                    MovementType = table.Column<string>(type: "TEXT", nullable: false),
-                    CaseSizeMm = table.Column<double>(type: "REAL", nullable: true),
-                    BandType = table.Column<string>(type: "TEXT", nullable: true),
-                    BandColor = table.Column<string>(type: "TEXT", nullable: true),
-                    PurchaseDate = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    PurchasePrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    Notes = table.Column<string>(type: "TEXT", nullable: true),
-                    AiAnalysis = table.Column<string>(type: "TEXT", nullable: true),
-                    LastWornDate = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    TimesWorn = table.Column<int>(type: "INTEGER", nullable: false),
-                    CrystalType = table.Column<string>(type: "TEXT", nullable: true),
-                    CaseShape = table.Column<string>(type: "TEXT", nullable: true),
-                    CrownType = table.Column<string>(type: "TEXT", nullable: true),
-                    CalendarType = table.Column<string>(type: "TEXT", nullable: true),
-                    CountryOfOrigin = table.Column<string>(type: "TEXT", nullable: true),
-                    WaterResistance = table.Column<string>(type: "TEXT", nullable: true),
-                    LugWidthMm = table.Column<double>(type: "REAL", nullable: true),
-                    DialColor = table.Column<string>(type: "TEXT", nullable: true),
-                    BezelType = table.Column<string>(type: "TEXT", nullable: true),
-                    PowerReserveHours = table.Column<int>(type: "INTEGER", nullable: true),
-                    SerialNumber = table.Column<string>(type: "TEXT", nullable: true),
-                    BatteryType = table.Column<string>(type: "TEXT", nullable: true),
-                    LinkUrl = table.Column<string>(type: "TEXT", nullable: true),
-                    LinkText = table.Column<string>(type: "TEXT", nullable: true),
-                    IsWishList = table.Column<bool>(type: "INTEGER", nullable: false),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Watches", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Watches_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "WatchImages",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    WatchId = table.Column<int>(type: "INTEGER", nullable: false),
-                    FileName = table.Column<string>(type: "TEXT", nullable: false),
-                    ContentType = table.Column<string>(type: "TEXT", nullable: false),
-                    SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WatchImages", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WatchImages_Watches_WatchId",
-                        column: x => x.WatchId,
-                        principalTable: "Watches",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "WearLogs",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    WatchId = table.Column<int>(type: "INTEGER", nullable: false),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    WornDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WearLogs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WearLogs_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_WearLogs_Watches_WatchId",
-                        column: x => x.WatchId,
-                        principalTable: "Watches",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ApiKeys_KeyHash",
-                table: "ApiKeys",
-                column: "KeyHash",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ApiKeys_UserId",
-                table: "ApiKeys",
-                column: "UserId");
+            migrationBuilder.Sql("""CREATE INDEX IF NOT EXISTS "IX_ApiKeys_KeyHash" ON "ApiKeys" ("KeyHash");""");
+            migrationBuilder.Sql("""CREATE INDEX IF NOT EXISTS "IX_ApiKeys_UserId" ON "ApiKeys" ("UserId");""");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_TokenHash",
@@ -210,31 +146,11 @@ namespace WatchTracker.Api.Migrations
                 table: "RefreshTokens",
                 column: "UserId");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Email",
-                table: "Users",
-                column: "Email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Watches_UserId",
-                table: "Watches",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WatchImages_WatchId",
-                table: "WatchImages",
-                column: "WatchId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WearLogs_UserId",
-                table: "WearLogs",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WearLogs_WatchId",
-                table: "WearLogs",
-                column: "WatchId");
+            migrationBuilder.Sql("""CREATE UNIQUE INDEX IF NOT EXISTS "IX_Users_Email" ON "Users" ("Email");""");
+            migrationBuilder.Sql("""CREATE INDEX IF NOT EXISTS "IX_Watches_UserId" ON "Watches" ("UserId");""");
+            migrationBuilder.Sql("""CREATE INDEX IF NOT EXISTS "IX_WatchImages_WatchId" ON "WatchImages" ("WatchId");""");
+            migrationBuilder.Sql("""CREATE INDEX IF NOT EXISTS "IX_WearLogs_UserId" ON "WearLogs" ("UserId");""");
+            migrationBuilder.Sql("""CREATE INDEX IF NOT EXISTS "IX_WearLogs_WatchId" ON "WearLogs" ("WatchId");""");
         }
 
         /// <inheritdoc />
