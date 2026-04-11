@@ -1820,6 +1820,33 @@ h1, h2, h3 {
   white-space: nowrap;
 }
 
+/* Neglected watches split */
+.neglected-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.neglected-split h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-muted);
+}
+
+.neglected-days {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .neglected-split {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Word cloud */
 .word-cloud {
   display: flex;

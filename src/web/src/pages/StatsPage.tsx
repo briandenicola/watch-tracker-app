@@ -39,6 +39,21 @@ export default function StatsPage() {
       .slice(0, 5);
   }, [watches]);
 
+  const { longestUnworn, neverWorn } = useMemo(() => {
+    const now = new Date();
+    const collection = watches.filter((w) => !w.isWishList);
+    const worn = collection
+      .filter((w) => w.lastWornDate)
+      .map((w) => ({
+        watch: w,
+        daysSince: Math.floor((now.getTime() - new Date(w.lastWornDate!).getTime()) / 86_400_000),
+      }))
+      .sort((a, b) => b.daysSince - a.daysSince)
+      .slice(0, 5);
+    const never = collection.filter((w) => !w.lastWornDate);
+    return { longestUnworn: worn, neverWorn: never };
+  }, [watches]);
+
   const words: CloudWord[] = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const log of logs) {
@@ -152,6 +167,40 @@ export default function StatsPage() {
                 <span className="top-expensive-price">${w.purchasePrice!.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </Link>
             ))}
+          </div>
+        </section>
+      )}
+
+      {(longestUnworn.length > 0 || neverWorn.length > 0) && (
+        <section className="stats-section">
+          <h2>Neglected Watches</h2>
+          <div className="neglected-split">
+            {longestUnworn.length > 0 && (
+              <div className="neglected-column">
+                <h3>Longest Since Worn</h3>
+                <div className="top-expensive-list">
+                  {longestUnworn.map((item, i) => (
+                    <Link key={item.watch.id} to={`/watches/${item.watch.id}`} className="top-expensive-item">
+                      <span className="top-expensive-rank">#{i + 1}</span>
+                      <span className="top-expensive-name">{item.watch.brand} {item.watch.model}</span>
+                      <span className="neglected-days">{item.daysSince}d ago</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {neverWorn.length > 0 && (
+              <div className="neglected-column">
+                <h3>Never Worn</h3>
+                <div className="top-expensive-list">
+                  {neverWorn.map((w) => (
+                    <Link key={w.id} to={`/watches/${w.id}`} className="top-expensive-item">
+                      <span className="top-expensive-name">{w.brand} {w.model}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}
