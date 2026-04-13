@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { usePreferences } from '../context/PreferencesContext';
 import { useAuth } from '../context/AuthContext';
 import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage, deleteProfileImage } from '../api/auth';
@@ -347,6 +348,12 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
               <p className="settings-hint">
                 Current time: {new Date().toLocaleTimeString('en-US', { timeZone: timezone, timeZoneName: 'short' })}
               </p>
+            </fieldset>
+
+            <fieldset className="watch-form-group">
+              <legend>Collection</legend>
+              <p className="settings-hint">Manage watches that have been retired from your active collection.</p>
+              <Link to="/retired" className="btn" onClick={onClose}>View Retired Watches</Link>
             </fieldset>
 
             <fieldset className="watch-form-group">

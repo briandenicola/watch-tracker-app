@@ -16,6 +16,7 @@ import SettingsPage from './pages/SettingsPage';
 import AddWishListPage from './pages/AddWishListPage';
 import EditWishListPage from './pages/EditWishListPage';
 import SettingsModal from './components/SettingsModal';
+import RetiredWatchesPage from './pages/RetiredWatchesPage';
 import { useAuth } from './context/AuthContext';
 import { gravatarUrl } from './utils/gravatar';
 import useIsPwa from './hooks/useIsPwa';
@@ -79,6 +80,7 @@ function App() {
                 <Route path="/watches/:id" element={<WatchDetailPage />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/retired" element={<RetiredWatchesPage />} />
                 <Route path="/wishlist/new" element={<AddWishListPage />} />
                 <Route path="/wishlist/:id/edit" element={<EditWishListPage />} />
               </Route>

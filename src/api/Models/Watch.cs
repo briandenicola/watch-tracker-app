@@ -30,6 +30,8 @@ public class Watch
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
     public bool IsWishList { get; set; }
+    public bool IsRetired { get; set; }
+    public DateTime? RetiredAt { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; } = null!;

@@ -4,7 +4,7 @@ namespace WatchTracker.Api.Services;
 
 public interface IWatchService
 {
-    Task<IEnumerable<WatchDto>> GetAllAsync(int userId);
+    Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeRetired = false);
     Task<WatchDto?> GetByIdAsync(int id, int userId);
     Task<WatchDto> CreateAsync(CreateWatchDto dto, int userId);
     Task<WatchDto?> UpdateAsync(int id, UpdateWatchDto dto, int userId);
@@ -13,4 +13,6 @@ public interface IWatchService
     Task<IEnumerable<WearLogDto>> GetWearLogsAsync(int userId);
     Task<bool> DeleteWearLogAsync(int logId, int userId);
     Task<bool> UpdateWearLogDateAsync(int logId, int userId, DateTime newDate);
+    Task<WatchDto?> RetireAsync(int id, int userId);
+    Task<WatchDto?> UnretireAsync(int id, int userId);
 }

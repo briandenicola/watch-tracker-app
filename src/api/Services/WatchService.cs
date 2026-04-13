@@ -7,11 +7,16 @@ namespace WatchTracker.Api.Services;
 
 public class WatchService(AppDbContext context) : IWatchService
 {
-    public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId)
+    public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeRetired = false)
     {
-        return await context.Watches
+        var query = context.Watches
             .Include(w => w.Images)
-            .Where(w => w.UserId == userId)
+            .Where(w => w.UserId == userId);
+
+        if (!includeRetired)
+            query = query.Where(w => !w.IsRetired);
+
+        return await query
             .Select(w => MapToDto(w))
             .ToListAsync();
     }
@@ -201,6 +206,38 @@ public class WatchService(AppDbContext context) : IWatchService
         return true;
     }
 
+    public async Task<WatchDto?> RetireAsync(int id, int userId)
+    {
+        var watch = await context.Watches
+            .Include(w => w.Images)
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+
+        if (watch is null) return null;
+
+        watch.IsRetired = true;
+        watch.RetiredAt = DateTime.UtcNow;
+        watch.UpdatedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+
+        return MapToDto(watch);
+    }
+
+    public async Task<WatchDto?> UnretireAsync(int id, int userId)
+    {
+        var watch = await context.Watches
+            .Include(w => w.Images)
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+
+        if (watch is null) return null;
+
+        watch.IsRetired = false;
+        watch.RetiredAt = null;
+        watch.UpdatedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+
+        return MapToDto(watch);
+    }
+
     private static WatchDto MapToDto(Watch watch) => new()
     {
         Id = watch.Id,
@@ -231,6 +268,8 @@ public class WatchService(AppDbContext context) : IWatchService
         LinkUrl = watch.LinkUrl,
         LinkText = watch.LinkText,
         IsWishList = watch.IsWishList,
+        IsRetired = watch.IsRetired,
+        RetiredAt = watch.RetiredAt,
         ImageUrls = watch.Images.OrderBy(i => i.SortOrder).Select(i => new WatchImageDto
         {
             Id = i.Id,

@@ -15,9 +15,9 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<WatchDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<WatchDto>>> GetAll([FromQuery] bool includeRetired = false)
     {
-        var watches = await watchService.GetAllAsync(UserId);
+        var watches = await watchService.GetAllAsync(UserId, includeRetired);
         return Ok(watches);
     }
 
@@ -89,5 +89,19 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     {
         var updated = await watchService.UpdateWearLogDateAsync(logId, UserId, dto.WornDate);
         return updated ? NoContent() : NotFound();
+    }
+
+    [HttpPut("{id}/retire")]
+    public async Task<ActionResult<WatchDto>> Retire(int id)
+    {
+        var watch = await watchService.RetireAsync(id, UserId);
+        return watch is null ? NotFound() : Ok(watch);
+    }
+
+    [HttpPut("{id}/unretire")]
+    public async Task<ActionResult<WatchDto>> Unretire(int id)
+    {
+        var watch = await watchService.UnretireAsync(id, UserId);
+        return watch is null ? NotFound() : Ok(watch);
     }
 }

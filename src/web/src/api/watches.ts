@@ -5,8 +5,10 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL !== undefined
   ? import.meta.env.VITE_API_BASE_URL
   : 'http://localhost:5062';
 
-export async function getWatches(): Promise<Watch[]> {
-  const { data } = await client.get<Watch[]>('/watches');
+export async function getWatches(includeRetired = false): Promise<Watch[]> {
+  const { data } = await client.get<Watch[]>('/watches', {
+    params: includeRetired ? { includeRetired: true } : undefined,
+  });
   return data;
 }
 
@@ -75,4 +77,14 @@ export async function deleteWearLog(logId: number): Promise<void> {
 
 export async function updateWearLogDate(logId: number, wornDate: string): Promise<void> {
   await client.put(`/watches/wear-logs/${logId}`, { wornDate });
+}
+
+export async function retireWatch(id: number): Promise<Watch> {
+  const { data } = await client.put<Watch>(`/watches/${id}/retire`);
+  return data;
+}
+
+export async function unretireWatch(id: number): Promise<Watch> {
+  const { data } = await client.put<Watch>(`/watches/${id}/unretire`);
+  return data;
 }

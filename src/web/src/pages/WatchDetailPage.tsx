@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Markdown from 'react-markdown';
-import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear } from '../api/watches';
+import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear, retireWatch } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
 import { usePreferences } from '../context/PreferencesContext';
 import useIsPwa from '../hooks/useIsPwa';
@@ -30,6 +30,12 @@ export default function WatchDetailPage() {
   async function handleDelete() {
     if (!watch || !confirm('Delete this watch?')) return;
     await deleteWatch(watch.id);
+    navigate('/');
+  }
+
+  async function handleRetire() {
+    if (!watch || !confirm('Retire this watch? It will be removed from your collection but can be restored later.')) return;
+    await retireWatch(watch.id);
     navigate('/');
   }
 
@@ -109,6 +115,7 @@ export default function WatchDetailPage() {
         <div className="watch-detail-header-actions">
           <button className="btn btn-sm" onClick={handleRecordWear}>⌚ Wore Today</button>
           <Link to={`/watches/${watch.id}/edit`} className="btn btn-sm">Edit</Link>
+          <button className="btn btn-sm" onClick={handleRetire}>Retire</button>
           <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete</button>
         </div>
       </div>

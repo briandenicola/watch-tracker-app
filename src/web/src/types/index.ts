@@ -35,6 +35,8 @@ export interface Watch {
   linkUrl?: string;
   linkText?: string;
   isWishList: boolean;
+  isRetired: boolean;
+  retiredAt?: string;
   createdAt: string;
   updatedAt: string;
 }

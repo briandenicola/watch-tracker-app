@@ -33,6 +33,8 @@ public class WatchDto
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
     public bool IsWishList { get; set; }
+    public bool IsRetired { get; set; }
+    public DateTime? RetiredAt { get; set; }
     public string BrandName => Brand;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

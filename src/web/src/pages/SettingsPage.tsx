@@ -390,6 +390,12 @@ export default function SettingsPage() {
         </fieldset>
 
         <fieldset className="watch-form-group">
+          <legend>Collection</legend>
+          <p className="settings-hint">Manage watches that have been retired from your active collection.</p>
+          <Link to="/retired" className="btn">View Retired Watches</Link>
+        </fieldset>
+
+        <fieldset className="watch-form-group">
           <legend>Data Management</legend>
           <p className="settings-hint">Export your entire collection (watches, images, and wear history) as a ZIP file, or import from a previous export.</p>
           <div className="data-management-actions">
