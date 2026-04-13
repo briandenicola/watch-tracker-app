@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getWatch, updateWatch, deleteWatch, importImageFromUrl, deleteWatchImage, imageUrl } from '../api/watches';
+import ConfirmDialog from '../components/ConfirmDialog';
 import type { Watch } from '../types';
 
 export default function EditWishListPage() {
@@ -56,8 +57,10 @@ export default function EditWishListPage() {
     }
   }
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   async function handleDelete() {
-    if (!watch || !confirm('Remove this item from your wish list?')) return;
+    if (!watch) return;
     await deleteWatch(watch.id);
     navigate('/?wishlist');
   }
@@ -117,9 +120,18 @@ export default function EditWishListPage() {
           <button type="button" className="btn btn-purchased" onClick={handlePurchased}>
             Purchased!
           </button>
-          <button type="button" className="btn btn-danger" onClick={handleDelete}>Delete</button>
+          <button type="button" className="btn btn-danger" onClick={() => setShowDeleteConfirm(true)}>Delete</button>
         </div>
       </form>
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Remove from Wish List"
+        message="Are you sure you want to remove this item from your wish list?"
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={() => { setShowDeleteConfirm(false); handleDelete(); }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

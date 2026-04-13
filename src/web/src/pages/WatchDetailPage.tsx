@@ -3,9 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear, retireWatch } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { usePreferences } from '../context/PreferencesContext';
 import useIsPwa from '../hooks/useIsPwa';
 import type { Watch } from '../types';
+
+type PendingAction = 'delete' | 'retire' | 'deleteImage';
 
 export default function WatchDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +21,7 @@ export default function WatchDetailPage() {
   const [analyzeError, setAnalyzeError] = useState('');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: PendingAction; imageId?: number } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -28,22 +32,37 @@ export default function WatchDetailPage() {
   }, [id, navigate]);
 
   async function handleDelete() {
-    if (!watch || !confirm('Delete this watch?')) return;
+    if (!watch) return;
     await deleteWatch(watch.id);
     navigate('/');
   }
 
   async function handleRetire() {
-    if (!watch || !confirm('Retire this watch? It will be removed from your collection but can be restored later.')) return;
+    if (!watch) return;
     await retireWatch(watch.id);
     navigate('/');
   }
 
   async function handleDeleteImage(imageId: number) {
-    if (!watch || !confirm('Delete this image?')) return;
+    if (!watch) return;
     await deleteWatchImage(watch.id, imageId);
     setWatch({ ...watch, imageUrls: watch.imageUrls.filter((img) => img.id !== imageId) });
   }
+
+  function handleConfirm() {
+    if (!confirmAction) return;
+    const { type, imageId } = confirmAction;
+    setConfirmAction(null);
+    if (type === 'delete') handleDelete();
+    else if (type === 'retire') handleRetire();
+    else if (type === 'deleteImage' && imageId != null) handleDeleteImage(imageId);
+  }
+
+  const confirmMessages: Record<PendingAction, { title: string; message: string; label: string; variant: 'default' | 'danger' }> = {
+    delete: { title: 'Delete Watch', message: 'Are you sure you want to permanently delete this watch? This cannot be undone.', label: 'Delete', variant: 'danger' },
+    retire: { title: 'Retire Watch', message: 'This watch will be removed from your collection but can be restored later from Settings.', label: 'Retire', variant: 'default' },
+    deleteImage: { title: 'Delete Image', message: 'Are you sure you want to delete this image?', label: 'Delete', variant: 'danger' },
+  };
 
   async function handleAnalyze() {
     if (!watch) return;
@@ -115,8 +134,8 @@ export default function WatchDetailPage() {
         <div className="watch-detail-header-actions">
           <button className="btn btn-sm" onClick={handleRecordWear}>⌚ Wore Today</button>
           <Link to={`/watches/${watch.id}/edit`} className="btn btn-sm">Edit</Link>
-          <button className="btn btn-sm" onClick={handleRetire}>Retire</button>
-          <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete</button>
+          <button className="btn btn-sm" onClick={() => setConfirmAction({ type: 'retire' })}>Retire</button>
+          <button className="btn btn-danger btn-sm" onClick={() => setConfirmAction({ type: 'delete' })}>Delete</button>
         </div>
       </div>
 
@@ -190,7 +209,7 @@ export default function WatchDetailPage() {
             <button className="btn btn-sm" onClick={handleAnalyze} disabled={analyzing}>
               {analyzing ? 'Analyzing…' : '🤖 Analyze with AI'}
             </button>
-            <button className="btn btn-danger btn-sm" onClick={() => handleDeleteImage(watch.imageUrls[0]?.id)}>
+            <button className="btn btn-danger btn-sm" onClick={() => setConfirmAction({ type: 'deleteImage', imageId: watch.imageUrls[0]?.id })}>
               Delete Current Image
             </button>
           </div>
@@ -212,6 +231,15 @@ export default function WatchDetailPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmAction !== null}
+        title={confirmAction ? confirmMessages[confirmAction.type].title : ''}
+        message={confirmAction ? confirmMessages[confirmAction.type].message : ''}
+        confirmLabel={confirmAction ? confirmMessages[confirmAction.type].label : 'OK'}
+        variant={confirmAction ? confirmMessages[confirmAction.type].variant : 'default'}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

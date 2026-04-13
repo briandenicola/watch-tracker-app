@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage, deleteProfileImage } from '../api/auth';
 import { exportData, importData } from '../api/data';
 import { getApiKeys, createApiKey, deleteApiKey, type ApiKeyDto, type ApiKeyCreatedDto } from '../api/apikeys';
+import { AlertDialog } from '../components/ConfirmDialog';
 import { gravatarUrl } from '../utils/gravatar';
 
 export default function SettingsPage() {
@@ -34,6 +35,7 @@ export default function SettingsPage() {
   const [keyCopied, setKeyCopied] = useState(false);
   const [keyLoading, setKeyLoading] = useState(false);
   const [keyDeleting, setKeyDeleting] = useState<number | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setUsername(user?.username ?? '');
@@ -108,7 +110,7 @@ export default function SettingsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Export failed. Please try again.');
+      setAlertMessage('Export failed. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -139,7 +141,7 @@ export default function SettingsPage() {
       setNewKeyName('');
       setApiKeys((prev) => [{ id: result.id, name: result.name, createdAt: result.createdAt, lastUsedAt: null }, ...prev]);
     } catch {
-      alert('Failed to create API key.');
+      setAlertMessage('Failed to create API key.');
     } finally {
       setKeyLoading(false);
     }
@@ -152,7 +154,7 @@ export default function SettingsPage() {
       setApiKeys((prev) => prev.filter((k) => k.id !== id));
       if (createdKey?.id === id) setCreatedKey(null);
     } catch {
-      alert('Failed to delete API key.');
+      setAlertMessage('Failed to delete API key.');
     } finally {
       setKeyDeleting(null);
     }
@@ -488,6 +490,12 @@ export default function SettingsPage() {
           )}
         </fieldset>
       </div>
+      <AlertDialog
+        open={alertMessage !== null}
+        title="Error"
+        message={alertMessage ?? ''}
+        onClose={() => setAlertMessage(null)}
+      />
     </div>
   );
 }

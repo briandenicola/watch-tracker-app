@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage, deleteProfileImage } from '../api/auth';
 import { exportData, importData } from '../api/data';
 import { getApiKeys, createApiKey, deleteApiKey, type ApiKeyDto, type ApiKeyCreatedDto } from '../api/apikeys';
+import { AlertDialog } from './ConfirmDialog';
 import { gravatarUrl } from '../utils/gravatar';
 
 interface SettingsModalProps {
@@ -40,6 +41,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [keyCopied, setKeyCopied] = useState(false);
   const [keyLoading, setKeyLoading] = useState(false);
   const [keyDeleting, setKeyDeleting] = useState<number | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   // Sync username when user changes or modal opens
   useEffect(() => {
@@ -131,7 +133,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Export failed. Please try again.');
+      setAlertMessage('Export failed. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -162,7 +164,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       setNewKeyName('');
       setApiKeys((prev) => [{ id: result.id, name: result.name, createdAt: result.createdAt, lastUsedAt: null }, ...prev]);
     } catch {
-      alert('Failed to create API key.');
+      setAlertMessage('Failed to create API key.');
     } finally {
       setKeyLoading(false);
     }
@@ -175,7 +177,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       setApiKeys((prev) => prev.filter((k) => k.id !== id));
       if (createdKey?.id === id) setCreatedKey(null);
     } catch {
-      alert('Failed to delete API key.');
+      setAlertMessage('Failed to delete API key.');
     } finally {
       setKeyDeleting(null);
     }
@@ -451,6 +453,12 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           </div>
         </div>
       </div>
+      <AlertDialog
+        open={alertMessage !== null}
+        title="Error"
+        message={alertMessage ?? ''}
+        onClose={() => setAlertMessage(null)}
+      />
     </div>
   );
 }

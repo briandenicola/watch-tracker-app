@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getWearLogs, deleteWearLog, updateWearLogDate, getWatches } from '../api/watches';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { usePreferences } from '../context/PreferencesContext';
 import useIsPwa from '../hooks/useIsPwa';
 import type { WearLog, Watch } from '../types';
@@ -102,12 +103,17 @@ export default function StatsPage() {
     return new Date(iso).toLocaleDateString('en-US', { timeZone: timezone, month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  async function handleDeleteLog(logId: number) {
-    if (!confirm('Remove this wear entry?')) return;
+  const [pendingDeleteLogId, setPendingDeleteLogId] = useState<number | null>(null);
+
+  const doDeleteLog = useCallback(async (logId: number) => {
     try {
       await deleteWearLog(logId);
       setLogs((prev) => prev.filter((l) => l.id !== logId));
     } catch { /* ignore */ }
+  }, []);
+
+  async function handleDeleteLog(logId: number) {
+    setPendingDeleteLogId(logId);
   }
 
   const dateInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
@@ -281,6 +287,15 @@ export default function StatsPage() {
           </div>
         )}
       </section>
+      <ConfirmDialog
+        open={pendingDeleteLogId !== null}
+        title="Remove Wear Entry"
+        message="Are you sure you want to remove this wear entry?"
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={() => { if (pendingDeleteLogId !== null) doDeleteLog(pendingDeleteLogId); setPendingDeleteLogId(null); }}
+        onCancel={() => setPendingDeleteLogId(null)}
+      />
     </div>
   );
 }
