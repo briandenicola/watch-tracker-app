@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { getWatches, unretireWatch } from '../api/watches';
 import { imageUrl } from '../api/watches';
-import useIsPwa from '../hooks/useIsPwa';
 import type { Watch } from '../types';
 
 export default function RetiredWatchesPage() {
   const [watches, setWatches] = useState<Watch[]>([]);
   const [loading, setLoading] = useState(true);
-  const isPwa = useIsPwa();
 
   useEffect(() => {
     loadRetired();
@@ -33,7 +30,6 @@ export default function RetiredWatchesPage() {
 
   return (
     <div className="retired-watches-page">
-      {!isPwa && <Link to="/settings" className="back-link">← Back to Settings</Link>}
       <h1>Retired Watches</h1>
       {watches.length === 0 ? (
         <p className="empty-state">No retired watches.</p>
