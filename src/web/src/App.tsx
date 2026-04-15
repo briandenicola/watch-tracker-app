@@ -53,6 +53,8 @@ function App() {
             <nav className={menuOpen ? 'nav-open' : ''}>
               {isAdmin && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
               <Link to="/stats" className="nav-link" onClick={() => setMenuOpen(false)}>Stats</Link>
+              <Link to="/?wishlist" className="nav-link" onClick={() => setMenuOpen(false)}>Wish List</Link>
+              <Link to="/retired" className="nav-link" onClick={() => setMenuOpen(false)}>Retired</Link>
               <button className="nav-avatar" title={user.username} onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
                 <img src={user.profileImage || gravatarUrl(user.email, 128)} alt={user.username} className="avatar" />
               </button>
