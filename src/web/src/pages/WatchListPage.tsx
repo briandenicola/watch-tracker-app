@@ -343,14 +343,6 @@ export default function WatchListPage() {
               >{gallerySortDir === 'asc' ? '▲' : '▼'}</button>
             </>
           )}
-
-          <button
-            className={`btn btn-sm${showWishList ? ' active' : ''}`}
-            onClick={() => { setShowWishList((v) => !v); setVisibleCount(PAGE_SIZE); }}
-            type="button"
-          >
-            {showWishList ? 'Wish List' : 'Wish List'}
-          </button>
         </div>
       )}
 
