@@ -58,4 +58,26 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
             return BadRequest("Failed to download image from the provided URL.");
         }
     }
+
+    [HttpPost("{imageId}/remove-background")]
+    public async Task<ActionResult<WatchImageDto>> RemoveBackground(int watchId, int imageId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await imageService.RemoveBackgroundAsync(watchId, imageId, UserId, cancellationToken);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (FileNotFoundException)
+        {
+            return Conflict(new { error = "Source image file is missing from disk." });
+        }
+        catch (TimeoutException)
+        {
+            return StatusCode(504, new { error = "Background removal timed out. Please try again." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { error = ex.Message });
+        }
+    }
 }

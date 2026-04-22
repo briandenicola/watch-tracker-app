@@ -8,4 +8,5 @@ public interface IWatchImageService
     Task<WatchImageDto?> ImportFromUrlAsync(int watchId, int userId, string imageUrl);
     Task<bool> DeleteAsync(int imageId, int userId);
     Task<bool> SetCoverAsync(int watchId, int imageId, int userId);
+    Task<WatchImageDto?> RemoveBackgroundAsync(int watchId, int imageId, int userId, CancellationToken cancellationToken = default);
 }

@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { WatchImage } from '../types';
 import { imageUrl } from '../api/watches';
 
 interface ImageCarouselProps {
   images: WatchImage[];
   alt: string;
+  onIndexChange?: (index: number) => void;
 }
 
-export default function ImageCarousel({ images, alt }: ImageCarouselProps) {
+export default function ImageCarousel({ images, alt, onIndexChange }: ImageCarouselProps) {
   const [index, setIndex] = useState(0);
+
+  const safeIndex = index >= images.length && images.length > 0 ? 0 : index;
+  if (safeIndex !== index) setIndex(safeIndex);
+
+  useEffect(() => {
+    onIndexChange?.(safeIndex);
+  }, [safeIndex, onIndexChange]);
 
   if (images.length === 0) return null;
 

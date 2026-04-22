@@ -88,3 +88,8 @@ export async function unretireWatch(id: number): Promise<Watch> {
   const { data } = await client.put<Watch>(`/watches/${id}/unretire`);
   return data;
 }
+
+export async function removeBackground(watchId: number, imageId: number): Promise<WatchImage> {
+  const { data } = await client.post<WatchImage>(`/watches/${watchId}/images/${imageId}/remove-background`);
+  return data;
+}

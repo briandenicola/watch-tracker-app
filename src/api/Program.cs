@@ -88,6 +88,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IWatchService, WatchService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
+builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();

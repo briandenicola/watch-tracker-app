@@ -14,6 +14,10 @@ COPY src/api/ .
 RUN dotnet publish -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --break-system-packages rembg[cli] && \
+    rembg d && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /root/.cache/pip
 WORKDIR /app
 COPY --from=api-build /app/publish .
 COPY --from=web-build /web/dist ./wwwroot

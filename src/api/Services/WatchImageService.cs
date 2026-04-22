@@ -5,7 +5,7 @@ using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
-public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IHttpClientFactory httpClientFactory) : IWatchImageService
+public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IHttpClientFactory httpClientFactory, IBackgroundRemovalService bgRemoval) : IWatchImageService
 {
     private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
@@ -183,5 +183,45 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
 
         await context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<WatchImageDto?> RemoveBackgroundAsync(int watchId, int imageId, int userId, CancellationToken cancellationToken = default)
+    {
+        var image = await context.WatchImages
+            .Include(i => i.Watch)
+            .FirstOrDefaultAsync(i => i.Id == imageId && i.WatchId == watchId && i.Watch.UserId == userId, cancellationToken);
+
+        if (image is null) return null;
+
+        var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
+        var inputPath = Path.Combine(uploadsDir, image.FileName);
+
+        if (!File.Exists(inputPath))
+            throw new FileNotFoundException("Source image file not found on disk.");
+
+        var newFileName = await bgRemoval.RemoveBackgroundAsync(inputPath, cancellationToken);
+        var newFilePath = Path.Combine(uploadsDir, newFileName);
+
+        try
+        {
+            var oldFileName = image.FileName;
+            image.FileName = newFileName;
+            image.ContentType = "image/png";
+            await context.SaveChangesAsync(cancellationToken);
+
+            // Only delete old file after DB update succeeds
+            var oldFilePath = Path.Combine(uploadsDir, oldFileName);
+            if (File.Exists(oldFilePath))
+                File.Delete(oldFilePath);
+        }
+        catch
+        {
+            // DB update failed — clean up the new file
+            if (File.Exists(newFilePath))
+                File.Delete(newFilePath);
+            throw;
+        }
+
+        return new WatchImageDto { Id = image.Id, Url = $"/uploads/{newFileName}" };
     }
 }

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Markdown from 'react-markdown';
-import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear, retireWatch } from '../api/watches';
+import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear, retireWatch, removeBackground } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { usePreferences } from '../context/PreferencesContext';
@@ -22,6 +22,12 @@ export default function WatchDetailPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: PendingAction; imageId?: number } | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [removingBg, setRemovingBg] = useState(false);
+  const [removeBgError, setRemoveBgError] = useState('');
+
+  const currentImage = watch?.imageUrls[carouselIndex] ?? null;
+  const handleCarouselChange = useCallback((i: number) => setCarouselIndex(i), []);
 
   useEffect(() => {
     if (!id) return;
@@ -75,6 +81,23 @@ export default function WatchDetailPage() {
       setAnalyzeError('Analysis failed. Check AI provider configuration in the admin panel.');
     } finally {
       setAnalyzing(false);
+    }
+  }
+
+  async function handleRemoveBackground() {
+    if (!watch || !currentImage) return;
+    setRemovingBg(true);
+    setRemoveBgError('');
+    try {
+      const updated = await removeBackground(watch.id, currentImage.id);
+      setWatch({
+        ...watch,
+        imageUrls: watch.imageUrls.map((img) => img.id === updated.id ? updated : img),
+      });
+    } catch {
+      setRemoveBgError('Background removal failed. The feature may not be available on this server.');
+    } finally {
+      setRemovingBg(false);
     }
   }
 
@@ -204,16 +227,28 @@ export default function WatchDetailPage() {
 
       {watch.imageUrls.length > 0 && (
         <div className="watch-images-section">
-          <ImageCarousel images={watch.imageUrls} alt={`${watch.brand} ${watch.model}`} />
+          <div className="carousel-wrapper">
+            <ImageCarousel images={watch.imageUrls} alt={`${watch.brand} ${watch.model}`} onIndexChange={handleCarouselChange} />
+            {removingBg && (
+              <div className="bg-removal-overlay">
+                <div className="spinner" />
+                <p>Removing background…</p>
+              </div>
+            )}
+          </div>
           <div className="image-actions">
-            <button className="btn btn-sm" onClick={handleAnalyze} disabled={analyzing}>
+            <button className="btn btn-sm" onClick={handleAnalyze} disabled={analyzing || removingBg}>
               {analyzing ? 'Analyzing…' : '🤖 Analyze with AI'}
             </button>
-            <button className="btn btn-danger btn-sm" onClick={() => setConfirmAction({ type: 'deleteImage', imageId: watch.imageUrls[0]?.id })}>
+            <button className="btn btn-sm" onClick={handleRemoveBackground} disabled={removingBg || analyzing}>
+              {removingBg ? 'Removing…' : '✨ Remove BG'}
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={() => setConfirmAction({ type: 'deleteImage', imageId: currentImage?.id })} disabled={removingBg}>
               Delete Current Image
             </button>
           </div>
           {analyzeError && <p className="error">{analyzeError}</p>}
+          {removeBgError && <p className="error">{removeBgError}</p>}
         </div>
       )}
 
