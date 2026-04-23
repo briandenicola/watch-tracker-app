@@ -33,9 +33,7 @@ export async function deleteWatch(id: number): Promise<void> {
 export async function uploadWatchImages(watchId: number, files: File[]): Promise<WatchImage[]> {
   const form = new FormData();
   files.forEach((f) => form.append('files', f));
-  const { data } = await client.post<WatchImage[]>(`/watches/${watchId}/images`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const { data } = await client.post<WatchImage[]>(`/watches/${watchId}/images`, form);
   return data;
 }
 

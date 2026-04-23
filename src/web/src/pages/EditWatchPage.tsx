@@ -28,11 +28,16 @@ export default function EditWatchPage() {
 
   async function handleSubmit(data: CreateWatch, files: File[]) {
     if (!id) return;
-    await updateWatch(Number(id), data);
-    if (files.length > 0) {
-      await uploadWatchImages(Number(id), files);
+    try {
+      await updateWatch(Number(id), data);
+      if (files.length > 0) {
+        await uploadWatchImages(Number(id), files);
+      }
+      navigate(`/watches/${id}`);
+    } catch (error) {
+      console.error('Failed to update watch:', error);
+      alert('Failed to update watch. Please try again.');
     }
-    navigate(`/watches/${id}`);
   }
 
   async function handleSetCover(imageId: number) {
