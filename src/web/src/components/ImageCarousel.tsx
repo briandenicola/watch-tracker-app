@@ -11,8 +11,8 @@ interface ImageCarouselProps {
 export default function ImageCarousel({ images, alt, onIndexChange }: ImageCarouselProps) {
   const [index, setIndex] = useState(0);
 
-  const safeIndex = index >= images.length && images.length > 0 ? 0 : index;
-  if (safeIndex !== index) setIndex(safeIndex);
+  // Clamp index to valid range without calling setState during render or in an effect
+  const safeIndex = images.length > 0 ? Math.min(index, images.length - 1) : 0;
 
   useEffect(() => {
     onIndexChange?.(safeIndex);
@@ -26,7 +26,7 @@ export default function ImageCarousel({ images, alt, onIndexChange }: ImageCarou
   return (
     <div className="carousel">
       <div className="carousel-viewport">
-        <img src={imageUrl(images[index].url)} alt={`${alt} ${index + 1}`} className="carousel-image" />
+        <img src={imageUrl(images[safeIndex].url)} alt={`${alt} ${safeIndex + 1}`} className="carousel-image" />
         {images.length > 1 && (
           <>
             <button className="carousel-btn carousel-prev" onClick={prev} aria-label="Previous image">‹</button>
@@ -39,7 +39,7 @@ export default function ImageCarousel({ images, alt, onIndexChange }: ImageCarou
           {images.map((_, i) => (
             <button
               key={i}
-              className={`carousel-dot${i === index ? ' active' : ''}`}
+              className={`carousel-dot${i === safeIndex ? ' active' : ''}`}
               onClick={() => setIndex(i)}
               aria-label={`Go to image ${i + 1}`}
             />

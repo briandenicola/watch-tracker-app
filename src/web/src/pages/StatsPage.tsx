@@ -35,14 +35,14 @@ export default function StatsPage() {
 
   const topExpensive = useMemo(() => {
     return watches
-      .filter((w) => !w.isWishList && w.purchasePrice != null && w.purchasePrice > 0)
+      .filter((w) => !w.isWishList && !w.isRetired && w.purchasePrice != null && w.purchasePrice > 0)
       .sort((a, b) => (b.purchasePrice ?? 0) - (a.purchasePrice ?? 0))
       .slice(0, 5);
   }, [watches]);
 
   const { longestUnworn, neverWorn } = useMemo(() => {
     const now = new Date();
-    const collection = watches.filter((w) => !w.isWishList);
+    const collection = watches.filter((w) => !w.isWishList && !w.isRetired);
     const worn = collection
       .filter((w) => w.lastWornDate)
       .map((w) => ({
