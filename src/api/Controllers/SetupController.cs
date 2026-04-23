@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
@@ -9,6 +10,7 @@ namespace WatchTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth")]
 public class SetupController(AppDbContext context, IAuthService authService, IAppSettingsService appSettings) : ControllerBase
 {
     [HttpGet("status")]

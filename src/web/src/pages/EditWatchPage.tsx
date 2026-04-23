@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getWatch, updateWatch, uploadWatchImages, setCoverImage, imageUrl, getWatches } from '../api/watches';
+import { useToast } from '../components/Toast';
 import WatchForm from '../components/WatchForm';
 import type { Watch, CreateWatch } from '../types';
 
@@ -10,6 +11,7 @@ export default function EditWatchPage() {
   const [watch, setWatch] = useState<Watch | null>(null);
   const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<string[]>([]);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!id) return;
@@ -23,8 +25,8 @@ export default function EditWatchPage() {
     getWatches().then((watches) => {
       const unique = [...new Set(watches.map((w) => w.brand))].sort();
       setBrands(unique);
-    }).catch(() => {});
-  }, []);
+    }).catch(() => showToast('Failed to load brands'));
+  }, [showToast]);
 
   async function handleSubmit(data: CreateWatch, files: File[]) {
     if (!id) return;
@@ -36,7 +38,7 @@ export default function EditWatchPage() {
       navigate(`/watches/${id}`);
     } catch (error) {
       console.error('Failed to update watch:', error);
-      alert('Failed to update watch. Please try again.');
+      showToast('Failed to update watch. Please try again.');
     }
   }
 

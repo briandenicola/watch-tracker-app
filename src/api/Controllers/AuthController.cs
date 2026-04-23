@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Services;
 
@@ -11,6 +12,7 @@ namespace WatchTracker.Api.Controllers;
 public class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
     {
         var result = await authService.RegisterAsync(dto);
@@ -18,6 +20,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
         var result = await authService.LoginAsync(dto);

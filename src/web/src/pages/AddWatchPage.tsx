@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createWatch, uploadWatchImages, getWatches } from '../api/watches';
+import { useToast } from '../components/Toast';
 import WatchForm from '../components/WatchForm';
 import type { CreateWatch } from '../types';
 
@@ -8,6 +9,7 @@ export default function AddWatchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [brands, setBrands] = useState<string[]>([]);
+  const { showToast } = useToast();
 
   const initialBrand = searchParams.get('brand') ?? '';
   const initialModel = searchParams.get('model') ?? '';
@@ -16,8 +18,8 @@ export default function AddWatchPage() {
     getWatches().then((watches) => {
       const unique = [...new Set(watches.map((w) => w.brand))].sort();
       setBrands(unique);
-    }).catch(() => {});
-  }, []);
+    }).catch(() => showToast('Failed to load brands'));
+  }, [showToast]);
 
   async function handleSubmit(data: CreateWatch, files: File[]) {
     try {
@@ -28,7 +30,7 @@ export default function AddWatchPage() {
       navigate(`/watches/${watch.id}`);
     } catch (error) {
       console.error('Failed to create watch:', error);
-      alert('Failed to create watch. Please try again.');
+      showToast('Failed to create watch. Please try again.');
     }
   }
 

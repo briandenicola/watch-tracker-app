@@ -1,9 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createWatch, getWatches, importImageFromUrl } from '../api/watches';
+import { useToast } from '../components/Toast';
 
 export default function AddWishListPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [price, setPrice] = useState('');
@@ -17,8 +19,8 @@ export default function AddWishListPage() {
     getWatches().then((watches) => {
       const unique = [...new Set(watches.map((w) => w.brand))].sort();
       setBrands(unique);
-    }).catch(() => {});
-  }, []);
+    }).catch(() => showToast('Failed to load brands'));
+  }, [showToast]);
 
   useEffect(() => {
     function handleClick() { setBrandFocused(false); }

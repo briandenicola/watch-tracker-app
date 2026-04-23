@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { getUsers, unlockUser, resetUserPassword, getSettings, updateSettings, getOllamaModels } from '../api/admin';
 import type { UserDto } from '../types';
 
@@ -124,6 +124,11 @@ function SettingsPanel() {
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
   const [ollamaLoading, setOllamaLoading] = useState(false);
   const [ollamaError, setOllamaError] = useState('');
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => { if (savedTimerRef.current !== null) clearTimeout(savedTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -161,7 +166,7 @@ function SettingsPanel() {
       setNewApiKey('');
     }
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
   }
 
   if (loading) return <p>Loading…</p>;

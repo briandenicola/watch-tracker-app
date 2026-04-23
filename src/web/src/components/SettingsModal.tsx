@@ -6,6 +6,7 @@ import { changePassword, updateUsername as apiUpdateUsername, uploadProfileImage
 import { exportData, importData } from '../api/data';
 import { getApiKeys, createApiKey, deleteApiKey, type ApiKeyDto, type ApiKeyCreatedDto } from '../api/apikeys';
 import { AlertDialog } from './ConfirmDialog';
+import { useToast } from './Toast';
 import { gravatarUrl } from '../utils/gravatar';
 
 interface SettingsModalProps {
@@ -16,8 +17,10 @@ interface SettingsModalProps {
 export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   const { theme, setTheme, timezone, setTimezone, defaultView, setDefaultView } = usePreferences();
   const { user, updateProfileImage, updateUsername } = useAuth();
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 
   const [username, setUsername] = useState(user?.username ?? '');
   const [userSaved, setUserSaved] = useState(false);
@@ -48,15 +51,25 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
     if (open) setUsername(user?.username ?? '');
   }, [open, user?.username]);
 
-  // Load API keys when modal opens
+  // Cleanup all timers on unmount
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => { timers.forEach(clearTimeout); };
+  }, []);
+
+  function safeTimeout(fn: () => void, ms: number) {
+    const id = setTimeout(() => { timersRef.current.delete(id); fn(); }, ms);
+    timersRef.current.add(id);
+  }
+
   useEffect(() => {
     if (open) {
-      getApiKeys().then(setApiKeys).catch(() => {});
+      getApiKeys().then(setApiKeys).catch(() => showToast('Failed to load API keys'));
     } else {
       setCreatedKey(null);
       setKeyCopied(false);
     }
-  }, [open]);
+  }, [open, showToast]);
 
   // Close on Escape
   useEffect(() => {
@@ -90,7 +103,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       updateUsername(username);
     }
     setUserSaved(true);
-    setTimeout(() => setUserSaved(false), 2000);
+    safeTimeout(() => setUserSaved(false), 2000);
   }
 
   async function handleChangePassword(e: FormEvent) {
@@ -114,7 +127,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       setCurrentPw('');
       setNewPw('');
       setConfirmPw('');
-      setTimeout(() => setPwSuccess(false), 3000);
+      safeTimeout(() => setPwSuccess(false), 3000);
     } catch {
       setPwError('Current password is incorrect.');
     } finally {
@@ -184,9 +197,13 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
   }
 
   async function handleCopyKey(key: string) {
-    await navigator.clipboard.writeText(key);
-    setKeyCopied(true);
-    setTimeout(() => setKeyCopied(false), 3000);
+    try {
+      await navigator.clipboard.writeText(key);
+      setKeyCopied(true);
+      safeTimeout(() => setKeyCopied(false), 3000);
+    } catch {
+      showToast('Failed to copy to clipboard');
+    }
   }
 
   if (!open) return null;
@@ -223,8 +240,12 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const url = await uploadProfileImage(file);
-                        updateProfileImage(url);
+                        try {
+                          const url = await uploadProfileImage(file);
+                          updateProfileImage(url);
+                        } catch {
+                          showToast('Failed to upload profile image');
+                        }
                         e.target.value = '';
                       }}
                     />
@@ -237,8 +258,12 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
                           type="button"
                           className="btn btn-danger btn-sm"
                           onClick={async () => {
-                            await deleteProfileImage();
-                            updateProfileImage(null);
+                            try {
+                              await deleteProfileImage();
+                              updateProfileImage(null);
+                            } catch {
+                              showToast('Failed to remove profile image');
+                            }
                           }}
                         >
                           Remove

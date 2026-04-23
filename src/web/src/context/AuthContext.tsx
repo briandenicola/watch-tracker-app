@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     authApi.getProfile().then((profile) => {
       setUser((prev) => prev ? { ...prev, username: profile.username, email: profile.email, role: profile.role, profileImage: profile.profileImage } : prev);
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Profile fetch failed:', err); });
   }, [token]);
 
   const isAdmin = user?.role === 'Admin';
