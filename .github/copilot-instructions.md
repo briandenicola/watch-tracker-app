@@ -70,8 +70,10 @@ State management uses React Context + `localStorage` — no Redux or external st
 - **Controller routes**: `[Route("api/[controller]")]` — all endpoints are under `/api/`.
 - **User scoping**: Controllers extract the user ID from `ClaimTypes.NameIdentifier` to scope all data access.
 - **DTOs per feature**: Multiple DTOs live in a single file when related (e.g., `AuthDtos.cs` has login request, register request, and response DTOs).
+- **DTO validation**: All DTOs use `System.ComponentModel.DataAnnotations` (`[Required]`, `[StringLength]`, `[Range]`, `[EmailAddress]`, `[Url]`). Passwords require minimum 8 characters. String fields have explicit max lengths.
 - **Action results**: Controllers return `ActionResult<T>` with standard HTTP status codes (`Ok`, `CreatedAtAction`, `NotFound`, `BadRequest`, `Conflict`).
 - **Error handling**: Local try/catch in services, no global exception middleware.
+- **File uploads**: Validated by magic bytes (not just Content-Type header) to prevent spoofed uploads.
 - **EF Migrations**: tracked in `src/api/Migrations/` and committed to git. The app runs `Database.MigrateAsync()` on startup.
 - **Frontend API modules**: Each feature has a dedicated file in `src/web/src/api/` (e.g., `watches.ts`, `auth.ts`, `admin.ts`) that exports functions calling the shared Axios client.
 - **PWA behavior**: The app detects standalone PWA mode via `useIsPwa()` hook and adjusts the UI (compact header, bottom nav bar).

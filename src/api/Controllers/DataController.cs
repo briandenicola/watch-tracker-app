@@ -148,10 +148,17 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
             var destFileName = Path.GetFileName(imgEntry.FullName);
             if (string.IsNullOrEmpty(destFileName)) continue;
 
-            // Use a new GUID to avoid collisions
-            var ext = Path.GetExtension(destFileName);
+            // Use a new GUID to avoid collisions and prevent path traversal
+            var ext = Path.GetExtension(destFileName).ToLowerInvariant();
+            if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp" or ".gif"))
+                continue;
+
             var newFileName = $"{Guid.NewGuid()}{ext}";
             var destPath = Path.Combine(uploadsDir, newFileName);
+
+            // Verify the resolved path is still within uploads directory
+            if (!Path.GetFullPath(destPath).StartsWith(Path.GetFullPath(uploadsDir), StringComparison.OrdinalIgnoreCase))
+                continue;
 
             await using var entryStream = imgEntry.Open();
             await using var fileStream = new FileStream(destPath, FileMode.Create);

@@ -35,18 +35,28 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             if (!AllowedTypes.Contains(file.ContentType))
                 continue;
 
-            var ext = Path.GetExtension(file.FileName);
+            // Verify actual file content matches claimed content type via magic bytes
+            using var peekStream = file.OpenReadStream();
+            var header = new byte[12];
+            var bytesRead = await peekStream.ReadAsync(header.AsMemory(0, 12));
+            peekStream.Position = 0;
+
+            var detectedType = DetectImageType(header);
+            if (detectedType is null || !AllowedTypes.Contains(detectedType))
+                continue;
+
+            var ext = MimeToExt.GetValueOrDefault(detectedType, Path.GetExtension(file.FileName));
             var fileName = $"{Guid.NewGuid()}{ext}";
             var filePath = Path.Combine(uploadsDir, fileName);
 
             await using var stream = new FileStream(filePath, FileMode.Create);
-            await file.CopyToAsync(stream);
+            await peekStream.CopyToAsync(stream);
 
             var image = new WatchImage
             {
                 WatchId = watchId,
                 FileName = fileName,
-                ContentType = file.ContentType,
+                ContentType = detectedType,
                 SortOrder = ++maxSort
             };
 

@@ -24,6 +24,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
         ?? "Data Source=watchtracker.db"));
 
+// Validate JWT configuration at startup
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrEmpty(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException(
+        "Jwt:Key must be configured and at least 32 bytes long. " +
+        "Set it via appsettings.json, environment variable (Jwt__Key), or user secrets.");
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = "JwtOrApiKey";
@@ -40,7 +47,7 @@ builder.Services.AddAuthentication(options =>
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+                Encoding.UTF8.GetBytes(jwtKey))
         };
     })
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
