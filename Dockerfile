@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     mkdir -p /models && \
     curl -fSL -o /models/u2net.onnx \
       "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx" && \
-    echo "0b0d38be5f23e4aea97e7a1e2fc8e8b02d1e42237e7bdf30caa24e40e5aa65f8  /models/u2net.onnx" | sha256sum -c - && \
+    echo "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491  /models/u2net.onnx" | sha256sum -c - && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
