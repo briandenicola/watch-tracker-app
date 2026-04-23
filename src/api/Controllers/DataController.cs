@@ -104,7 +104,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
     public async Task<ActionResult<ImportResultDto>> Import(IFormFile file)
     {
         if (file.Length == 0 || !file.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            return BadRequest("Please upload a .zip file.");
+            return BadRequest(new { error = "Please upload a .zip file." });
 
         var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
         Directory.CreateDirectory(uploadsDir);
@@ -120,7 +120,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         var csvEntry = archive.Entries.FirstOrDefault(e =>
             e.FullName.Equals("watches.csv", StringComparison.OrdinalIgnoreCase));
         if (csvEntry is null)
-            return BadRequest("ZIP must contain watches.csv at the root level.");
+            return BadRequest(new { error = "ZIP must contain watches.csv at the root level." });
 
         // Read CSV
         List<string[]> rows;
@@ -131,7 +131,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         }
 
         if (rows.Count < 2)
-            return BadRequest("CSV file is empty or contains only headers.");
+            return BadRequest(new { error = "CSV file is empty or contains only headers." });
 
         var headers = rows[0];
         var colMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);

@@ -15,14 +15,14 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpPost]
-    public async Task<ActionResult<List<WatchImageDto>>> Upload(int watchId, [FromForm] List<IFormFile> files)
+    public async Task<ActionResult<List<WatchImageDto>>> Upload(int watchId, [FromForm] List<IFormFile> files, CancellationToken ct)
     {
         if (files.Count == 0)
-            return BadRequest("No files provided.");
+            return BadRequest(new { error = "No files provided." });
 
         try
         {
-            var images = await imageService.UploadAsync(watchId, UserId, files);
+            var images = await imageService.UploadAsync(watchId, UserId, files, ct);
             return Ok(images);
         }
         catch (InvalidOperationException)
@@ -32,30 +32,30 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
     }
 
     [HttpDelete("{imageId}")]
-    public async Task<IActionResult> Delete(int watchId, int imageId)
+    public async Task<IActionResult> Delete(int watchId, int imageId, CancellationToken ct)
     {
-        var result = await imageService.DeleteAsync(imageId, UserId);
+        var result = await imageService.DeleteAsync(imageId, UserId, ct);
         return result ? NoContent() : NotFound();
     }
 
     [HttpPut("{imageId}/cover")]
-    public async Task<IActionResult> SetCover(int watchId, int imageId)
+    public async Task<IActionResult> SetCover(int watchId, int imageId, CancellationToken ct)
     {
-        var result = await imageService.SetCoverAsync(watchId, imageId, UserId);
+        var result = await imageService.SetCoverAsync(watchId, imageId, UserId, ct);
         return result ? NoContent() : NotFound();
     }
 
     [HttpPost("import-url")]
-    public async Task<ActionResult<WatchImageDto>> ImportFromUrl(int watchId, [FromBody] ImportImageUrlDto dto)
+    public async Task<ActionResult<WatchImageDto>> ImportFromUrl(int watchId, [FromBody] ImportImageUrlDto dto, CancellationToken ct)
     {
         try
         {
-            var image = await imageService.ImportFromUrlAsync(watchId, UserId, dto.Url);
-            return image is null ? BadRequest("Could not download image.") : Ok(image);
+            var image = await imageService.ImportFromUrlAsync(watchId, UserId, dto.Url, ct);
+            return image is null ? BadRequest(new { error = "Could not download image." }) : Ok(image);
         }
         catch
         {
-            return BadRequest("Failed to download image from the provided URL.");
+            return BadRequest(new { error = "Failed to download image from the provided URL." });
         }
     }
 

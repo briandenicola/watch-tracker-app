@@ -39,4 +39,7 @@ public class Watch
     public ICollection<WearLog> WearLogs { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Optimistic concurrency token
+    public uint RowVersion { get; set; }
 }

@@ -7,7 +7,7 @@ namespace WatchTracker.Api.Services;
 
 public class WatchService(AppDbContext context) : IWatchService
 {
-    public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeRetired = false)
+    public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeRetired = false, CancellationToken ct = default)
     {
         var query = context.Watches
             .Include(w => w.Images)
@@ -18,19 +18,19 @@ public class WatchService(AppDbContext context) : IWatchService
 
         return await query
             .Select(w => MapToDto(w))
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<WatchDto?> GetByIdAsync(int id, int userId)
+    public async Task<WatchDto?> GetByIdAsync(int id, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         return watch is null ? null : MapToDto(watch);
     }
 
-    public async Task<WatchDto> CreateAsync(CreateWatchDto dto, int userId)
+    public async Task<WatchDto> CreateAsync(CreateWatchDto dto, int userId, CancellationToken ct = default)
     {
         var watch = new Watch
         {
@@ -64,15 +64,15 @@ public class WatchService(AppDbContext context) : IWatchService
         };
 
         context.Watches.Add(watch);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return MapToDto(watch);
     }
 
-    public async Task<WatchDto?> UpdateAsync(int id, UpdateWatchDto dto, int userId)
+    public async Task<WatchDto?> UpdateAsync(int id, UpdateWatchDto dto, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return null;
 
@@ -102,49 +102,63 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.IsWishList = dto.IsWishList;
         watch.UpdatedAt = DateTime.UtcNow;
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return MapToDto(watch);
     }
 
-    public async Task<bool> DeleteAsync(int id, int userId)
+    public async Task<bool> DeleteAsync(int id, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return false;
 
         context.Watches.Remove(watch);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return true;
     }
 
-    public async Task<WatchDto?> RecordWearAsync(int id, int userId)
+    public async Task<WatchDto?> RecordWearAsync(int id, int userId, CancellationToken ct = default)
     {
-        var watch = await context.Watches
-            .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
-
-        if (watch is null) return null;
-
-        watch.TimesWorn++;
-        watch.LastWornDate = DateTime.UtcNow;
-        watch.UpdatedAt = DateTime.UtcNow;
-
-        context.WearLogs.Add(new WearLog
+        // Retry on concurrency conflict (e.g. rapid double-tap)
+        for (var attempt = 0; attempt < 3; attempt++)
         {
-            WatchId = watch.Id,
-            UserId = userId,
-            WornDate = DateTime.UtcNow,
-        });
+            var watch = await context.Watches
+                .Include(w => w.Images)
+                .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
-        await context.SaveChangesAsync();
+            if (watch is null) return null;
 
-        return MapToDto(watch);
+            watch.TimesWorn++;
+            watch.LastWornDate = DateTime.UtcNow;
+            watch.UpdatedAt = DateTime.UtcNow;
+
+            context.WearLogs.Add(new WearLog
+            {
+                WatchId = watch.Id,
+                UserId = userId,
+                WornDate = DateTime.UtcNow,
+            });
+
+            try
+            {
+                await context.SaveChangesAsync(ct);
+                return MapToDto(watch);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < 2)
+            {
+                // Reload entity and retry
+                foreach (var entry in context.ChangeTracker.Entries())
+                    await entry.ReloadAsync(ct);
+            }
+        }
+
+        return null;
     }
 
-    public async Task<IEnumerable<WearLogDto>> GetWearLogsAsync(int userId)
+    public async Task<IEnumerable<WearLogDto>> GetWearLogsAsync(int userId, CancellationToken ct = default)
     {
         return await context.WearLogs
             .Include(wl => wl.Watch)
@@ -158,14 +172,14 @@ public class WatchService(AppDbContext context) : IWatchService
                 WatchModel = wl.Watch.Model,
                 WornDate = wl.WornDate,
             })
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<bool> DeleteWearLogAsync(int logId, int userId)
+    public async Task<bool> DeleteWearLogAsync(int logId, int userId, CancellationToken ct = default)
     {
         var log = await context.WearLogs
             .Include(wl => wl.Watch)
-            .FirstOrDefaultAsync(wl => wl.Id == logId && wl.UserId == userId);
+            .FirstOrDefaultAsync(wl => wl.Id == logId && wl.UserId == userId, ct);
 
         if (log is null) return false;
 
@@ -176,20 +190,20 @@ public class WatchService(AppDbContext context) : IWatchService
         var nextMostRecent = await context.WearLogs
             .Where(wl => wl.WatchId == log.WatchId && wl.Id != logId)
             .OrderByDescending(wl => wl.WornDate)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
         log.Watch.LastWornDate = nextMostRecent?.WornDate;
 
         context.WearLogs.Remove(log);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return true;
     }
 
-    public async Task<bool> UpdateWearLogDateAsync(int logId, int userId, DateTime newDate)
+    public async Task<bool> UpdateWearLogDateAsync(int logId, int userId, DateTime newDate, CancellationToken ct = default)
     {
         var log = await context.WearLogs
             .Include(wl => wl.Watch)
             .ThenInclude(w => w.WearLogs)
-            .FirstOrDefaultAsync(wl => wl.Id == logId && wl.UserId == userId);
+            .FirstOrDefaultAsync(wl => wl.Id == logId && wl.UserId == userId, ct);
 
         if (log is null) return false;
 
@@ -202,38 +216,38 @@ public class WatchService(AppDbContext context) : IWatchService
             .FirstOrDefault();
         log.Watch.LastWornDate = latestDate;
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return true;
     }
 
-    public async Task<WatchDto?> RetireAsync(int id, int userId)
+    public async Task<WatchDto?> RetireAsync(int id, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return null;
 
         watch.IsRetired = true;
         watch.RetiredAt = DateTime.UtcNow;
         watch.UpdatedAt = DateTime.UtcNow;
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return MapToDto(watch);
     }
 
-    public async Task<WatchDto?> UnretireAsync(int id, int userId)
+    public async Task<WatchDto?> UnretireAsync(int id, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return null;
 
         watch.IsRetired = false;
         watch.RetiredAt = null;
         watch.UpdatedAt = DateTime.UtcNow;
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return MapToDto(watch);
     }

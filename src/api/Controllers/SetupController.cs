@@ -24,7 +24,7 @@ public class SetupController(AppDbContext context, IAuthService authService, IAp
     public async Task<ActionResult<AuthResponseDto>> Setup(SetupDto dto)
     {
         if (await context.Users.AnyAsync())
-            return Conflict("Setup has already been completed.");
+            return Conflict(new { error = "Setup has already been completed." });
 
         // Create admin user
         var user = new User

@@ -11,7 +11,7 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
 {
     private const string KeyPrefix = "wt_";
 
-    public async Task<ApiKeyCreatedDto> CreateAsync(int userId, CreateApiKeyDto dto)
+    public async Task<ApiKeyCreatedDto> CreateAsync(int userId, CreateApiKeyDto dto, CancellationToken ct = default)
     {
         var rawKey = GenerateKey();
         var hash = HashKey(rawKey);
@@ -25,7 +25,7 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
         };
 
         context.ApiKeys.Add(apiKey);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return new ApiKeyCreatedDto
         {
@@ -36,7 +36,7 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
         };
     }
 
-    public async Task<List<ApiKeyDto>> GetAllAsync(int userId)
+    public async Task<List<ApiKeyDto>> GetAllAsync(int userId, CancellationToken ct = default)
     {
         return await context.ApiKeys
             .Where(k => k.UserId == userId)
@@ -48,31 +48,31 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
                 CreatedAt = k.CreatedAt,
                 LastUsedAt = k.LastUsedAt
             })
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task<bool> DeleteAsync(int id, int userId)
+    public async Task<bool> DeleteAsync(int id, int userId, CancellationToken ct = default)
     {
         var key = await context.ApiKeys
-            .FirstOrDefaultAsync(k => k.Id == id && k.UserId == userId);
+            .FirstOrDefaultAsync(k => k.Id == id && k.UserId == userId, ct);
         if (key is null) return false;
 
         context.ApiKeys.Remove(key);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return true;
     }
 
-    public async Task<User?> ValidateAsync(string rawKey)
+    public async Task<User?> ValidateAsync(string rawKey, CancellationToken ct = default)
     {
         var hash = HashKey(rawKey);
         var apiKey = await context.ApiKeys
             .Include(k => k.User)
-            .FirstOrDefaultAsync(k => k.KeyHash == hash);
+            .FirstOrDefaultAsync(k => k.KeyHash == hash, ct);
 
         if (apiKey is null) return null;
 
         apiKey.LastUsedAt = DateTime.UtcNow;
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return apiKey.User;
     }

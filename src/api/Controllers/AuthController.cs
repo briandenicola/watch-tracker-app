@@ -16,7 +16,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
     {
         var result = await authService.RegisterAsync(dto);
-        return result is null ? Conflict("Email already registered.") : Ok(result);
+        return result is null ? Conflict(new { error = "Email already registered." }) : Ok(result);
     }
 
     [HttpPost("login")]
@@ -24,7 +24,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
         var result = await authService.LoginAsync(dto);
-        return result is null ? Unauthorized("Invalid credentials.") : Ok(result);
+        return result is null ? Unauthorized(new { error = "Invalid credentials." }) : Ok(result);
     }
 
     [HttpPost("refresh")]
@@ -32,7 +32,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     public async Task<ActionResult<AuthResponseDto>> Refresh(RefreshTokenRequestDto dto)
     {
         var result = await authService.RefreshAsync(dto.RefreshToken);
-        return result is null ? Unauthorized("Invalid or expired refresh token.") : Ok(result);
+        return result is null ? Unauthorized(new { error = "Invalid or expired refresh token." }) : Ok(result);
     }
 
     [Authorize]
@@ -49,7 +49,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var result = await authService.ChangePasswordAsync(userId, dto);
-        return result ? NoContent() : BadRequest("Current password is incorrect.");
+        return result ? NoContent() : BadRequest(new { error = "Current password is incorrect." });
     }
 
     [Authorize]

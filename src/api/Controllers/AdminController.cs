@@ -73,11 +73,11 @@ public class AdminController(
     }
 
     [HttpPost("ollama/models")]
-    public async Task<ActionResult<List<string>>> GetOllamaModels([FromBody] OllamaUrlDto dto)
+    public async Task<ActionResult<List<string>>> GetOllamaModels([FromBody] OllamaUrlDto dto, CancellationToken ct)
     {
         try
         {
-            var models = await analysisService.GetOllamaModelsAsync(dto.Url);
+            var models = await analysisService.GetOllamaModelsAsync(dto.Url, ct);
             return Ok(models);
         }
         catch (Exception ex)

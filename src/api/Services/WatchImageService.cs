@@ -17,11 +17,11 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         ["image/gif"] = ".gif",
     };
 
-    public async Task<List<WatchImageDto>> UploadAsync(int watchId, int userId, IEnumerable<IFormFile> files)
+    public async Task<List<WatchImageDto>> UploadAsync(int watchId, int userId, IEnumerable<IFormFile> files, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId)
+            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId, ct)
             ?? throw new InvalidOperationException("Watch not found.");
 
         var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
@@ -61,7 +61,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             };
 
             context.WatchImages.Add(image);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(ct);
 
             result.Add(new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" });
         }
@@ -69,19 +69,19 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         return result;
     }
 
-    public async Task<WatchImageDto?> ImportFromUrlAsync(int watchId, int userId, string imageUrl)
+    public async Task<WatchImageDto?> ImportFromUrlAsync(int watchId, int userId, string imageUrl, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId, ct);
 
         if (watch is null) return null;
 
         var httpClient = httpClientFactory.CreateClient();
-        using var response = await httpClient.GetAsync(imageUrl);
+        using var response = await httpClient.GetAsync(imageUrl, ct);
         response.EnsureSuccessStatusCode();
 
-        var bytes = await response.Content.ReadAsByteArrayAsync();
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct);
 
         // Detect type from magic bytes first, then Content-Type header, then URL extension
         var contentType = DetectImageType(bytes)
@@ -97,7 +97,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         Directory.CreateDirectory(uploadsDir);
         var filePath = Path.Combine(uploadsDir, fileName);
 
-        await File.WriteAllBytesAsync(filePath, bytes);
+        await File.WriteAllBytesAsync(filePath, bytes, ct);
 
         var maxSort = watch.Images.Count > 0 ? watch.Images.Max(i => i.SortOrder) : -1;
         var image = new WatchImage
@@ -109,7 +109,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         };
 
         context.WatchImages.Add(image);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" };
     }
@@ -155,11 +155,11 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         catch { return null; }
     }
 
-    public async Task<bool> DeleteAsync(int imageId, int userId)
+    public async Task<bool> DeleteAsync(int imageId, int userId, CancellationToken ct = default)
     {
         var image = await context.WatchImages
             .Include(i => i.Watch)
-            .FirstOrDefaultAsync(i => i.Id == imageId && i.Watch.UserId == userId);
+            .FirstOrDefaultAsync(i => i.Id == imageId && i.Watch.UserId == userId, ct);
 
         if (image is null) return false;
 
@@ -168,16 +168,16 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             File.Delete(filePath);
 
         context.WatchImages.Remove(image);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return true;
     }
 
-    public async Task<bool> SetCoverAsync(int watchId, int imageId, int userId)
+    public async Task<bool> SetCoverAsync(int watchId, int imageId, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId);
+            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId, ct);
 
         if (watch is null) return false;
 
@@ -191,7 +191,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         }
         target.SortOrder = 0;
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return true;
     }
 

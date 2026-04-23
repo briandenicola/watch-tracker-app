@@ -12,11 +12,11 @@ public class WatchAnalysisService(
     HttpClient httpClient,
     IWebHostEnvironment env) : IWatchAnalysisService
 {
-    public async Task<string> AnalyzeAsync(int watchId, int userId)
+    public async Task<string> AnalyzeAsync(int watchId, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
-            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId)
+            .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId, ct)
             ?? throw new InvalidOperationException("Watch not found.");
 
         var image = watch.Images.OrderBy(i => i.SortOrder).FirstOrDefault()
@@ -26,7 +26,7 @@ public class WatchAnalysisService(
         if (!File.Exists(filePath))
             throw new InvalidOperationException("Image file not found.");
 
-        var imageBytes = await File.ReadAllBytesAsync(filePath);
+        var imageBytes = await File.ReadAllBytesAsync(filePath, ct);
         var base64 = Convert.ToBase64String(imageBytes);
 
         var prompt = await appSettings.GetAsync(
@@ -148,11 +148,11 @@ public class WatchAnalysisService(
         return analysis;
     }
 
-    public async Task<List<string>> GetOllamaModelsAsync(string url)
+    public async Task<List<string>> GetOllamaModelsAsync(string url, CancellationToken ct = default)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, $"{url.TrimEnd('/')}/api/tags");
-        var response = await httpClient.SendAsync(request);
-        var responseBody = await response.Content.ReadAsStringAsync();
+        var response = await httpClient.SendAsync(request, ct);
+        var responseBody = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException($"Failed to connect to Ollama at {url}");

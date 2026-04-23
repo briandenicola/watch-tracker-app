@@ -70,6 +70,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithOne(wl => wl.Watch)
                 .HasForeignKey(wl => wl.WatchId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(w => w.RowVersion)
+                .IsRowVersion();
         });
     }
 }
