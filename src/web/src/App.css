@@ -444,6 +444,8 @@ h1, h2, h3 {
   padding: 0;
   padding-top: 6px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .pwa-tab-item {
