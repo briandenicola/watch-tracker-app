@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Markdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
 import { getWatch, deleteWatch, deleteWatchImage, analyzeWatch, updateWatch, recordWear, retireWatch, removeBackground } from '../api/watches';
 import ImageCarousel from '../components/ImageCarousel';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -215,7 +216,7 @@ export default function WatchDetailPage() {
                   <>
                     <h3 style={{ marginTop: '0.75rem' }}>Notes</h3>
                     <div className="watch-detail-notes watch-detail-notes-scroll">
-                      <Markdown>{watch.notes}</Markdown>
+                      <Markdown rehypePlugins={[rehypeSanitize]}>{watch.notes}</Markdown>
                     </div>
                   </>
                 )}
@@ -257,7 +258,7 @@ export default function WatchDetailPage() {
           <div className="modal analysis-modal" onClick={(e) => e.stopPropagation()}>
             <h3>AI Analysis</h3>
             <div className="analysis-modal-body">
-              <Markdown>{pendingAnalysis}</Markdown>
+              <Markdown rehypePlugins={[rehypeSanitize]}>{pendingAnalysis}</Markdown>
             </div>
             <div className="modal-actions">
               <button className="btn" onClick={handleAcceptAnalysis}>Accept &amp; Save to Notes</button>

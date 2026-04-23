@@ -11,6 +11,7 @@ export default function EditWatchPage() {
   const [watch, setWatch] = useState<Watch | null>(null);
   const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function EditWatchPage() {
 
   async function handleSubmit(data: CreateWatch, files: File[]) {
     if (!id) return;
+    setSubmitting(true);
     try {
       await updateWatch(Number(id), data);
       if (files.length > 0) {
@@ -39,6 +41,8 @@ export default function EditWatchPage() {
     } catch (error) {
       console.error('Failed to update watch:', error);
       showToast('Failed to update watch. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -78,7 +82,7 @@ export default function EditWatchPage() {
         </fieldset>
       )}
 
-      <WatchForm initial={watch} onSubmit={handleSubmit} submitLabel="Update Watch" brands={brands} />
+      <WatchForm initial={watch} onSubmit={handleSubmit} submitLabel="Update Watch" brands={brands} isSubmitting={submitting} />
     </div>
   );
 }

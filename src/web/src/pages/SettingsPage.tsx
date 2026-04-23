@@ -39,6 +39,7 @@ export default function SettingsPage() {
   const [keyLoading, setKeyLoading] = useState(false);
   const [keyDeleting, setKeyDeleting] = useState<number | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [savingAccount, setSavingAccount] = useState(false);
 
   useEffect(() => {
     setUsername(user?.username ?? '');
@@ -76,12 +77,19 @@ export default function SettingsPage() {
 
   async function handleSaveAccount(e: FormEvent) {
     e.preventDefault();
-    if (username !== user?.username) {
-      await apiUpdateUsername(username);
-      updateUsername(username);
+    setSavingAccount(true);
+    try {
+      if (username !== user?.username) {
+        await apiUpdateUsername(username);
+        updateUsername(username);
+      }
+      setUserSaved(true);
+      safeTimeout(() => setUserSaved(false), 2000);
+    } catch {
+      showToast('Failed to save account settings.');
+    } finally {
+      setSavingAccount(false);
     }
-    setUserSaved(true);
-    safeTimeout(() => setUserSaved(false), 2000);
   }
 
   async function handleChangePassword(e: FormEvent) {
@@ -252,7 +260,7 @@ export default function SettingsPage() {
               <input type="email" value={user?.email ?? ''} disabled />
             </label>
           </div>
-          <button type="submit" className="btn">Save Account</button>
+          <button type="submit" className="btn" disabled={savingAccount}>{savingAccount ? 'Saving…' : 'Save Account'}</button>
           {userSaved && <span className="save-success">✓ Saved</span>}
         </fieldset>
       </form>

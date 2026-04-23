@@ -11,6 +11,7 @@ export default function SetupPage() {
   const { setTokenAndUser } = useAuth();
   const [step, setStep] = useState<Step>('admin');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   // Admin fields
   const [username, setUsername] = useState('');
@@ -59,6 +60,7 @@ export default function SetupPage() {
   async function handleFinish(e: FormEvent) {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     try {
       const res = await completeSetup({
         username,
@@ -74,6 +76,8 @@ export default function SetupPage() {
       setStep('done');
     } catch {
       setError('Setup failed. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -201,7 +205,7 @@ export default function SetupPage() {
           </label>
           <div className="setup-nav">
             <button type="button" className="btn" onClick={() => setStep('admin')}>← Back</button>
-            <button type="submit" className="btn">Finish Setup</button>
+            <button type="submit" className="btn" disabled={submitting}>{submitting ? 'Setting up…' : 'Finish Setup'}</button>
           </div>
         </form>
       )}

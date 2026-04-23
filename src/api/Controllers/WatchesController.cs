@@ -15,6 +15,7 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<WatchDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<WatchDto>>> GetAll([FromQuery] bool includeRetired = false, CancellationToken ct = default)
     {
         var watches = await watchService.GetAllAsync(UserId, includeRetired, ct);
@@ -22,6 +23,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> GetById(int id, CancellationToken ct)
     {
         var watch = await watchService.GetByIdAsync(id, UserId, ct);
@@ -29,6 +32,7 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<WatchDto>> Create(CreateWatchDto dto, CancellationToken ct)
     {
         var watch = await watchService.CreateAsync(dto, UserId, ct);
@@ -36,6 +40,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpPut("{id}")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> Update(int id, UpdateWatchDto dto, CancellationToken ct)
     {
         var watch = await watchService.UpdateAsync(id, dto, UserId, ct);
@@ -43,6 +49,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var result = await watchService.DeleteAsync(id, UserId, ct);
@@ -50,6 +58,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpPost("{id}/analyze")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<object>> Analyze(int id, CancellationToken ct)
     {
         try
@@ -64,6 +74,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpPost("{id}/wear")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> RecordWear(int id, CancellationToken ct)
     {
         var watch = await watchService.RecordWearAsync(id, UserId, ct);
@@ -71,6 +83,7 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpGet("wear-logs")]
+    [ProducesResponseType(typeof(IEnumerable<WearLogDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<WearLogDto>>> GetWearLogs(CancellationToken ct)
     {
         var logs = await watchService.GetWearLogsAsync(UserId, ct);
@@ -78,6 +91,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpDelete("wear-logs/{logId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteWearLog(int logId, CancellationToken ct)
     {
         var deleted = await watchService.DeleteWearLogAsync(logId, UserId, ct);
@@ -85,6 +100,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpPut("wear-logs/{logId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateWearLogDate(int logId, [FromBody] UpdateWearLogDateDto dto, CancellationToken ct)
     {
         var updated = await watchService.UpdateWearLogDateAsync(logId, UserId, dto.WornDate, ct);
@@ -92,6 +109,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpPut("{id}/retire")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> Retire(int id, CancellationToken ct)
     {
         var watch = await watchService.RetireAsync(id, UserId, ct);
@@ -99,6 +118,8 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     }
 
     [HttpPut("{id}/unretire")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> Unretire(int id, CancellationToken ct)
     {
         var watch = await watchService.UnretireAsync(id, UserId, ct);

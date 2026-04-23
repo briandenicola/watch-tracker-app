@@ -19,6 +19,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet("export")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Export()
     {
         var watches = await context.Watches
@@ -101,6 +102,8 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
     }
 
     [HttpPost("import")]
+    [ProducesResponseType(typeof(ImportResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ImportResultDto>> Import(IFormFile file)
     {
         if (file.Length == 0 || !file.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))

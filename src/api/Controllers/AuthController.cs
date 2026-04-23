@@ -13,6 +13,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("register")]
     [EnableRateLimiting("auth")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
     {
         var result = await authService.RegisterAsync(dto);
@@ -21,6 +23,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [HttpPost("login")]
     [EnableRateLimiting("auth")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
         var result = await authService.LoginAsync(dto);
@@ -29,6 +33,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [HttpPost("refresh")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponseDto>> Refresh(RefreshTokenRequestDto dto)
     {
         var result = await authService.RefreshAsync(dto.RefreshToken);
@@ -37,6 +43,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [Authorize]
     [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout(RefreshTokenRequestDto dto)
     {
         await authService.RevokeRefreshTokenAsync(dto.RefreshToken);
@@ -45,6 +52,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [Authorize]
     [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -54,6 +63,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AuthResponseDto>> Me()
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -63,6 +74,8 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [Authorize]
     [HttpPut("username")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateUsername(UpdateUsernameDto dto)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -72,6 +85,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [Authorize]
     [HttpPost("profile-image")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<object>> UploadProfileImage([FromForm] IFormFile file)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -91,6 +105,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     [Authorize]
     [HttpDelete("profile-image")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteProfileImage()
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

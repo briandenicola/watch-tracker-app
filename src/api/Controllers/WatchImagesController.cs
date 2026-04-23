@@ -15,6 +15,9 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpPost]
+    [ProducesResponseType(typeof(List<WatchImageDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<WatchImageDto>>> Upload(int watchId, [FromForm] List<IFormFile> files, CancellationToken ct)
     {
         if (files.Count == 0)
@@ -32,6 +35,8 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
     }
 
     [HttpDelete("{imageId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int watchId, int imageId, CancellationToken ct)
     {
         var result = await imageService.DeleteAsync(imageId, UserId, ct);
@@ -39,6 +44,8 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
     }
 
     [HttpPut("{imageId}/cover")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetCover(int watchId, int imageId, CancellationToken ct)
     {
         var result = await imageService.SetCoverAsync(watchId, imageId, UserId, ct);
@@ -46,6 +53,8 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
     }
 
     [HttpPost("import-url")]
+    [ProducesResponseType(typeof(WatchImageDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<WatchImageDto>> ImportFromUrl(int watchId, [FromBody] ImportImageUrlDto dto, CancellationToken ct)
     {
         try
@@ -60,6 +69,11 @@ public class WatchImagesController(IWatchImageService imageService) : Controller
     }
 
     [HttpPost("{imageId}/remove-background")]
+    [ProducesResponseType(typeof(WatchImageDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    [ProducesResponseType(StatusCodes.Status504GatewayTimeout)]
     public async Task<ActionResult<WatchImageDto>> RemoveBackground(int watchId, int imageId, CancellationToken cancellationToken)
     {
         try

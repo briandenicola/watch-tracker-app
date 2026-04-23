@@ -16,6 +16,7 @@ public class AdminController(
     ILogger<AdminController> logger) : ControllerBase
 {
     [HttpGet("users")]
+    [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<UserDto>>> GetUsers()
     {
         var users = await adminService.ListUsersAsync();
@@ -23,6 +24,8 @@ public class AdminController(
     }
 
     [HttpPost("users/{id}/unlock")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnlockUser(int id)
     {
         var result = await adminService.UnlockUserAsync(id);
@@ -30,6 +33,8 @@ public class AdminController(
     }
 
     [HttpPost("users/{id}/reset-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetPassword(int id, AdminResetPasswordDto dto)
     {
         var result = await adminService.ResetPasswordAsync(id, dto.NewPassword);
@@ -37,6 +42,7 @@ public class AdminController(
     }
 
     [HttpGet("settings")]
+    [ProducesResponseType(typeof(Dictionary<string, string>), StatusCodes.Status200OK)]
     public async Task<ActionResult<Dictionary<string, string>>> GetSettings()
     {
         var settings = await appSettings.GetAllAsync();
@@ -51,6 +57,7 @@ public class AdminController(
     }
 
     [HttpPut("settings")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UpdateSettings(List<AppSettingDto> settings)
     {
         foreach (var s in settings)
@@ -73,6 +80,8 @@ public class AdminController(
     }
 
     [HttpPost("ollama/models")]
+    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<List<string>>> GetOllamaModels([FromBody] OllamaUrlDto dto, CancellationToken ct)
     {
         try

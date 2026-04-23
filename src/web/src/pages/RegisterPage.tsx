@@ -9,15 +9,19 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     try {
       await register({ username, email, password });
       navigate('/');
     } catch {
       setError('Registration failed. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -38,7 +42,7 @@ export default function RegisterPage() {
           Password
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
-        <button type="submit">Register</button>
+        <button type="submit" disabled={submitting}>{submitting ? 'Registering…' : 'Register'}</button>
       </form>
       <p>Already have an account? <Link to="/login">Login</Link></p>
     </div>

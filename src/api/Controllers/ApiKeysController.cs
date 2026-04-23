@@ -15,6 +15,7 @@ public class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
+    [ProducesResponseType(typeof(List<ApiKeyDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ApiKeyDto>>> GetAll(CancellationToken ct)
     {
         var keys = await apiKeyService.GetAllAsync(UserId, ct);
@@ -22,6 +23,7 @@ public class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(ApiKeyCreatedDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<ApiKeyCreatedDto>> Create(CreateApiKeyDto dto, CancellationToken ct)
     {
         var result = await apiKeyService.CreateAsync(UserId, dto, ct);
@@ -29,6 +31,8 @@ public class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await apiKeyService.DeleteAsync(id, UserId, ct);

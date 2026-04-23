@@ -9,6 +9,7 @@ export default function AddWatchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [brands, setBrands] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
 
   const initialBrand = searchParams.get('brand') ?? '';
@@ -22,6 +23,7 @@ export default function AddWatchPage() {
   }, [showToast]);
 
   async function handleSubmit(data: CreateWatch, files: File[]) {
+    setSubmitting(true);
     try {
       const watch = await createWatch(data);
       if (files.length > 0) {
@@ -31,6 +33,8 @@ export default function AddWatchPage() {
     } catch (error) {
       console.error('Failed to create watch:', error);
       showToast('Failed to create watch. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -43,6 +47,7 @@ export default function AddWatchPage() {
         submitLabel="Add Watch"
         onCancel={() => navigate('/')}
         brands={brands}
+        isSubmitting={submitting}
       />
     </div>
   );

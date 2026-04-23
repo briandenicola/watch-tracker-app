@@ -7,12 +7,13 @@ interface WatchFormProps {
   submitLabel?: string;
   onCancel?: () => void;
   brands?: string[];
+  isSubmitting?: boolean;
 }
 
 const MOVEMENT_TYPES: MovementType[] = ['Automatic', 'Manual', 'Quartz', 'Digital'];
 const BAND_TYPE_OPTIONS = ['Leather Strap', 'Bracelet'];
 
-export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onCancel, brands = [] }: WatchFormProps) {
+export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onCancel, brands = [], isSubmitting = false }: WatchFormProps) {
   const [brand, setBrand] = useState(initial?.brand ?? '');
   const [brandFocused, setBrandFocused] = useState(false);
   const brandRef = useRef<HTMLDivElement>(null);
@@ -304,7 +305,7 @@ export default function WatchForm({ initial, onSubmit, submitLabel = 'Save', onC
       </fieldset>
 
       <div className="watch-form-actions">
-        <button type="submit">{submitLabel}</button>
+        <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving…' : submitLabel}</button>
         {onCancel && <button type="button" className="btn btn-danger" onClick={onCancel}>Cancel</button>}
       </div>
     </form>

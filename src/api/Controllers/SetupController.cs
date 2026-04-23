@@ -14,6 +14,7 @@ namespace WatchTracker.Api.Controllers;
 public class SetupController(AppDbContext context, IAuthService authService, IAppSettingsService appSettings) : ControllerBase
 {
     [HttpGet("status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<object>> GetStatus()
     {
         var needsSetup = !await context.Users.AnyAsync();
@@ -21,6 +22,8 @@ public class SetupController(AppDbContext context, IAuthService authService, IAp
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AuthResponseDto>> Setup(SetupDto dto)
     {
         if (await context.Users.AnyAsync())

@@ -8,10 +8,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     try {
       await login({ email, password });
       navigate('/');
@@ -22,6 +24,8 @@ export default function LoginPage() {
       } else {
         setError('Invalid email or password.');
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -38,7 +42,7 @@ export default function LoginPage() {
           Password
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
-        <button type="submit">Login</button>
+        <button type="submit" disabled={submitting}>{submitting ? 'Logging in…' : 'Login'}</button>
       </form>
       <p>Don&apos;t have an account? <Link to="/register">Register</Link></p>
     </div>
