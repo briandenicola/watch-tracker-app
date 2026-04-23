@@ -20,11 +20,16 @@ export default function AddWatchPage() {
   }, []);
 
   async function handleSubmit(data: CreateWatch, files: File[]) {
-    const watch = await createWatch(data);
-    if (files.length > 0) {
-      await uploadWatchImages(watch.id, files);
+    try {
+      const watch = await createWatch(data);
+      if (files.length > 0) {
+        await uploadWatchImages(watch.id, files);
+      }
+      navigate(`/watches/${watch.id}`);
+    } catch (error) {
+      console.error('Failed to create watch:', error);
+      alert('Failed to create watch. Please try again.');
     }
-    navigate(`/watches/${watch.id}`);
   }
 
   return (
