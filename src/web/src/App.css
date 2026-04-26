@@ -152,7 +152,7 @@ h1, h2, h3 {
 
   /* Watch detail page header needs top margin in PWA to clear the fixed header */
   .watch-detail-header {
-    margin-top: 0.5rem;
+    margin-top: 1.25rem;
   }
 
   .watch-detail-header h1 {
