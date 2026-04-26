@@ -62,6 +62,19 @@ h1, h2, h3 {
 }
 
 @media (display-mode: standalone) {
+  /* PWA shell: flex column fills viewport so fixed bottom bar always has
+     enough layout height behind it — matches drinks-and-desserts pattern */
+  .pwa-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+  }
+
+  .pwa-shell > .container {
+    flex: 1;
+  }
+
   .hamburger {
     display: flex;
   }
@@ -126,8 +139,6 @@ h1, h2, h3 {
 
   .container {
     padding: calc(56px + env(safe-area-inset-top, 0px)) 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
-    min-height: 100dvh;
-    min-height: -webkit-fill-available;
   }
 
   /* Consistent page titles in PWA mode */

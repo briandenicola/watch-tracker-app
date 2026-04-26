@@ -32,6 +32,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <div className={isPwa ? 'pwa-shell' : undefined}>
       {user && !needsSetup && (
         <header className={`app-header${isPwa ? ' pwa-app-header' : ''}`}>
           <div className="app-header-left">
@@ -95,6 +96,7 @@ function App() {
       </main>
       {user && !isPwa && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
       {user && !needsSetup && isPwa && <PwaBottomBar />}
+      </div>
     </BrowserRouter>
   );
 }
