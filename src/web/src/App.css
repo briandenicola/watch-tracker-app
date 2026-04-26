@@ -164,11 +164,6 @@ h1, h2, h3 {
   .watch-detail-header h1 {
     margin: 0;
   }
-
-  /* Carousel image sized for mobile viewport */
-  .carousel-image {
-    height: 45dvh;
-  }
 }
 
 .app-title {
@@ -900,6 +895,13 @@ h1, h2, h3 {
   object-fit: contain;
   display: block;
   background: var(--carousel-img-bg);
+}
+
+/* PWA: constrain carousel image to mobile viewport */
+@media (display-mode: standalone) {
+  .carousel-image {
+    height: 35dvh;
+  }
 }
 
 .carousel-btn {
