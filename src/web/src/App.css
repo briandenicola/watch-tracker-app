@@ -2,7 +2,6 @@
   max-width: 960px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
-  flex: 1;
 }
 
 h1, h2, h3 {
@@ -127,6 +126,8 @@ h1, h2, h3 {
 
   .container {
     padding: calc(56px + env(safe-area-inset-top, 0px)) 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
   }
 
   /* Consistent page titles in PWA mode */
@@ -136,6 +137,20 @@ h1, h2, h3 {
     font-weight: 500;
     letter-spacing: 0.04em;
     margin: 1.25rem 0 0.75rem 0.25rem;
+  }
+
+  /* Watch detail page header needs top margin in PWA to clear the fixed header */
+  .watch-detail-header {
+    margin-top: 0.5rem;
+  }
+
+  .watch-detail-header h1 {
+    margin: 0;
+  }
+
+  /* Carousel image sized for mobile viewport */
+  .carousel-image {
+    max-height: 45dvh;
   }
 }
 
@@ -859,10 +874,12 @@ h1, h2, h3 {
   position: relative;
   border-radius: 8px;
   overflow: hidden;
+  background: var(--carousel-img-bg);
 }
 
 .carousel-image {
   width: 100%;
+  height: auto;
   max-height: 400px;
   object-fit: contain;
   display: block;
