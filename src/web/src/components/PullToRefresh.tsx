@@ -16,8 +16,22 @@ export default function PullToRefresh({ onRefresh, children }: Props) {
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (refreshing) return;
-    // Only activate when scrolled to top
-    if (window.scrollY > 0) return;
+    // Walk up the DOM to find the nearest scrollable ancestor.
+    // In PWA mode the .container element (not window) is the scroll root, so
+    // window.scrollY is always 0 and would falsely allow pull-to-refresh when
+    // the user has already scrolled down inside the container.
+    const scrollTop = (() => {
+      let el = containerRef.current?.parentElement;
+      while (el && el !== document.documentElement) {
+        const { overflow, overflowY } = window.getComputedStyle(el);
+        if (/(auto|scroll)/.test(overflow + overflowY) && el.scrollTop > 0) {
+          return el.scrollTop;
+        }
+        el = el.parentElement;
+      }
+      return window.scrollY;
+    })();
+    if (scrollTop > 0) return;
     startY.current = e.touches[0].clientY;
     pulling.current = true;
   }, [refreshing]);
