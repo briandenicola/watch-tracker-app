@@ -30,6 +30,12 @@ h1, h2, h3 {
   display: flex;
   align-items: center;
   gap: 1rem;
+  color: #fff;
+}
+
+.app-header nav a,
+.app-header nav button {
+  color: #fff;
 }
 
 .app-header button {
