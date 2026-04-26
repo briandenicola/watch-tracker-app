@@ -2,6 +2,7 @@
   max-width: 960px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
+  flex: 1;
 }
 
 h1, h2, h3 {
@@ -126,7 +127,6 @@ h1, h2, h3 {
 
   .container {
     padding: calc(56px + env(safe-area-inset-top, 0px)) 1rem calc(64px + env(safe-area-inset-bottom, 0px)) 1rem;
-    min-height: calc(100dvh - 44px);
   }
 
   /* Consistent page titles in PWA mode */
@@ -135,7 +135,7 @@ h1, h2, h3 {
     font-size: 1.3rem;
     font-weight: 500;
     letter-spacing: 0.04em;
-    margin: 0.75rem 0 0.75rem 0.25rem;
+    margin: 1.25rem 0 0.75rem 0.25rem;
   }
 }
 
@@ -1334,6 +1334,7 @@ h1, h2, h3 {
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .watch-form textarea {
