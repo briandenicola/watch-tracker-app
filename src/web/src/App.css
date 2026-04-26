@@ -161,7 +161,7 @@ h1, h2, h3 {
 
   /* Carousel image sized for mobile viewport */
   .carousel-image {
-    max-height: 45dvh;
+    height: 45dvh;
   }
 }
 
@@ -890,8 +890,7 @@ h1, h2, h3 {
 
 .carousel-image {
   width: 100%;
-  height: auto;
-  max-height: 400px;
+  height: 400px;
   object-fit: contain;
   display: block;
   background: var(--carousel-img-bg);
