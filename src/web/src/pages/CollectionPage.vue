@@ -169,6 +169,14 @@
 
     <!-- Grid (Desktop) -->
     <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+      <!-- Add New Card -->
+      <RouterLink
+        :to="tab === 'wishlist' ? '/wishlist/new' : '/watches/new'"
+        class="group bg-bg-card border-2 border-dashed border-border rounded-xl overflow-hidden hover:border-accent/50 transition-colors flex flex-col items-center justify-center min-h-[320px]"
+      >
+        <div class="text-4xl text-text-muted group-hover:text-accent transition-colors mb-2">+</div>
+        <p class="text-sm text-text-muted group-hover:text-accent transition-colors">{{ tab === 'wishlist' ? 'Add to Wish List' : 'Add Watch' }}</p>
+      </RouterLink>
       <RouterLink
         v-for="watch in filteredWatches"
         :key="watch.id"
