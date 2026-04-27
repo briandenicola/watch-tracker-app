@@ -336,7 +336,20 @@ function removePhoto() {
 }
 
 function handleFormSubmit() {
-  emit('submit', formData, photoFile.value || undefined)
+  // Clean empty strings to null/undefined for API validation (e.g. [Url] rejects "")
+  const cleaned: Record<string, any> = {}
+  for (const [key, value] of Object.entries(formData)) {
+    if (value === '' || value === null) {
+      cleaned[key] = undefined
+    } else {
+      cleaned[key] = value
+    }
+  }
+  // Required fields must always be present
+  cleaned.brand = formData.brand
+  cleaned.model = formData.model
+  cleaned.movementType = formData.movementType
+  emit('submit', cleaned as CreateWatch, photoFile.value || undefined)
 }
 </script>
 
