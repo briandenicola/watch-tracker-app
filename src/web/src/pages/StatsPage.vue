@@ -100,11 +100,33 @@
       <div class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Recent Activity</h3>
         <div v-if="recentLogs.length === 0" class="text-sm text-text-muted">No wear logs yet</div>
-        <div v-else class="space-y-3">
-          <div v-for="log in recentLogs" :key="log.id" class="flex items-center gap-3">
-            <span class="text-xs text-text-muted w-20 flex-shrink-0">{{ formatDate(log.wornDate) }}</span>
-            <RouterLink :to="`/watches/${log.watchId}`" class="text-sm text-text hover:text-accent transition-colors truncate">
-              {{ log.watchBrand }} {{ log.watchModel }}
+        <div v-else class="relative">
+          <!-- Timeline line -->
+          <div class="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
+          <div class="space-y-4">
+            <RouterLink
+              v-for="(log, i) in recentLogs"
+              :key="log.id"
+              :to="`/watches/${log.watchId}`"
+              class="flex items-start gap-4 group relative"
+            >
+              <!-- Timeline dot -->
+              <div class="relative z-10 flex-shrink-0 mt-1">
+                <div
+                  class="w-[9px] h-[9px] rounded-full border-2 transition-colors ml-[11px]"
+                  :class="i === 0 ? 'bg-accent border-accent' : 'bg-bg-card border-text-muted group-hover:border-accent'"
+                />
+              </div>
+              <!-- Card -->
+              <div class="flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg bg-bg-surface/50 border border-transparent group-hover:border-accent/30 transition-all">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-text font-medium truncate group-hover:text-accent transition-colors">
+                    {{ log.watchBrand }} {{ log.watchModel }}
+                  </p>
+                  <p class="text-xs text-text-muted mt-0.5">{{ formatRelativeDate(log.wornDate) }}</p>
+                </div>
+                <span class="text-xs text-text-muted flex-shrink-0">{{ formatDate(log.wornDate) }}</span>
+              </div>
             </RouterLink>
           </div>
         </div>
@@ -173,6 +195,15 @@ function daysSince(dateStr: string): number {
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function formatRelativeDate(dateStr: string): string {
+  const days = daysSince(dateStr)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days} days ago`
+  if (days < 14) return '1 week ago'
+  return `${Math.floor(days / 7)} weeks ago`
 }
 
 async function load() {
