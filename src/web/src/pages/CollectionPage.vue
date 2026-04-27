@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- Tab Toggle + Filter Row -->
+    <!-- Tab Toggle + Filter Menu -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex gap-1 bg-bg-surface border border-border rounded-lg p-1">
         <button
@@ -18,38 +18,63 @@
           Wish List
         </button>
       </div>
-      <span class="text-sm text-text-muted">{{ filteredWatches.length }} watches</span>
+
+      <!-- Filter toggle + count -->
+      <button
+        @click="showFilters = !showFilters"
+        class="flex items-center gap-2 px-3 py-2 text-sm text-text-muted hover:text-text transition-colors"
+        :class="{ '!text-accent': hasActiveFilters }"
+      >
+        <span>{{ filteredWatches.length }}</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2" />
+        </svg>
+      </button>
     </div>
 
-    <!-- Filter & Sort Controls -->
-    <div class="flex flex-wrap items-center gap-2 mb-4">
-      <select
-        v-model="filterBrand"
-        class="px-3 py-2 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
-      >
-        <option value="">All Brands</option>
-        <option v-for="brand in brands" :key="brand" :value="brand">{{ brand }}</option>
-      </select>
-      <select
-        v-model="filterMovement"
-        class="px-3 py-2 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
-      >
-        <option value="">All Movements</option>
-        <option value="Automatic">Automatic</option>
-        <option value="Manual">Manual</option>
-        <option value="Quartz">Quartz</option>
-        <option value="Digital">Digital</option>
-      </select>
-      <select
-        v-model="sortBy"
-        class="px-3 py-2 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
-      >
-        <option value="dateAdded">Date Added</option>
-        <option value="brand">Brand</option>
-        <option value="lastWorn">Last Worn</option>
-        <option value="timesWorn">Most Worn</option>
-      </select>
-    </div>
+    <!-- Collapsible Filter Panel -->
+    <Transition name="filter">
+      <div v-if="showFilters" class="mb-4 p-3 bg-bg-surface border border-border rounded-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-text-secondary uppercase tracking-wider">Filter & Sort</span>
+          <button
+            v-if="hasActiveFilters"
+            @click="clearFilters"
+            class="text-xs text-accent hover:text-accent-hover transition-colors"
+          >
+            Clear All
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <select
+            v-model="filterBrand"
+            class="px-3 py-2.5 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
+          >
+            <option value="">All Brands</option>
+            <option v-for="brand in brands" :key="brand" :value="brand">{{ brand }}</option>
+          </select>
+          <select
+            v-model="filterMovement"
+            class="px-3 py-2.5 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
+          >
+            <option value="">All Movements</option>
+            <option value="Automatic">Automatic</option>
+            <option value="Manual">Manual</option>
+            <option value="Quartz">Quartz</option>
+            <option value="Digital">Digital</option>
+          </select>
+          <select
+            v-model="sortBy"
+            class="px-3 py-2.5 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
+          >
+            <option value="dateAdded">Date Added</option>
+            <option value="brand">Brand</option>
+            <option value="lastWorn">Last Worn</option>
+            <option value="timesWorn">Most Worn</option>
+          </select>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center py-20">
@@ -81,10 +106,10 @@
     <div v-else-if="!isDesktop" class="relative">
       <div class="overflow-hidden rounded-xl">
         <div
+          ref="swipeEl"
           class="flex transition-transform duration-300 ease-out"
           :style="{ transform: `translateX(-${currentIndex * 100}%)` }"
           @touchstart="onTouchStart"
-          @touchmove="onTouchMove"
           @touchend="onTouchEnd"
         >
           <div
@@ -184,6 +209,7 @@ const tab = ref<'collection' | 'wishlist'>('collection')
 const currentIndex = ref(0)
 const windowWidth = ref(window.innerWidth)
 const isDesktop = computed(() => windowWidth.value >= 1024)
+const swipeEl = ref<HTMLElement | null>(null)
 
 // Filter & Sort state
 const filterBrand = ref('')
@@ -231,6 +257,10 @@ const filteredWatches = computed(() => {
   return watches
 })
 
+// Filter panel
+const showFilters = ref(false)
+const hasActiveFilters = computed(() => filterBrand.value !== '' || filterMovement.value !== '' || sortBy.value !== 'dateAdded')
+
 function clearFilters() {
   filterBrand.value = ''
   filterMovement.value = ''
@@ -240,22 +270,41 @@ function clearFilters() {
 // Reset carousel index when tab or filters change
 vueWatch([tab, filterBrand, filterMovement, sortBy], () => { currentIndex.value = 0 })
 
-// Touch handling for swipe
+// Touch handling for swipe — lock axis to prevent vertical shift
 let touchStartX = 0
+let touchStartY = 0
 let touchDeltaX = 0
+let isHorizontalSwipe: boolean | null = null
 
 function onTouchStart(e: TouchEvent) {
   touchStartX = e.touches[0].clientX
+  touchStartY = e.touches[0].clientY
+  touchDeltaX = 0
+  isHorizontalSwipe = null
 }
 
 function onTouchMove(e: TouchEvent) {
-  touchDeltaX = e.touches[0].clientX - touchStartX
+  const dx = e.touches[0].clientX - touchStartX
+  const dy = e.touches[0].clientY - touchStartY
+
+  // Determine swipe direction on first significant movement
+  if (isHorizontalSwipe === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+    isHorizontalSwipe = Math.abs(dx) > Math.abs(dy)
+  }
+
+  if (isHorizontalSwipe) {
+    e.preventDefault() // Prevent vertical scroll during horizontal swipe
+    touchDeltaX = dx
+  }
 }
 
 function onTouchEnd() {
-  if (touchDeltaX < -50) next()
-  else if (touchDeltaX > 50) prev()
+  if (isHorizontalSwipe) {
+    if (touchDeltaX < -50) next()
+    else if (touchDeltaX > 50) prev()
+  }
   touchDeltaX = 0
+  isHorizontalSwipe = null
 }
 
 function next() {
@@ -277,5 +326,29 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => window.removeEventListener('resize', onResize))
+// Register touchmove as non-passive once the swipe element renders
+vueWatch(swipeEl, (el) => {
+  if (el) {
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
+  if (swipeEl.value) {
+    swipeEl.value.removeEventListener('touchmove', onTouchMove)
+  }
+})
 </script>
+
+<style scoped>
+.filter-enter-active,
+.filter-leave-active {
+  transition: all 0.2s ease;
+}
+.filter-enter-from,
+.filter-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>
