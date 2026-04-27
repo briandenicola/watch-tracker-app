@@ -51,6 +51,24 @@
         <p v-if="usernameMsg" class="text-sm mt-2" :class="usernameMsg.includes('Error') ? 'text-danger' : 'text-success'">{{ usernameMsg }}</p>
       </section>
 
+      <!-- Appearance Section -->
+      <section class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">Appearance</h3>
+        <div class="flex gap-2">
+          <button
+            v-for="opt in themeOptions"
+            :key="opt.value"
+            @click="theme.setTheme(opt.value)"
+            class="flex-1 px-4 py-3 border rounded-lg text-sm font-medium transition-colors text-center"
+            :class="theme.mode.value === opt.value
+              ? 'border-accent bg-accent/10 text-accent'
+              : 'border-border bg-bg-surface text-text-secondary hover:border-accent/50'"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </section>
+
       <!-- Password Section -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Change Password</h3>
@@ -148,10 +166,18 @@ import { ref, onMounted } from 'vue'
 import type { ApiKey } from '@/types'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import { useTheme, type ThemeMode } from '@/stores/theme'
 
 const authStore = useAuthStore()
+const theme = useTheme()
 const loading = ref(true)
 const profileImage = ref<string | null>(null)
+
+const themeOptions: { value: ThemeMode; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+]
 
 // Profile
 const newUsername = ref('')
