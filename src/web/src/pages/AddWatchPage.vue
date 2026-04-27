@@ -1,0 +1,32 @@
+<template>
+  <div>
+    <h2 class="font-display text-2xl font-semibold text-text mb-6">Add Watch</h2>
+    <WatchForm @submit="handleSubmit" :loading="loading" />
+    <p v-if="error" class="text-danger text-sm mt-4">{{ error }}</p>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { createWatch } from '@/services/watches'
+import WatchForm from '@/components/common/WatchForm.vue'
+import type { CreateWatch } from '@/types'
+
+const router = useRouter()
+const loading = ref(false)
+const error = ref('')
+
+async function handleSubmit(data: CreateWatch) {
+  loading.value = true
+  error.value = ''
+  try {
+    const watch = await createWatch(data)
+    router.push(`/watches/${watch.id}`)
+  } catch (e: any) {
+    error.value = e.response?.data?.error || 'Failed to create watch'
+  } finally {
+    loading.value = false
+  }
+}
+</script>

@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* === Luxury Watch Theme === */
+@theme {
+  --color-bg: #1a1a1a;
+  --color-bg-surface: #242424;
+  --color-bg-elevated: #2e2e2e;
+  --color-bg-card: #1f1f1f;
+  --color-accent: #c4a35a;
+  --color-accent-hover: #d4b76a;
+  --color-accent-muted: #a08642;
+  --color-text: #f5f0e8;
+  --color-text-secondary: #b8b0a4;
+  --color-text-muted: #7a7368;
+  --color-border: #3a3632;
+  --color-border-light: #2a2826;
+  --color-danger: #c45a5a;
+  --color-danger-hover: #d46a6a;
+  --color-success: #5ac47a;
+  --color-nav-bg: #141414;
+  --color-sidebar-bg: #1a1a1a;
+  --font-display: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+}
+
+/* === Base Styles === */
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100dvh;
+}
+
+/* Safe area utilities */
+.safe-area-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.safe-area-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
