@@ -85,7 +85,10 @@
 
     <div>
       <label class="block text-sm font-medium text-text-secondary mb-1">Purchase Price *</label>
-      <input v-model.number="formData.purchasePrice" type="number" step="0.01" required placeholder="0.00" class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+      <div class="relative">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-sm">$</span>
+        <input v-model.number="formData.purchasePrice" type="number" step="0.01" min="0" required placeholder="0.00" class="w-full pl-8 pr-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+      </div>
     </div>
 
     <!-- Optional Fields (collapsible) -->
@@ -115,7 +118,25 @@
             </div>
             <div>
               <label class="block text-xs font-medium text-text-muted mb-1">Crystal Type</label>
-              <input v-model="formData.crystalType" placeholder="Sapphire" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              <div class="relative">
+                <select
+                  v-if="!customCrystalType"
+                  v-model="formData.crystalType"
+                  class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
+                >
+                  <option value="">Select...</option>
+                  <option v-for="ct in crystalTypes" :key="ct" :value="ct">{{ ct }}</option>
+                  <option value="__custom__">Other...</option>
+                </select>
+                <div v-else class="flex gap-1">
+                  <input
+                    v-model="formData.crystalType"
+                    placeholder="Custom type"
+                    class="flex-1 px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                  />
+                  <button type="button" @click="customCrystalType = false; formData.crystalType = ''" class="px-2 text-text-muted hover:text-text text-xs">✕</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -161,7 +182,7 @@
 
           <div>
             <label class="block text-xs font-medium text-text-muted mb-1">Notes</label>
-            <textarea v-model="formData.notes" rows="2" placeholder="Any additional notes..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors resize-none" />
+            <textarea v-model="formData.notes" rows="6" placeholder="Any additional notes..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors resize-y" />
           </div>
 
           <div>
@@ -195,6 +216,7 @@ const emit = defineEmits<{
 }>()
 
 const bandTypes = ['Bracelet', 'Leather', 'Rubber', 'NATO', 'Canvas', 'Mesh', 'Silicone', 'Ceramic', 'Titanium']
+const crystalTypes = ['Sapphire', 'Mineral', 'Hardlex', 'Acrylic', 'Hesalite']
 
 const showOptional = ref(false)
 const showBrandSuggestions = ref(false)
@@ -202,6 +224,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 const customBandType = ref(false)
+const customCrystalType = ref(false)
 
 // Show existing image from the watch being edited
 const existingImageUrl = computed(() => {
@@ -239,12 +262,21 @@ const formData = reactive<CreateWatch>({
 if (props.initial?.bandType && !bandTypes.includes(props.initial.bandType)) {
   customBandType.value = true
 }
+if (props.initial?.crystalType && !crystalTypes.includes(props.initial.crystalType)) {
+  customCrystalType.value = true
+}
 
 // Watch for "Other..." selection
 vueWatch(() => formData.bandType, (val) => {
   if (val === '__custom__') {
     customBandType.value = true
     formData.bandType = ''
+  }
+})
+vueWatch(() => formData.crystalType, (val) => {
+  if (val === '__custom__') {
+    customCrystalType.value = true
+    formData.crystalType = ''
   }
 })
 
