@@ -69,6 +69,25 @@
         </div>
       </section>
 
+      <!-- Collection Preferences Section -->
+      <section class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">Collection</h3>
+        <label class="text-sm text-text-secondary mb-2 block">Default Sort Order</label>
+        <div class="flex gap-2 flex-wrap">
+          <button
+            v-for="opt in sortOptions"
+            :key="opt.value"
+            @click="preferences.setDefaultSort(opt.value)"
+            class="px-4 py-2.5 border rounded-lg text-sm font-medium transition-colors"
+            :class="preferences.prefs.value.defaultSort === opt.value
+              ? 'border-accent bg-accent/10 text-accent'
+              : 'border-border bg-bg-surface text-text-secondary hover:border-accent/50'"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </section>
+
       <!-- Password Section -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Change Password</h3>
@@ -167,9 +186,11 @@ import type { ApiKey } from '@/types'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme, type ThemeMode } from '@/stores/theme'
+import { usePreferences, type SortOption } from '@/stores/preferences'
 
 const authStore = useAuthStore()
 const theme = useTheme()
+const preferences = usePreferences()
 const loading = ref(true)
 const profileImage = ref<string | null>(null)
 
@@ -177,6 +198,13 @@ const themeOptions: { value: ThemeMode; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
   { value: 'system', label: 'System' },
+]
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'dateAdded', label: 'Date Added' },
+  { value: 'brand', label: 'Brand' },
+  { value: 'lastWorn', label: 'Last Worn' },
+  { value: 'timesWorn', label: 'Most Worn' },
 ]
 
 // Profile

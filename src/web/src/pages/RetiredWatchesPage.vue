@@ -1,5 +1,6 @@
 <template>
   <div>
+    <PullToRefresh :pulling="pulling" :refreshing="refreshing" :pull-distance="pullDistance" />
     <h2 class="font-display text-2xl font-semibold text-text mb-6">Retired Watches</h2>
 
     <div v-if="loading" class="flex items-center justify-center py-20">
@@ -57,6 +58,10 @@ import { ref, onMounted } from 'vue'
 import type { Watch } from '@/types'
 import { imageUrl, unretireWatch } from '@/services/watches'
 import { api } from '@/services/api'
+import { usePullToRefresh } from '@/composables/usePullToRefresh'
+import PullToRefresh from '@/components/common/PullToRefresh.vue'
+
+const { refreshing, pullDistance, pulling } = usePullToRefresh(load)
 
 const watches = ref<Watch[]>([])
 const loading = ref(true)

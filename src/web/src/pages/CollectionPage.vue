@@ -1,5 +1,8 @@
 <template>
   <div>
+    <!-- Pull to Refresh indicator -->
+    <PullToRefresh :pulling="pulling" :refreshing="refreshing" :pull-distance="pullDistance" />
+
     <!-- Tab Toggle + Filter Menu -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex gap-1 bg-bg-surface border border-border rounded-lg p-1">
@@ -202,6 +205,11 @@
 import { ref, computed, onMounted, onUnmounted, watch as vueWatch } from 'vue'
 import type { Watch } from '@/types'
 import { getWatches, imageUrl } from '@/services/watches'
+import { usePullToRefresh } from '@/composables/usePullToRefresh'
+import { usePreferences } from '@/stores/preferences'
+import PullToRefresh from '@/components/common/PullToRefresh.vue'
+
+const { prefs } = usePreferences()
 
 const allWatches = ref<Watch[]>([])
 const loading = ref(true)
@@ -211,10 +219,10 @@ const windowWidth = ref(window.innerWidth)
 const isDesktop = computed(() => windowWidth.value >= 1024)
 const swipeEl = ref<HTMLElement | null>(null)
 
-// Filter & Sort state
+// Filter & Sort state — default from preferences
 const filterBrand = ref('')
 const filterMovement = ref('')
-const sortBy = ref('dateAdded')
+const sortBy = ref(prefs.value.defaultSort)
 
 const brands = computed(() => {
   const tabWatches = tab.value === 'wishlist'
@@ -316,6 +324,12 @@ function prev() {
 }
 
 function onResize() { windowWidth.value = window.innerWidth }
+
+// Pull-to-refresh
+async function reload() {
+  allWatches.value = await getWatches()
+}
+const { refreshing, pullDistance, pulling } = usePullToRefresh(reload)
 
 onMounted(async () => {
   window.addEventListener('resize', onResize)
