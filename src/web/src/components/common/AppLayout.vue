@@ -128,7 +128,7 @@
           class="flex flex-col items-center gap-0.5 min-w-[48px] py-1 text-text-muted transition-colors"
           :class="{ '!text-accent': isActiveTab(tab.to) }"
         >
-          <AppIcon :name="tab.icon" :size="22" :stroke-width="isActiveTab(tab.to) ? 2 : 1.5" />
+          <AppIcon :name="tab.icon" :size="22" :stroke-width="isActiveTab(tab.to) ? 1.75 : 1.25" />
           <span class="text-[10px] font-medium">{{ tab.label }}</span>
         </RouterLink>
         <!-- Raised FAB for Add -->
@@ -136,7 +136,7 @@
           to="/watches/new"
           class="flex items-center justify-center w-14 h-14 -mt-6 rounded-full bg-accent text-bg shadow-lg shadow-accent/30 hover:bg-accent-hover transition-colors"
         >
-          <AppIcon name="plus" :size="28" :stroke-width="2" />
+          <AppIcon name="plus" :size="28" :stroke-width="1.75" />
         </RouterLink>
         <RouterLink
           v-for="tab in bottomTabsRight"
@@ -145,7 +145,7 @@
           class="flex flex-col items-center gap-0.5 min-w-[48px] py-1 text-text-muted transition-colors"
           :class="{ '!text-accent': isActiveTab(tab.to) }"
         >
-          <AppIcon :name="tab.icon" :size="22" :stroke-width="isActiveTab(tab.to) ? 2 : 1.5" />
+          <AppIcon :name="tab.icon" :size="22" :stroke-width="isActiveTab(tab.to) ? 1.75 : 1.25" />
           <span class="text-[10px] font-medium">{{ tab.label }}</span>
         </RouterLink>
       </div>
