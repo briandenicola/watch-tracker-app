@@ -45,34 +45,64 @@
       <!-- Header -->
       <div class="mb-4">
         <h1 class="font-display text-2xl font-semibold text-text">{{ watch.brand }} {{ watch.model }}</h1>
-        <p class="text-sm text-text-muted mt-1">{{ watch.movementType }} · Worn {{ watch.timesWorn }} times</p>
+        <p v-if="watch.isWishList" class="text-sm text-text-muted mt-1">Wish List</p>
+        <p v-else class="text-sm text-text-muted mt-1">{{ watch.movementType }} · Worn {{ watch.timesWorn }} times</p>
+      </div>
+
+      <!-- Price callout -->
+      <div v-if="watch.purchasePrice" class="mb-4">
+        <span class="inline-block px-4 py-2 bg-accent/10 border border-accent/30 rounded-lg text-lg font-display font-semibold text-accent">
+          ${{ watch.purchasePrice.toFixed(2) }}
+        </span>
+        <span v-if="watch.purchaseDate" class="text-xs text-text-muted ml-3">
+          {{ watch.isWishList ? 'Target price' : `Purchased ${new Date(watch.purchaseDate).toLocaleDateString()}` }}
+        </span>
       </div>
 
       <!-- Actions -->
       <div class="flex flex-wrap gap-2 mb-6">
-        <button @click="handleWear" :disabled="wearLoading" class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
-          {{ wearLoading ? 'Recording...' : '⌚ Wore Today' }}
-        </button>
-        <RouterLink :to="`/watches/${watch.id}/edit`" class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors">
-          Edit
-        </RouterLink>
-        <label class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors cursor-pointer">
-          {{ uploading ? 'Uploading…' : 'Upload Images' }}
-          <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
-        </label>
-        <button
-          @click="handleAnalyze"
-          :disabled="analyzing || !watch.imageUrls.length"
-          class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50"
-        >
-          {{ analyzing ? 'Analyzing…' : '🤖 AI Analyze' }}
-        </button>
-        <button @click="handleRetire" class="px-4 py-2 bg-bg-surface border border-border text-text-secondary text-sm rounded-lg hover:border-accent/50 transition-colors">
-          Retire
-        </button>
-        <button @click="handleDelete" class="px-4 py-2 bg-bg-surface border border-danger/50 text-danger text-sm rounded-lg hover:bg-danger/10 transition-colors">
-          Delete
-        </button>
+        <!-- Collection watch actions -->
+        <template v-if="!watch.isWishList">
+          <button @click="handleWear" :disabled="wearLoading" class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+            {{ wearLoading ? 'Recording...' : '⌚ Wore Today' }}
+          </button>
+          <RouterLink :to="`/watches/${watch.id}/edit`" class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors">
+            Edit
+          </RouterLink>
+          <label class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors cursor-pointer">
+            {{ uploading ? 'Uploading…' : 'Upload Images' }}
+            <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
+          </label>
+          <button
+            @click="handleAnalyze"
+            :disabled="analyzing || !watch.imageUrls.length"
+            class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50"
+          >
+            {{ analyzing ? 'Analyzing…' : '🤖 AI Analyze' }}
+          </button>
+          <button @click="handleRetire" class="px-4 py-2 bg-bg-surface border border-border text-text-secondary text-sm rounded-lg hover:border-accent/50 transition-colors">
+            Retire
+          </button>
+          <button @click="handleDelete" class="px-4 py-2 bg-bg-surface border border-danger/50 text-danger text-sm rounded-lg hover:bg-danger/10 transition-colors">
+            Delete
+          </button>
+        </template>
+        <!-- Wish list actions -->
+        <template v-else>
+          <button @click="handlePurchase" :disabled="purchasing" class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+            {{ purchasing ? 'Moving…' : '🛒 Mark as Purchased' }}
+          </button>
+          <RouterLink :to="`/wishlist/${watch.id}/edit`" class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors">
+            Edit
+          </RouterLink>
+          <label class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors cursor-pointer">
+            {{ uploading ? 'Uploading…' : 'Upload Images' }}
+            <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
+          </label>
+          <button @click="handleDelete" class="px-4 py-2 bg-bg-surface border border-danger/50 text-danger text-sm rounded-lg hover:bg-danger/10 transition-colors">
+            Delete
+          </button>
+        </template>
       </div>
 
       <!-- AI Analysis -->
@@ -83,6 +113,9 @@
 
       <!-- Details Chips -->
       <div class="flex flex-wrap gap-2 mb-6">
+        <span v-if="!watch.isWishList && watch.movementType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
+          {{ watch.movementType }}
+        </span>
         <span v-if="watch.caseSizeMm" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
           {{ watch.caseSizeMm }}mm case
         </span>
@@ -116,17 +149,11 @@
         <span v-if="watch.lugWidthMm" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
           {{ watch.lugWidthMm }}mm lug
         </span>
-        <span v-if="watch.powerReserveHours" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
+        <span v-if="!watch.isWishList && watch.powerReserveHours" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
           {{ watch.powerReserveHours }}h reserve
         </span>
         <span v-if="watch.countryOfOrigin" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
           {{ watch.countryOfOrigin }}
-        </span>
-        <span v-if="watch.purchasePrice" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          ${{ watch.purchasePrice.toFixed(2) }}
-        </span>
-        <span v-if="watch.purchaseDate" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          Purchased {{ new Date(watch.purchaseDate).toLocaleDateString() }}
         </span>
         <span v-if="watch.batteryType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
           {{ watch.batteryType }} battery
@@ -139,7 +166,7 @@
       <!-- Link -->
       <div v-if="watch.linkUrl" class="mb-6">
         <a :href="watch.linkUrl" target="_blank" rel="noopener noreferrer" class="text-sm text-accent hover:underline">
-          {{ watch.linkText || watch.linkUrl }} ↗
+          {{ watch.linkText || 'Store Link' }} ↗
         </a>
       </div>
 
@@ -158,7 +185,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import type { Watch } from '@/types'
-import { getWatch, imageUrl, recordWear, retireWatch, deleteWatch, uploadImage, deleteImage, removeBackground, analyzeWatch } from '@/services/watches'
+import { getWatch, imageUrl, recordWear, retireWatch, deleteWatch, uploadImage, deleteImage, removeBackground, analyzeWatch, updateWatch } from '@/services/watches'
 
 const route = useRoute()
 const router = useRouter()
@@ -174,6 +201,7 @@ const wearLoading = ref(false)
 const uploading = ref(false)
 const removingBg = ref(false)
 const analyzing = ref(false)
+const purchasing = ref(false)
 
 onMounted(async () => {
   try {
@@ -204,6 +232,18 @@ async function handleDelete() {
   if (!watch.value || !confirm('Delete this watch permanently?')) return
   await deleteWatch(watch.value.id)
   router.push('/')
+}
+
+async function handlePurchase() {
+  if (!watch.value || !confirm('Move this watch from your wish list to your collection?')) return
+  purchasing.value = true
+  try {
+    await updateWatch(watch.value.id, { ...watch.value, isWishList: false })
+    router.push(`/watches/${watch.value.id}`)
+    watch.value = await getWatch(watch.value.id)
+  } finally {
+    purchasing.value = false
+  }
 }
 
 async function handleImageUpload(e: Event) {

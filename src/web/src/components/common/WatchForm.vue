@@ -78,6 +78,16 @@
       </select>
     </div>
 
+    <div>
+      <label class="block text-sm font-medium text-text-secondary mb-1">Purchase Date *</label>
+      <input v-model="formData.purchaseDate" type="date" required class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-text-secondary mb-1">Purchase Price *</label>
+      <input v-model.number="formData.purchasePrice" type="number" step="0.01" required placeholder="0.00" class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+    </div>
+
     <!-- Optional Fields (collapsible) -->
     <div class="border-t border-border pt-4">
       <button
@@ -147,16 +157,6 @@
               <label class="block text-xs font-medium text-text-muted mb-1">Water Resistance</label>
               <input v-model="formData.waterResistance" placeholder="100m" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
             </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-text-muted mb-1">Purchase Date</label>
-            <input v-model="formData.purchaseDate" type="date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-text-muted mb-1">Purchase Price</label>
-            <input v-model.number="formData.purchasePrice" type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
           </div>
 
           <div>
