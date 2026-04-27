@@ -118,8 +118,8 @@
       <RouterView />
     </main>
 
-    <!-- Mobile Bottom Nav -->
-    <nav v-if="!isDesktop" class="mobile-bottom-nav">
+    <!-- Mobile Bottom Nav (hidden when keyboard is open) -->
+    <nav v-if="!isDesktop && !keyboardOpen" class="mobile-bottom-nav">
       <div class="flex justify-around items-end pt-2 pb-1">
         <RouterLink
           v-for="tab in bottomTabs"
@@ -165,6 +165,7 @@ const route = useRoute()
 const theme = useTheme()
 const sidebarOpen = ref(false)
 const windowWidth = ref(window.innerWidth)
+const keyboardOpen = ref(false)
 
 const isDesktop = computed(() => windowWidth.value >= 1024)
 
@@ -172,8 +173,28 @@ function onResize() {
   windowWidth.value = window.innerWidth
 }
 
-onMounted(() => window.addEventListener('resize', onResize))
-onUnmounted(() => window.removeEventListener('resize', onResize))
+// Detect virtual keyboard via Visual Viewport API
+function onViewportResize() {
+  if (window.visualViewport) {
+    const vvHeight = window.visualViewport.height
+    const windowHeight = window.innerHeight
+    // If visual viewport is significantly smaller than window, keyboard is open
+    keyboardOpen.value = (windowHeight - vvHeight) > 100
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', onResize)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportResize)
+  }
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', onViewportResize)
+  }
+})
 
 function cycleTheme() {
   const modes = ['dark', 'light', 'system'] as const
