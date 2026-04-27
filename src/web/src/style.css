@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* === Luxury Watch Theme === */
+/* === Luxury Watch Theme — Dark (default) === */
 @theme {
   --color-bg: #1a1a1a;
   --color-bg-surface: #242424;
@@ -23,6 +23,27 @@
   --font-body: "Inter", sans-serif;
 }
 
+/* === Light Theme === */
+[data-theme="light"] {
+  --color-bg: #f8f6f3;
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #f0ede8;
+  --color-bg-card: #ffffff;
+  --color-accent: #9e7c3c;
+  --color-accent-hover: #b8923e;
+  --color-accent-muted: #7d6230;
+  --color-text: #1a1714;
+  --color-text-secondary: #5c554b;
+  --color-text-muted: #9a9088;
+  --color-border: #e2ddd6;
+  --color-border-light: #ebe7e2;
+  --color-danger: #b84444;
+  --color-danger-hover: #cc5555;
+  --color-success: #3a8a54;
+  --color-nav-bg: #ffffff;
+  --color-sidebar-bg: #faf8f5;
+}
+
 /* === Base Styles === */
 html {
   height: 100%;
@@ -38,6 +59,7 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #app {
@@ -65,4 +87,12 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 3px;
+}
+
+/* Select dropdown arrow for dark/light */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a7368' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
 }

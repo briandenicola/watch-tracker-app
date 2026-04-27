@@ -199,7 +199,7 @@ async function handleTestOllama() {
   ollamaModels.value = []
   ollamaError.value = ''
   try {
-    const { data } = await api.post<string[]>('/api/admin/ollama-models', { url: ollamaUrl.value })
+    const { data } = await api.post<string[]>('/api/admin/ollama/models', { url: ollamaUrl.value })
     ollamaModels.value = data
   } catch {
     ollamaError.value = 'Failed to connect to Ollama'
