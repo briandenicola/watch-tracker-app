@@ -242,27 +242,33 @@ function formatDateForInput(dateStr?: string): string {
   return d.toISOString().split('T')[0]
 }
 
+// Normalize band/crystal type to match dropdown casing
+function matchListValue(value: string, list: string[]): string {
+  const match = list.find(item => item.toLowerCase() === value.toLowerCase())
+  return match || value
+}
+
 const formData = reactive<CreateWatch>({
   brand: props.initial?.brand || '',
   model: props.initial?.model || '',
   movementType: props.initial?.movementType || 'Automatic',
   caseSizeMm: props.initial?.caseSizeMm,
-  bandType: props.initial?.bandType || '',
+  bandType: props.initial?.bandType ? matchListValue(props.initial.bandType, bandTypes) : '',
   bandColor: props.initial?.bandColor || '',
   purchaseDate: formatDateForInput(props.initial?.purchaseDate),
   purchasePrice: props.initial?.purchasePrice,
   notes: props.initial?.notes || '',
-  crystalType: props.initial?.crystalType || '',
+  crystalType: props.initial?.crystalType ? matchListValue(props.initial.crystalType, crystalTypes) : '',
   dialColor: props.initial?.dialColor || '',
   waterResistance: props.initial?.waterResistance || '',
   linkUrl: props.initial?.linkUrl || '',
 })
 
 // If editing with a band type not in the predefined list, show custom input
-if (props.initial?.bandType && !bandTypes.includes(props.initial.bandType)) {
+if (props.initial?.bandType && !bandTypes.some(bt => bt.toLowerCase() === props.initial!.bandType!.toLowerCase())) {
   customBandType.value = true
 }
-if (props.initial?.crystalType && !crystalTypes.includes(props.initial.crystalType)) {
+if (props.initial?.crystalType && !crystalTypes.some(ct => ct.toLowerCase() === props.initial!.crystalType!.toLowerCase())) {
   customCrystalType.value = true
 }
 
