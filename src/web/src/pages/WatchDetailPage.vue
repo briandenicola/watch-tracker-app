@@ -238,9 +238,25 @@ async function handlePurchase() {
   if (!watch.value || !confirm('Move this watch from your wish list to your collection?')) return
   purchasing.value = true
   try {
-    await updateWatch(watch.value.id, { ...watch.value, isWishList: false })
-    router.push(`/watches/${watch.value.id}`)
-    watch.value = await getWatch(watch.value.id)
+    const w = watch.value
+    await updateWatch(w.id, {
+      brand: w.brand,
+      model: w.model,
+      movementType: w.movementType,
+      caseSizeMm: w.caseSizeMm,
+      bandType: w.bandType,
+      bandColor: w.bandColor,
+      purchaseDate: w.purchaseDate,
+      purchasePrice: w.purchasePrice,
+      notes: w.notes,
+      crystalType: w.crystalType,
+      dialColor: w.dialColor,
+      waterResistance: w.waterResistance,
+      linkUrl: w.linkUrl,
+      linkText: w.linkText,
+      isWishList: false,
+    })
+    watch.value = await getWatch(w.id)
   } finally {
     purchasing.value = false
   }
