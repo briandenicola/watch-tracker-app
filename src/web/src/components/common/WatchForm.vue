@@ -1,12 +1,13 @@
 <template>
   <form @submit.prevent="handleFormSubmit" class="space-y-5 max-w-lg">
     <!-- Photo Section -->
-    <div class="flex flex-col items-center gap-3">
+    <div v-if="!hidePhoto" class="flex flex-col items-center gap-3">
       <div
         class="w-32 h-32 rounded-xl bg-bg-surface border-2 border-dashed border-border overflow-hidden flex items-center justify-center cursor-pointer hover:border-accent transition-colors"
         @click="triggerFileInput"
       >
         <img v-if="photoPreview" :src="photoPreview" class="w-full h-full object-cover" />
+        <img v-else-if="existingImageUrl" :src="existingImageUrl" class="w-full h-full object-contain p-1" />
         <div v-else class="text-center">
           <svg class="w-8 h-8 mx-auto text-text-muted mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.25">
             <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -111,7 +112,25 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-medium text-text-muted mb-1">Band Type</label>
-              <input v-model="formData.bandType" placeholder="Bracelet" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              <div class="relative">
+                <select
+                  v-if="!customBandType"
+                  v-model="formData.bandType"
+                  class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
+                >
+                  <option value="">Select...</option>
+                  <option v-for="bt in bandTypes" :key="bt" :value="bt">{{ bt }}</option>
+                  <option value="__custom__">Other...</option>
+                </select>
+                <div v-else class="flex gap-1">
+                  <input
+                    v-model="formData.bandType"
+                    placeholder="Custom type"
+                    class="flex-1 px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                  />
+                  <button type="button" @click="customBandType = false; formData.bandType = ''" class="px-2 text-text-muted hover:text-text text-xs">✕</button>
+                </div>
+              </div>
             </div>
             <div>
               <label class="block text-xs font-medium text-text-muted mb-1">Band Color</label>
@@ -160,11 +179,12 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
-import type { CreateWatch } from '@/types'
+import { reactive, ref, computed, watch as vueWatch } from 'vue'
+import type { CreateWatch, Watch } from '@/types'
+import { imageUrl as toImageUrl } from '@/services/watches'
 
 const props = defineProps<{
-  initial?: CreateWatch
+  initial?: Partial<Watch>
   loading?: boolean
   existingBrands?: string[]
   hidePhoto?: boolean
@@ -174,11 +194,30 @@ const emit = defineEmits<{
   submit: [data: CreateWatch, photo?: File]
 }>()
 
+const bandTypes = ['Bracelet', 'Leather', 'Rubber', 'NATO', 'Canvas', 'Mesh', 'Silicone', 'Ceramic', 'Titanium']
+
 const showOptional = ref(false)
 const showBrandSuggestions = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
+const customBandType = ref(false)
+
+// Show existing image from the watch being edited
+const existingImageUrl = computed(() => {
+  if (props.initial && 'imageUrls' in props.initial && props.initial.imageUrls?.length) {
+    return toImageUrl(props.initial.imageUrls[0].url)
+  }
+  return null
+})
+
+// Format purchaseDate for date input (needs YYYY-MM-DD)
+function formatDateForInput(dateStr?: string): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return d.toISOString().split('T')[0]
+}
 
 const formData = reactive<CreateWatch>({
   brand: props.initial?.brand || '',
@@ -187,13 +226,26 @@ const formData = reactive<CreateWatch>({
   caseSizeMm: props.initial?.caseSizeMm,
   bandType: props.initial?.bandType || '',
   bandColor: props.initial?.bandColor || '',
-  purchaseDate: props.initial?.purchaseDate || '',
+  purchaseDate: formatDateForInput(props.initial?.purchaseDate),
   purchasePrice: props.initial?.purchasePrice,
   notes: props.initial?.notes || '',
   crystalType: props.initial?.crystalType || '',
   dialColor: props.initial?.dialColor || '',
   waterResistance: props.initial?.waterResistance || '',
   linkUrl: props.initial?.linkUrl || '',
+})
+
+// If editing with a band type not in the predefined list, show custom input
+if (props.initial?.bandType && !bandTypes.includes(props.initial.bandType)) {
+  customBandType.value = true
+}
+
+// Watch for "Other..." selection
+vueWatch(() => formData.bandType, (val) => {
+  if (val === '__custom__') {
+    customBandType.value = true
+    formData.bandType = ''
+  }
 })
 
 // Auto-expand optional section if editing and has optional data

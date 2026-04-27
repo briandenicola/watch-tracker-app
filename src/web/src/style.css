@@ -96,3 +96,54 @@ select {
   background-position: right 0.75rem center;
   padding-right: 2rem;
 }
+
+/* Markdown prose styling */
+.prose-markdown {
+  line-height: 1.65;
+}
+.prose-markdown p {
+  margin-bottom: 0.5em;
+}
+.prose-markdown p:last-child {
+  margin-bottom: 0;
+}
+.prose-markdown strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+.prose-markdown em {
+  font-style: italic;
+}
+.prose-markdown ul,
+.prose-markdown ol {
+  padding-left: 1.25em;
+  margin-bottom: 0.5em;
+}
+.prose-markdown ul {
+  list-style-type: disc;
+}
+.prose-markdown ol {
+  list-style-type: decimal;
+}
+.prose-markdown li {
+  margin-bottom: 0.25em;
+}
+.prose-markdown h1, .prose-markdown h2, .prose-markdown h3 {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-top: 0.75em;
+  margin-bottom: 0.25em;
+}
+.prose-markdown h1 { font-size: 1.25em; }
+.prose-markdown h2 { font-size: 1.1em; }
+.prose-markdown h3 { font-size: 1em; }
+.prose-markdown code {
+  background: var(--color-bg-elevated);
+  border-radius: 3px;
+  padding: 0.15em 0.35em;
+  font-size: 0.875em;
+}
+.prose-markdown a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}

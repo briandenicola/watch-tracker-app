@@ -78,7 +78,7 @@
       <!-- AI Analysis -->
       <div v-if="watch.aiAnalysis" class="bg-bg-card border border-border rounded-xl p-4 mb-6">
         <h3 class="text-sm font-medium text-text-secondary mb-2">🤖 AI Analysis</h3>
-        <p class="text-sm text-text whitespace-pre-wrap">{{ watch.aiAnalysis }}</p>
+        <div class="prose-markdown text-sm text-text" v-html="renderMarkdown(watch.aiAnalysis)" />
       </div>
 
       <!-- Details Chips -->
@@ -146,7 +146,7 @@
       <!-- Notes -->
       <div v-if="watch.notes" class="bg-bg-surface border border-border rounded-xl p-4">
         <h3 class="text-sm font-medium text-text-secondary mb-2">Notes</h3>
-        <p class="text-sm text-text whitespace-pre-wrap">{{ watch.notes }}</p>
+        <div class="prose-markdown text-sm text-text" v-html="renderMarkdown(watch.notes)" />
       </div>
     </div>
     <div v-else class="text-center py-20 text-text-muted">Watch not found.</div>
@@ -156,11 +156,17 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { marked } from 'marked'
 import type { Watch } from '@/types'
 import { getWatch, imageUrl, recordWear, retireWatch, deleteWatch, uploadImage, deleteImage, removeBackground, analyzeWatch } from '@/services/watches'
 
 const route = useRoute()
 const router = useRouter()
+
+function renderMarkdown(text: string): string {
+  return marked.parse(text, { async: false }) as string
+}
+
 const watch = ref<Watch | null>(null)
 const loading = ref(true)
 const imageIndex = ref(0)
