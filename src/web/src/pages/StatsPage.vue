@@ -47,6 +47,26 @@
         </div>
       </div>
 
+      <!-- Most Popular Brands -->
+      <div class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">Top Brands</h3>
+        <div v-if="brandBreakdown.length === 0" class="text-sm text-text-muted">No data</div>
+        <div v-else class="space-y-3">
+          <div v-for="(item, i) in brandBreakdown" :key="item.brand" class="flex items-center gap-3">
+            <span class="text-sm font-medium text-accent w-5 text-right flex-shrink-0">{{ i + 1 }}.</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-text truncate">{{ item.brand }}</span>
+                <span class="text-xs text-text-muted flex-shrink-0 ml-2">{{ item.count }} watch{{ item.count > 1 ? 'es' : '' }}</span>
+              </div>
+              <div class="h-1.5 bg-bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-accent/60 rounded-full transition-all" :style="{ width: item.pct + '%' }" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Most Worn -->
       <div class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Most Worn</h3>
@@ -100,7 +120,7 @@
       <div class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Recent Activity</h3>
         <div v-if="recentLogs.length === 0" class="text-sm text-text-muted">No wear logs yet</div>
-        <div v-else class="relative">
+        <div v-else class="relative max-h-[320px] overflow-y-auto">
           <!-- Timeline line -->
           <div class="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
           <div class="space-y-4">
@@ -177,6 +197,16 @@ const movementBreakdown = computed(() => {
     .sort((a, b) => b.count - a.count)
 })
 
+const brandBreakdown = computed(() => {
+  const counts: Record<string, number> = {}
+  watches.value.forEach(w => { counts[w.brand] = (counts[w.brand] || 0) + 1 })
+  const max = Math.max(...Object.values(counts), 1)
+  return Object.entries(counts)
+    .map(([brand, count]) => ({ brand, count, pct: Math.round((count / max) * 100) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 7)
+})
+
 const recentLogs = computed(() => [...wearLogs.value].sort((a, b) => new Date(b.wornDate).getTime() - new Date(a.wornDate).getTime()).slice(0, 10))
 
 function movementColor(type: string): string {
@@ -190,7 +220,12 @@ function movementColor(type: string): string {
 }
 
 function daysSince(dateStr: string): number {
-  return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
+  // Parse as local date to avoid timezone offset issues with date-only strings
+  const parts = dateStr.split('T')[0].split('-')
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function formatDate(dateStr: string): string {
