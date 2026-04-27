@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getWatch, getWatches, updateWatch } from '@/services/watches'
+import { getWatch, getWatches, updateWatch, uploadImage } from '@/services/watches'
 import WatchForm from '@/components/common/WatchForm.vue'
 import type { Watch, UpdateWatch } from '@/types'
 
@@ -37,12 +37,15 @@ onMounted(async () => {
   }
 })
 
-async function handleSubmit(data: UpdateWatch) {
+async function handleSubmit(data: UpdateWatch, photo?: File) {
   if (!watch.value) return
   saving.value = true
   error.value = ''
   try {
     await updateWatch(watch.value.id, data)
+    if (photo) {
+      await uploadImage(watch.value.id, photo)
+    }
     router.push(`/watches/${watch.value.id}`)
   } catch (e: any) {
     error.value = e.response?.data?.error || 'Failed to update watch'
