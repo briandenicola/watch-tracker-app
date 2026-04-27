@@ -1,5 +1,32 @@
 <template>
-  <form @submit.prevent="emit('submit', formData)" class="space-y-5 max-w-lg">
+  <form @submit.prevent="handleFormSubmit" class="space-y-5 max-w-lg">
+    <!-- Photo Section -->
+    <div class="flex flex-col items-center gap-3">
+      <div
+        class="w-32 h-32 rounded-xl bg-bg-surface border-2 border-dashed border-border overflow-hidden flex items-center justify-center cursor-pointer hover:border-accent transition-colors"
+        @click="triggerFileInput"
+      >
+        <img v-if="photoPreview" :src="photoPreview" class="w-full h-full object-cover" />
+        <div v-else class="text-center">
+          <svg class="w-8 h-8 mx-auto text-text-muted mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.25">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+          <span class="text-xs text-text-muted">Add Photo</span>
+        </div>
+      </div>
+      <button
+        v-if="photoPreview"
+        type="button"
+        @click="removePhoto"
+        class="text-xs text-danger hover:text-danger-hover transition-colors"
+      >
+        Remove Photo
+      </button>
+      <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileSelected" />
+    </div>
+
     <!-- Required Fields -->
     <div>
       <label class="block text-sm font-medium text-text-secondary mb-1">Brand *</label>
@@ -140,14 +167,18 @@ const props = defineProps<{
   initial?: CreateWatch
   loading?: boolean
   existingBrands?: string[]
+  hidePhoto?: boolean
 }>()
 
 const emit = defineEmits<{
-  submit: [data: CreateWatch]
+  submit: [data: CreateWatch, photo?: File]
 }>()
 
 const showOptional = ref(false)
 const showBrandSuggestions = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const photoFile = ref<File | null>(null)
+const photoPreview = ref<string | null>(null)
 
 const formData = reactive<CreateWatch>({
   brand: props.initial?.brand || '',
@@ -190,6 +221,32 @@ function selectBrand(brand: string) {
 
 function hideBrandSuggestions() {
   setTimeout(() => { showBrandSuggestions.value = false }, 150)
+}
+
+// Photo handling
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+function onFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  photoFile.value = file
+  photoPreview.value = URL.createObjectURL(file)
+}
+
+function removePhoto() {
+  photoFile.value = null
+  if (photoPreview.value) {
+    URL.revokeObjectURL(photoPreview.value)
+    photoPreview.value = null
+  }
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+function handleFormSubmit() {
+  emit('submit', formData, photoFile.value || undefined)
 }
 </script>
 
