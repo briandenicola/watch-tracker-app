@@ -204,7 +204,7 @@ const brandBreakdown = computed(() => {
   return Object.entries(counts)
     .map(([brand, count]) => ({ brand, count, pct: Math.round((count / max) * 100) }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 7)
+    .slice(0, 5)
 })
 
 const recentLogs = computed(() => [...wearLogs.value].sort((a, b) => new Date(b.wornDate).getTime() - new Date(a.wornDate).getTime()).slice(0, 10))
