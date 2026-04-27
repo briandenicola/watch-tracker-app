@@ -190,7 +190,12 @@ function movementColor(type: string): string {
 }
 
 function daysSince(dateStr: string): number {
-  return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
+  // Parse as local date to avoid timezone offset issues with date-only strings
+  const parts = dateStr.split('T')[0].split('-')
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function formatDate(dateStr: string): string {
