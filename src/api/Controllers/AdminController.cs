@@ -46,6 +46,11 @@ public class AdminController(
     public async Task<ActionResult<Dictionary<string, string>>> GetSettings()
     {
         var settings = await appSettings.GetAllAsync();
+
+        // Remove legacy settings that are no longer used
+        settings.Remove("AnthropicApiKey");
+        settings.Remove("AiProvider");
+
         return Ok(settings);
     }
 
