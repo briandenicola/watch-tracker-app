@@ -86,7 +86,6 @@ tasks:
         -e Jwt__Key=${JWT_KEY}
         -e Jwt__Issuer=Horologium 
         -e Jwt__Audience=Solis
-        -e Anthropic__ApiKey=${ANTHROPIC_API_KEY:-}
         -v watch-tracker-data:/app/data
         -v watch-tracker-uploads:/app/uploads
         --name watch-tracker-app
@@ -100,6 +99,5 @@ tasks:
       - |
         cat > .env <<EOF
         JWT_KEY=$(openssl rand -base64 48)
-        ANTHROPIC_API_KEY=
         EOF
       - echo ".env file created with a generated JWT key."

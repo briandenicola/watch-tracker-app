@@ -43,12 +43,6 @@ public class SetupController(AppDbContext context, IAuthService authService, IAp
         await context.SaveChangesAsync();
 
         // Save optional settings
-        if (!string.IsNullOrWhiteSpace(dto.AiProvider))
-            await appSettings.SetAsync(AppSettingsService.Keys.AiProvider, dto.AiProvider);
-
-        if (!string.IsNullOrWhiteSpace(dto.AnthropicApiKey))
-            await appSettings.SetAsync("AnthropicApiKey", dto.AnthropicApiKey);
-
         if (!string.IsNullOrWhiteSpace(dto.OllamaUrl))
             await appSettings.SetAsync(AppSettingsService.Keys.OllamaUrl, dto.OllamaUrl);
 

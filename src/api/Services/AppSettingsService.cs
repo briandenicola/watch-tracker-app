@@ -12,7 +12,6 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string LockoutDurationMinutes = "LockoutDurationMinutes";
         public const string AiAnalysisPrompt = "AiAnalysisPrompt";
         public const string LogLevel = "LogLevel";
-        public const string AiProvider = "AiProvider";
         public const string OllamaUrl = "OllamaUrl";
         public const string OllamaModel = "OllamaModel";
     }
@@ -23,7 +22,6 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.LockoutDurationMinutes] = "15",
         [Keys.LogLevel] = "Information",
         [Keys.AiAnalysisPrompt] = "You are a watch expert. Analyze this watch image and provide a detailed description including the brand, model (if identifiable), movement type, case material, approximate case size, dial color, and any notable features or complications. Be concise but informative.",
-        [Keys.AiProvider] = "Anthropic",
         [Keys.OllamaUrl] = "http://localhost:11434",
         [Keys.OllamaModel] = ""
     };
