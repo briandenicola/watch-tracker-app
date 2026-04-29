@@ -231,6 +231,20 @@ function isActiveTab(path: string): boolean {
   min-height: 100dvh;
 }
 
+/* PWA standalone: flex column forces iOS to resolve viewport height on first paint.
+   Matches the proven .pwa-shell pattern from the React version (bb680fc). */
+@media (display-mode: standalone) {
+  .layout-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: -webkit-fill-available;
+  }
+
+  .mobile-main {
+    flex: 1;
+  }
+}
+
 /* Mobile header: fixed to top, below the PWA title bar */
 .mobile-header {
   position: fixed;
