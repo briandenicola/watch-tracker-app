@@ -242,6 +242,7 @@ function isActiveTab(path: string): boolean {
 
   .mobile-main {
     flex: 1;
+    min-height: 0; /* let flex control height, not min-height: 100dvh */
   }
 }
 
