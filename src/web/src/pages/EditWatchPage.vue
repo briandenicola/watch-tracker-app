@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getWatch, getWatches, updateWatch, uploadImage } from '@/services/watches'
+import { getWatch, getWatches, updateWatch, uploadImage, importImageFromUrl } from '@/services/watches'
 import WatchForm from '@/components/common/WatchForm.vue'
 import type { Watch, UpdateWatch } from '@/types'
 
@@ -37,7 +37,7 @@ onMounted(async () => {
   }
 })
 
-async function handleSubmit(data: UpdateWatch, photo?: File) {
+async function handleSubmit(data: UpdateWatch, photo?: File, imageUrl?: string) {
   if (!watch.value) return
   saving.value = true
   error.value = ''
@@ -45,6 +45,8 @@ async function handleSubmit(data: UpdateWatch, photo?: File) {
     await updateWatch(watch.value.id, data)
     if (photo) {
       await uploadImage(watch.value.id, photo)
+    } else if (imageUrl) {
+      await importImageFromUrl(watch.value.id, imageUrl)
     }
     router.push(`/watches/${watch.value.id}`)
   } catch (e: any) {

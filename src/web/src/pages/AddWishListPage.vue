@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createWatch, getWatches, uploadImage } from '@/services/watches'
+import { createWatch, getWatches, uploadImage, importImageFromUrl } from '@/services/watches'
 import WatchForm from '@/components/common/WatchForm.vue'
 import type { CreateWatch } from '@/types'
 
@@ -25,13 +25,15 @@ onMounted(async () => {
   } catch { /* non-critical */ }
 })
 
-async function handleSubmit(data: CreateWatch, photo?: File) {
+async function handleSubmit(data: CreateWatch, photo?: File, imageUrl?: string) {
   loading.value = true
   error.value = ''
   try {
     const watch = await createWatch({ ...data, isWishList: true })
     if (photo) {
       await uploadImage(watch.id, photo)
+    } else if (imageUrl) {
+      await importImageFromUrl(watch.id, imageUrl)
     }
     router.push('/')
   } catch (e: any) {

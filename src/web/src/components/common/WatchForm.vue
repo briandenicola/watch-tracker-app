@@ -7,6 +7,7 @@
         @click="triggerFileInput"
       >
         <img v-if="photoPreview" :src="photoPreview" class="w-full h-full object-cover" />
+        <img v-else-if="imageUrlPreview" :src="imageUrlPreview" class="w-full h-full object-contain p-1" />
         <img v-else-if="existingImageUrl" :src="existingImageUrl" class="w-full h-full object-contain p-1" />
         <div v-else class="text-center">
           <svg class="w-8 h-8 mx-auto text-text-muted mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.25">
@@ -25,6 +26,30 @@
       >
         Remove Photo
       </button>
+      <button
+        v-if="!photoPreview && !imageUrlMode"
+        type="button"
+        @click="imageUrlMode = true"
+        class="text-xs text-accent hover:text-accent-hover transition-colors"
+      >
+        Or paste image URL
+      </button>
+      <div v-if="imageUrlMode && !photoPreview" class="w-full">
+        <div class="flex gap-2">
+          <input
+            v-model="imageUrlInput"
+            type="url"
+            placeholder="https://example.com/watch.jpg"
+            class="flex-1 px-3 py-2 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+          />
+          <button
+            v-if="imageUrlInput"
+            type="button"
+            @click="imageUrlMode = false; imageUrlInput = ''; imageUrlPreview = ''"
+            class="px-2 text-text-muted hover:text-text text-xs"
+          >✕</button>
+        </div>
+      </div>
       <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileSelected" />
     </div>
 
@@ -220,7 +245,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [data: CreateWatch, photo?: File]
+  submit: [data: CreateWatch, photo?: File, imageUrl?: string]
 }>()
 
 const bandTypes = ['Bracelet', 'Leather', 'Rubber', 'NATO', 'Canvas', 'Mesh', 'Silicone', 'Ceramic', 'Titanium']
@@ -234,6 +259,12 @@ const photoPreview = ref<string | null>(null)
 const customBandType = ref(false)
 const customCrystalType = ref(false)
 const isWishlist = computed(() => props.mode === 'wishlist')
+const imageUrlMode = ref(false)
+const imageUrlInput = ref('')
+const imageUrlPreview = computed(() => {
+  if (imageUrlInput.value && imageUrlInput.value.startsWith('http')) return imageUrlInput.value
+  return ''
+})
 
 // Show existing image from the watch being edited
 const existingImageUrl = computed(() => {
@@ -360,7 +391,7 @@ function handleFormSubmit() {
   if (!isWishlist.value) {
     cleaned.movementType = formData.movementType
   }
-  emit('submit', cleaned as CreateWatch, photoFile.value || undefined)
+  emit('submit', cleaned as CreateWatch, photoFile.value || undefined, imageUrlInput.value || undefined)
 }
 </script>
 

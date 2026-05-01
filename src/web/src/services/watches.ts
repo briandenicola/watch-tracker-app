@@ -45,8 +45,12 @@ export async function unretireWatch(id: number): Promise<void> {
 
 export async function uploadImage(watchId: number, file: File): Promise<void> {
   const form = new FormData()
-  form.append('file', file)
+  form.append('files', file)
   await api.post(`/api/watches/${watchId}/images`, form)
+}
+
+export async function importImageFromUrl(watchId: number, url: string): Promise<void> {
+  await api.post(`/api/watches/${watchId}/images/import-url`, { url })
 }
 
 export async function deleteImage(watchId: number, imageId: number): Promise<void> {
