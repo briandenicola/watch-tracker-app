@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="font-display text-2xl font-semibold text-text mb-6">Add to Wish List</h2>
-    <WatchForm @submit="handleSubmit" :loading="loading" />
+    <WatchForm mode="wishlist" @submit="handleSubmit" :loading="loading" />
     <p v-if="error" class="text-danger text-sm mt-4">{{ error }}</p>
   </div>
 </template>

@@ -4,7 +4,7 @@
     <div v-if="loading" class="flex justify-center py-20">
       <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
     </div>
-    <WatchForm v-else-if="watch" :initial="watch" @submit="handleSubmit" :loading="saving" />
+    <WatchForm v-else-if="watch" :initial="watch" mode="wishlist" @submit="handleSubmit" :loading="saving" />
     <p v-if="error" class="text-danger text-sm mt-4">{{ error }}</p>
   </div>
 </template>

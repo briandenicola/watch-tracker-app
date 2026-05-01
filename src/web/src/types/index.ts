@@ -44,7 +44,7 @@ export interface Watch {
 export interface CreateWatch {
   brand: string
   model: string
-  movementType: MovementType
+  movementType?: MovementType
   caseSizeMm?: number
   bandType?: string
   bandColor?: string

@@ -69,8 +69,9 @@
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-text-secondary mb-1">Movement *</label>
-      <select v-model="formData.movementType" required class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors appearance-none">
+      <label class="block text-sm font-medium text-text-secondary mb-1">Movement {{ isWishlist ? '' : '*' }}</label>
+      <select v-model="formData.movementType" :required="!isWishlist" class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors appearance-none">
+        <option value="">Select...</option>
         <option value="Automatic">Automatic</option>
         <option value="Manual">Manual</option>
         <option value="Quartz">Quartz</option>
@@ -78,17 +79,23 @@
       </select>
     </div>
 
-    <div>
+    <div v-if="!isWishlist">
       <label class="block text-sm font-medium text-text-secondary mb-1">Purchase Date *</label>
       <input v-model="formData.purchaseDate" type="date" required class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors" />
     </div>
 
-    <div>
+    <div v-if="!isWishlist">
       <label class="block text-sm font-medium text-text-secondary mb-1">Purchase Price *</label>
       <div class="relative">
         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-sm">$</span>
         <input v-model.number="formData.purchasePrice" type="number" step="0.01" min="0" required placeholder="0.00" class="w-full pl-8 pr-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
       </div>
+    </div>
+
+    <!-- Wishlist: link URL as top-level optional field -->
+    <div v-if="isWishlist">
+      <label class="block text-sm font-medium text-text-secondary mb-1">Link URL</label>
+      <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
     </div>
 
     <!-- Optional Fields (collapsible) -->
@@ -209,6 +216,7 @@ const props = defineProps<{
   loading?: boolean
   existingBrands?: string[]
   hidePhoto?: boolean
+  mode?: 'collection' | 'wishlist'
 }>()
 
 const emit = defineEmits<{
@@ -225,6 +233,7 @@ const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 const customBandType = ref(false)
 const customCrystalType = ref(false)
+const isWishlist = computed(() => props.mode === 'wishlist')
 
 // Show existing image from the watch being edited
 const existingImageUrl = computed(() => {
@@ -248,10 +257,10 @@ function matchListValue(value: string, list: string[]): string {
   return match || value
 }
 
-const formData = reactive<CreateWatch>({
+const formData = reactive({
   brand: props.initial?.brand || '',
   model: props.initial?.model || '',
-  movementType: props.initial?.movementType || 'Automatic',
+  movementType: props.initial?.movementType || (props.mode === 'wishlist' ? '' : 'Automatic'),
   caseSizeMm: props.initial?.caseSizeMm,
   bandType: props.initial?.bandType ? matchListValue(props.initial.bandType, bandTypes) : '',
   bandColor: props.initial?.bandColor || '',
@@ -348,7 +357,9 @@ function handleFormSubmit() {
   // Required fields must always be present
   cleaned.brand = formData.brand
   cleaned.model = formData.model
-  cleaned.movementType = formData.movementType
+  if (!isWishlist.value) {
+    cleaned.movementType = formData.movementType
+  }
   emit('submit', cleaned as CreateWatch, photoFile.value || undefined)
 }
 </script>
