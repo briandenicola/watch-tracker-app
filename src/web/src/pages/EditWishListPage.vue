@@ -48,7 +48,7 @@ async function handleSubmit(data: UpdateWatch, photo?: File, imageUrl?: string) 
     } else if (imageUrl) {
       await importImageFromUrl(watch.value.id, imageUrl)
     }
-    router.push('/')
+    router.push('/?tab=wishlist')
   } catch (e: any) {
     error.value = e.response?.data?.error || 'Failed to update'
   } finally {

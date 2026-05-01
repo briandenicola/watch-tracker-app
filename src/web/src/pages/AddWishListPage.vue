@@ -35,7 +35,7 @@ async function handleSubmit(data: CreateWatch, photo?: File, imageUrl?: string) 
     } else if (imageUrl) {
       await importImageFromUrl(watch.id, imageUrl)
     }
-    router.push('/')
+    router.push('/?tab=wishlist')
   } catch (e: any) {
     error.value = e.response?.data?.error || 'Failed to add'
   } finally {

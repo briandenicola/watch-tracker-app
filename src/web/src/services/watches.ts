@@ -58,11 +58,11 @@ export async function deleteImage(watchId: number, imageId: number): Promise<voi
 }
 
 export async function removeBackground(watchId: number, imageId: number): Promise<void> {
-  await api.post(`/api/watchimages/${imageId}/remove-background`)
+  await api.post(`/api/watches/${watchId}/images/${imageId}/remove-background`)
 }
 
 export async function analyzeWatch(watchId: number, imageId: number): Promise<string> {
-  const { data } = await api.post<{ analysis: string }>(`/api/watchimages/${imageId}/analyze`)
+  const { data } = await api.post<{ analysis: string }>(`/api/watches/${watchId}/images/${imageId}/analyze`)
   return data.analysis
 }
 

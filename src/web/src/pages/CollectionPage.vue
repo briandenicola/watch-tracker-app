@@ -213,17 +213,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch as vueWatch } from 'vue'
+import { useRoute } from 'vue-router'
 import type { Watch } from '@/types'
 import { getWatches, imageUrl } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { usePreferences } from '@/stores/preferences'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 
+const route = useRoute()
 const { prefs } = usePreferences()
 
 const allWatches = ref<Watch[]>([])
 const loading = ref(true)
-const tab = ref<'collection' | 'wishlist'>('collection')
+const tab = ref<'collection' | 'wishlist'>(route.query.tab === 'wishlist' ? 'wishlist' : 'collection')
 const currentIndex = ref(0)
 const windowWidth = ref(window.innerWidth)
 const isDesktop = computed(() => windowWidth.value >= 1024)
