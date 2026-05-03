@@ -124,3 +124,18 @@ export interface ApiKey {
   createdAt: string
   lastUsedAt?: string
 }
+
+export interface Notification {
+  id: number
+  title: string
+  message: string
+  actionUrl?: string
+  isRead: boolean
+  createdAt: string
+}
+
+export interface CreateNotification {
+  title: string
+  message: string
+  actionUrl?: string
+}

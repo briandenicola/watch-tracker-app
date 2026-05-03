@@ -19,6 +19,7 @@
         </RouterLink>
       </nav>
       <div class="p-4 border-t border-border space-y-2">
+        <NotificationBadge :size="18" />
         <button
           @click="cycleTheme"
           class="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-muted hover:text-text transition-colors"
@@ -46,9 +47,12 @@
           <AppIcon name="watch" :size="18" class="text-accent" />
           <h1 class="font-display text-lg font-semibold text-accent tracking-wide">Watch Tracker</h1>
         </div>
-        <button @click="cycleTheme" class="p-2 -mr-2 text-text-muted hover:text-text">
-          <AppIcon :name="theme.getEffectiveTheme() === 'dark' ? 'moon' : 'sun'" :size="18" />
-        </button>
+        <div class="flex items-center gap-1">
+          <NotificationBadge :size="20" />
+          <button @click="cycleTheme" class="p-2 -mr-2 text-text-muted hover:text-text">
+            <AppIcon :name="theme.getEffectiveTheme() === 'dark' ? 'moon' : 'sun'" :size="18" />
+          </button>
+        </div>
       </div>
     </header>
 
@@ -159,6 +163,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/stores/theme'
 import AppIcon from '@/components/icons/AppIcon.vue'
+import NotificationBadge from '@/components/common/NotificationBadge.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
