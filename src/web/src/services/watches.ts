@@ -36,11 +36,11 @@ export async function recordWear(id: number): Promise<void> {
 }
 
 export async function retireWatch(id: number): Promise<void> {
-  await api.post(`/api/watches/${id}/retire`)
+  await api.put(`/api/watches/${id}/retire`)
 }
 
 export async function unretireWatch(id: number): Promise<void> {
-  await api.post(`/api/watches/${id}/unretire`)
+  await api.put(`/api/watches/${id}/unretire`)
 }
 
 export async function uploadImage(watchId: number, file: File): Promise<void> {
