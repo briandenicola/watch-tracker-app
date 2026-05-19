@@ -6,6 +6,7 @@ src/api/obj/
 # Node
 src/web/node_modules/
 src/web/dist/
+*.tsbuildinfo
 
 # Docker / secrets
 .env
