@@ -62,7 +62,7 @@ export async function removeBackground(watchId: number, imageId: number): Promis
 }
 
 export async function analyzeWatch(watchId: number, imageId: number): Promise<string> {
-  const { data } = await api.post<{ analysis: string }>(`/api/watches/${watchId}/images/${imageId}/analyze`)
+  const { data } = await api.post<{ analysis: string }>(`/api/watches/${watchId}/analyze`)
   return data.analysis
 }
 
