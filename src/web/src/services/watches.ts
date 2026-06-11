@@ -70,3 +70,11 @@ export async function getWearLogs(): Promise<WearLog[]> {
   const { data } = await api.get<WearLog[]>('/api/watches/wear-logs')
   return data
 }
+
+export async function deleteWearLog(logId: number): Promise<void> {
+  await api.delete(`/api/watches/wear-logs/${logId}`)
+}
+
+export async function updateWearLogDate(logId: number, wornDate: string): Promise<void> {
+  await api.put(`/api/watches/wear-logs/${logId}`, { wornDate })
+}
