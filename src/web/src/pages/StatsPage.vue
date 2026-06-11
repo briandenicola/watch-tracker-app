@@ -124,10 +124,9 @@
           <!-- Timeline line -->
           <div class="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
           <div class="space-y-4">
-            <RouterLink
+            <div
               v-for="(log, i) in recentLogs"
               :key="log.id"
-              :to="`/watches/${log.watchId}`"
               class="flex items-start gap-4 group relative"
             >
               <!-- Timeline dot -->
@@ -139,15 +138,22 @@
               </div>
               <!-- Card -->
               <div class="flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg bg-bg-surface/50 border border-transparent group-hover:border-accent/30 transition-all">
-                <div class="flex-1 min-w-0">
+                <RouterLink :to="`/watches/${log.watchId}`" class="flex-1 min-w-0">
                   <p class="text-sm text-text font-medium truncate group-hover:text-accent transition-colors">
                     {{ log.watchBrand }} {{ log.watchModel }}
                   </p>
                   <p class="text-xs text-text-muted mt-0.5">{{ formatRelativeDate(log.wornDate) }}</p>
-                </div>
+                </RouterLink>
                 <span class="text-xs text-text-muted flex-shrink-0">{{ formatDate(log.wornDate) }}</span>
+                <button
+                  @click="handleDeleteWearLog(log.id)"
+                  :disabled="deletingLogId === log.id"
+                  class="flex-shrink-0 px-2 py-1 text-xs text-danger border border-danger/50 rounded-lg hover:bg-danger/10 transition-colors disabled:opacity-50"
+                >
+                  Remove
+                </button>
               </div>
-            </RouterLink>
+            </div>
           </div>
         </div>
       </div>
@@ -158,7 +164,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { Watch, WearLog } from '@/types'
-import { getWatches, getWearLogs, imageUrl } from '@/services/watches'
+import { getWatches, getWearLogs, deleteWearLog, imageUrl } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 
@@ -168,6 +174,7 @@ const watches = ref<Watch[]>([])
 const wearLogs = ref<WearLog[]>([])
 const loading = ref(true)
 const error = ref(false)
+const deletingLogId = ref<number | null>(null)
 
 const totalWears = computed(() => watches.value.reduce((sum, w) => sum + w.timesWorn, 0))
 const avgWears = computed(() => watches.value.length ? (totalWears.value / watches.value.length).toFixed(1) : '0')
@@ -239,6 +246,19 @@ function formatRelativeDate(dateStr: string): string {
   if (days < 7) return `${days} days ago`
   if (days < 14) return '1 week ago'
   return `${Math.floor(days / 7)} weeks ago`
+}
+
+async function handleDeleteWearLog(logId: number) {
+  if (!confirm('Remove this wear log? This will also update the worn count and last worn date.')) return
+  deletingLogId.value = logId
+  try {
+    await deleteWearLog(logId)
+    const [allWatches, logs] = await Promise.all([getWatches(), getWearLogs()])
+    watches.value = allWatches.filter(w => !w.isRetired && !w.isWishList)
+    wearLogs.value = logs
+  } finally {
+    deletingLogId.value = null
+  }
 }
 
 async function load() {
