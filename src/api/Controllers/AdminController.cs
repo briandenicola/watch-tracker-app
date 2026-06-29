@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WatchTracker.Api.DTOs;
+using WatchTracker.Api.Models;
 using WatchTracker.Api.Services;
 
 namespace WatchTracker.Api.Controllers;
@@ -11,6 +12,7 @@ namespace WatchTracker.Api.Controllers;
 public class AdminController(
     IAdminService adminService,
     IAppSettingsService appSettings,
+    IOidcService oidcService,
     IWatchAnalysisService analysisService,
     DynamicConfigurationProvider dynamicConfig,
     ILogger<AdminController> logger) : ControllerBase
@@ -71,6 +73,44 @@ public class AdminController(
         }
 
         return NoContent();
+    }
+
+    [HttpGet("oidc/providers")]
+    [ProducesResponseType(typeof(List<OidcProviderSettingsDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<OidcProviderSettingsDto>>> GetOidcProviders(CancellationToken ct)
+    {
+        return Ok(await oidcService.GetAdminProvidersAsync(ct));
+    }
+
+    [HttpPut("oidc/providers/{provider}")]
+    [ProducesResponseType(typeof(OidcProviderSettingsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<OidcProviderSettingsDto>> UpdateOidcProvider(
+        OidcProvider provider,
+        UpdateOidcProviderSettingsDto dto,
+        CancellationToken ct)
+    {
+        var result = await oidcService.UpdateProviderAsync(provider, dto, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPut("oidc/providers/{provider}/secret")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> SetOidcProviderSecret(
+        OidcProvider provider,
+        UpdateOidcProviderSecretDto dto,
+        CancellationToken ct)
+    {
+        await oidcService.SetClientSecretAsync(provider, dto.ClientSecret, ct);
+        return NoContent();
+    }
+
+    [HttpPost("oidc/providers/{provider}/test")]
+    [ProducesResponseType(typeof(OidcProviderTestResultDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<OidcProviderTestResultDto>> TestOidcProvider(
+        OidcProvider provider,
+        CancellationToken ct)
+    {
+        return Ok(await oidcService.TestProviderAsync(provider, ct));
     }
 
     [HttpPost("ollama/models")]

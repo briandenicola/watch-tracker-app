@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using WatchTracker.Api.DTOs;
+using WatchTracker.Api.Models;
 using WatchTracker.Api.Services;
 
 namespace WatchTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, IOidcService oidcService) : ControllerBase
 {
     [HttpPost("register")]
     [EnableRateLimiting("auth")]
@@ -115,6 +116,102 @@ public class AuthController(IAuthService authService) : ControllerBase
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", deleted);
             if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
         }
+        return NoContent();
+    }
+
+    [HttpGet("oidc/providers")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<OidcProviderPublicDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<OidcProviderPublicDto>>> GetOidcProviders(CancellationToken ct)
+    {
+        return Ok(await oidcService.GetEnabledProvidersAsync(ct));
+    }
+
+    [HttpGet("oidc/{provider}/login")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> StartOidcLogin(
+        OidcProvider provider,
+        [FromQuery] string? returnUrl,
+        CancellationToken ct)
+    {
+        var url = await oidcService.BuildLoginUrlAsync(provider, Request, returnUrl, null, ct);
+        return url is null ? BadRequest(new { error = "OIDC provider is not enabled or configured." }) : Redirect(url);
+    }
+
+    [HttpGet("oidc/{provider}/link")]
+    [Authorize]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> StartOidcLink(
+        OidcProvider provider,
+        [FromQuery] string? returnUrl,
+        CancellationToken ct)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var url = await oidcService.BuildLoginUrlAsync(provider, Request, returnUrl ?? "/settings", userId, ct);
+        return url is null ? BadRequest(new { error = "OIDC provider is not enabled or configured." }) : Redirect(url);
+    }
+
+    [HttpPost("oidc/{provider}/link-url")]
+    [Authorize]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<object>> CreateOidcLinkUrl(
+        OidcProvider provider,
+        [FromQuery] string? returnUrl,
+        CancellationToken ct)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var url = await oidcService.BuildLoginUrlAsync(provider, Request, returnUrl ?? "/settings", userId, ct);
+        return url is null ? BadRequest(new { error = "OIDC provider is not enabled or configured." }) : Ok(new { url });
+    }
+
+    [HttpGet("oidc/{provider}/complete")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    public async Task<IActionResult> CompleteOidcLogin(
+        OidcProvider provider,
+        [FromQuery] string? code,
+        [FromQuery] string? state,
+        [FromQuery] string? error,
+        CancellationToken ct)
+    {
+        var redirect = await oidcService.CompleteLoginAsync(provider, Request, code, state, error, ct);
+        return Redirect(redirect);
+    }
+
+    [HttpPost("oidc/exchange")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponseDto>> ExchangeOidcCode(OidcExchangeDto dto, CancellationToken ct)
+    {
+        var result = await oidcService.ExchangeCodeAsync(dto.Code, ct);
+        return result is null ? Unauthorized(new { error = "Invalid or expired OIDC login code." }) : Ok(result);
+    }
+
+    [Authorize]
+    [HttpGet("oidc/linked")]
+    [ProducesResponseType(typeof(List<LinkedOidcProviderDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<LinkedOidcProviderDto>>> GetLinkedOidcProviders(CancellationToken ct)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        return Ok(await oidcService.GetLinkedProvidersAsync(userId, ct));
+    }
+
+    [Authorize]
+    [HttpDelete("oidc/{provider}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UnlinkOidcProvider(OidcProvider provider, CancellationToken ct)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await oidcService.UnlinkProviderAsync(userId, provider, ct);
         return NoContent();
     }
 }

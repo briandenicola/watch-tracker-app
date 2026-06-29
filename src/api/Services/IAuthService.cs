@@ -13,4 +13,5 @@ public interface IAuthService
     Task<bool> UpdateUsernameAsync(int userId, string username);
     Task<AuthResponseDto?> RefreshAsync(string refreshToken);
     Task RevokeRefreshTokenAsync(string refreshToken);
+    Task<AuthResponseDto?> IssueTokensForUserAsync(int userId);
 }

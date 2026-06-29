@@ -12,6 +12,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<OidcProviderSetting> OidcProviderSettings => Set<OidcProviderSetting>();
+    public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+    public DbSet<OidcLoginTicket> OidcLoginTickets => Set<OidcLoginTicket>();
+    public DbSet<OidcState> OidcStates => Set<OidcState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +50,51 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(rt => rt.TokenHash).IsUnique();
+        });
+
+        modelBuilder.Entity<OidcProviderSetting>(entity =>
+        {
+            entity.Property(s => s.Provider)
+                .HasConversion<string>();
+
+            entity.HasIndex(s => s.Provider).IsUnique();
+        });
+
+        modelBuilder.Entity<ExternalLogin>(entity =>
+        {
+            entity.Property(l => l.Provider)
+                .HasConversion<string>();
+
+            entity.HasOne(l => l.User)
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(l => new { l.Provider, l.Issuer, l.ProviderSubject }).IsUnique();
+            entity.HasIndex(l => new { l.UserId, l.Provider }).IsUnique();
+        });
+
+        modelBuilder.Entity<OidcLoginTicket>(entity =>
+        {
+            entity.HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(t => t.CodeHash).IsUnique();
+        });
+
+        modelBuilder.Entity<OidcState>(entity =>
+        {
+            entity.Property(s => s.Provider)
+                .HasConversion<string>();
+
+            entity.HasOne(s => s.LinkUser)
+                .WithMany()
+                .HasForeignKey(s => s.LinkUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => s.StateHash).IsUnique();
         });
 
         modelBuilder.Entity<Watch>(entity =>

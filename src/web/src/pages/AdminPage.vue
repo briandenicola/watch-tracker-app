@@ -88,6 +88,75 @@
         </div>
       </section>
 
+      <!-- OIDC Providers -->
+      <section class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">OIDC Providers</h3>
+
+        <div class="space-y-5">
+          <div v-for="provider in oidcProviders" :key="provider.provider" class="p-4 bg-bg-surface border border-border rounded-lg space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h4 class="text-text font-medium">{{ provider.displayName || provider.provider }}</h4>
+                <p class="text-xs text-text-muted">{{ provider.provider }} · Secret {{ provider.hasClientSecret ? 'configured' : 'not configured' }}</p>
+              </div>
+              <label class="flex items-center gap-2 text-sm text-text-secondary">
+                <input v-model="provider.enabled" type="checkbox" />
+                Enabled
+              </label>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-2">
+              <input
+                v-model="provider.displayName"
+                placeholder="Display name"
+                class="px-4 py-3 bg-bg-card border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+              />
+              <input
+                v-model="provider.clientId"
+                placeholder="Client ID"
+                class="px-4 py-3 bg-bg-card border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+              />
+              <input
+                v-model="provider.authority"
+                placeholder="Authority URL"
+                class="px-4 py-3 bg-bg-card border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors md:col-span-2"
+              />
+              <input
+                v-model="provider.scopes"
+                placeholder="Scopes"
+                class="px-4 py-3 bg-bg-card border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+              />
+              <input
+                v-model="oidcSecrets[provider.provider]"
+                type="password"
+                placeholder="New client secret (leave blank to keep current)"
+                class="px-4 py-3 bg-bg-card border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                @click="handleSaveOidcProvider(provider)"
+                :disabled="savingOidc === provider.provider"
+                class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {{ savingOidc === provider.provider ? 'Saving...' : 'Save Provider' }}
+              </button>
+              <button
+                @click="handleTestOidcProvider(provider.provider)"
+                :disabled="testingOidc === provider.provider"
+                class="px-4 py-2 bg-bg-card border border-border text-text text-sm rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50"
+              >
+                {{ testingOidc === provider.provider ? 'Testing...' : 'Test' }}
+              </button>
+              <p v-if="oidcMessages[provider.provider]" class="text-sm" :class="(oidcMessages[provider.provider] || '').includes('Error') ? 'text-danger' : 'text-success'">
+                {{ oidcMessages[provider.provider] }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Ollama Test -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Ollama Connection</h3>
@@ -119,7 +188,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { UserDto, AppSettingDto } from '@/types'
+import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcProviderTestResult } from '@/types'
 import { api } from '@/services/api'
 
 const loading = ref(true)
@@ -129,6 +198,11 @@ const settings = ref<AppSettingDto[]>([])
 const userMsg = ref('')
 const settingsMsg = ref('')
 const savingSettings = ref(false)
+const oidcProviders = ref<OidcProviderSettings[]>([])
+const oidcSecrets = ref<Partial<Record<OidcProvider, string>>>({})
+const oidcMessages = ref<Partial<Record<OidcProvider, string>>>({})
+const savingOidc = ref<OidcProvider | ''>('')
+const testingOidc = ref<OidcProvider | ''>('')
 
 // Ollama
 const ollamaUrl = ref('')
@@ -140,14 +214,16 @@ async function load() {
   loading.value = true
   error.value = false
   try {
-    const [usersResp, settingsResp] = await Promise.all([
+    const [usersResp, settingsResp, oidcResp] = await Promise.all([
       api.get<UserDto[]>('/api/admin/users'),
       api.get<AppSettingDto[]>('/api/admin/settings'),
+      api.get<OidcProviderSettings[]>('/api/admin/oidc/providers'),
     ])
     users.value = usersResp.data
     settings.value = Array.isArray(settingsResp.data)
       ? settingsResp.data
       : Object.entries(settingsResp.data).map(([key, value]) => ({ key, value: String(value) }))
+    oidcProviders.value = oidcResp.data
     const ollamaSetting = settings.value.find(s => s.key.toLowerCase().includes('ollama') && s.key.toLowerCase().includes('url'))
     if (ollamaSetting) ollamaUrl.value = ollamaSetting.value
   } catch {
@@ -191,6 +267,47 @@ async function handleSaveSettings() {
     settingsMsg.value = 'Error saving settings'
   } finally {
     savingSettings.value = false
+  }
+}
+
+async function handleSaveOidcProvider(provider: OidcProviderSettings) {
+  savingOidc.value = provider.provider
+  oidcMessages.value[provider.provider] = ''
+  try {
+    const { data } = await api.put<OidcProviderSettings>(`/api/admin/oidc/providers/${provider.provider}`, {
+      enabled: provider.enabled,
+      displayName: provider.displayName,
+      authority: provider.authority,
+      clientId: provider.clientId,
+      scopes: provider.scopes,
+    })
+    Object.assign(provider, data)
+
+    const secret = oidcSecrets.value[provider.provider]
+    if (secret) {
+      await api.put(`/api/admin/oidc/providers/${provider.provider}/secret`, { clientSecret: secret })
+      provider.hasClientSecret = true
+      oidcSecrets.value[provider.provider] = ''
+    }
+
+    oidcMessages.value[provider.provider] = 'Provider saved'
+  } catch {
+    oidcMessages.value[provider.provider] = 'Error saving provider'
+  } finally {
+    savingOidc.value = ''
+  }
+}
+
+async function handleTestOidcProvider(provider: OidcProvider) {
+  testingOidc.value = provider
+  oidcMessages.value[provider] = ''
+  try {
+    const { data } = await api.post<OidcProviderTestResult>(`/api/admin/oidc/providers/${provider}/test`)
+    oidcMessages.value[provider] = data.success ? data.message : `Error: ${data.message}`
+  } catch {
+    oidcMessages.value[provider] = 'Error testing provider'
+  } finally {
+    testingOidc.value = ''
   }
 }
 
