@@ -97,7 +97,13 @@ async function handleLogin() {
   }
 }
 
-function startOidcLogin(provider: OidcProvider) {
-  window.location.href = `/api/auth/oidc/${provider}/login?returnUrl=/`
+async function startOidcLogin(provider: OidcProvider) {
+  error.value = ''
+  try {
+    const { data } = await api.post<{ url: string }>(`/api/auth/oidc/${provider}/login-url?returnUrl=/`)
+    window.location.href = data.url
+  } catch {
+    error.value = 'OIDC login failed to start'
+  }
 }
 </script>
