@@ -117,6 +117,39 @@
         </form>
       </section>
 
+      <!-- Linked Accounts Section -->
+      <section class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">Linked Sign-in Accounts</h3>
+
+        <div v-if="oidcProviders.length === 0" class="text-sm text-text-muted">No OIDC providers are enabled.</div>
+        <div v-else class="space-y-3">
+          <div v-for="provider in oidcProviders" :key="provider.provider" class="flex items-center justify-between gap-3 p-3 bg-bg-surface border border-border rounded-lg">
+            <div>
+              <p class="text-sm text-text">{{ provider.displayName }}</p>
+              <p class="text-xs text-text-muted">
+                <span v-if="linkedOidc(provider.provider)">Linked as {{ linkedOidc(provider.provider)?.email }}</span>
+                <span v-else>Not linked</span>
+              </p>
+            </div>
+            <button
+              v-if="linkedOidc(provider.provider)"
+              @click="handleUnlinkOidc(provider.provider)"
+              class="px-3 py-1.5 text-danger text-xs border border-danger/50 rounded-lg hover:bg-danger/10 transition-colors"
+            >
+              Unlink
+            </button>
+            <button
+              v-else
+              @click="handleLinkOidc(provider.provider)"
+              class="px-3 py-1.5 bg-bg-card border border-border text-xs text-text rounded-lg hover:border-accent/50 transition-colors"
+            >
+              Link
+            </button>
+          </div>
+        </div>
+        <p v-if="oidcMsg" class="text-sm mt-3" :class="oidcMsg.includes('Error') ? 'text-danger' : 'text-success'">{{ oidcMsg }}</p>
+      </section>
+
       <!-- API Keys Section -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">API Keys</h3>
@@ -182,7 +215,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { ApiKey } from '@/types'
+import type { ApiKey, LinkedOidcProvider, OidcProvider, OidcProviderPublic } from '@/types'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme, type ThemeMode } from '@/stores/theme'
@@ -219,6 +252,11 @@ const newPassword = ref('')
 const savingPassword = ref(false)
 const passwordMsg = ref('')
 
+// OIDC
+const oidcProviders = ref<OidcProviderPublic[]>([])
+const linkedOidcProviders = ref<LinkedOidcProvider[]>([])
+const oidcMsg = ref('')
+
 // API Keys
 const apiKeys = ref<ApiKey[]>([])
 const newKeyName = ref('')
@@ -232,13 +270,17 @@ const dataMsg = ref('')
 
 onMounted(async () => {
   try {
-    const [meResp, keysResp] = await Promise.all([
+    const [meResp, keysResp, oidcProvidersResp, linkedOidcResp] = await Promise.all([
       api.get<{ username: string; email: string; profileImage?: string }>('/api/auth/me'),
       api.get<ApiKey[]>('/api/apikeys'),
+      api.get<OidcProviderPublic[]>('/api/auth/oidc/providers'),
+      api.get<LinkedOidcProvider[]>('/api/auth/oidc/linked'),
     ])
     newUsername.value = meResp.data.username
     profileImage.value = meResp.data.profileImage || null
     apiKeys.value = keysResp.data
+    oidcProviders.value = oidcProvidersResp.data
+    linkedOidcProviders.value = linkedOidcResp.data
   } finally {
     loading.value = false
   }
@@ -300,6 +342,32 @@ async function handlePasswordChange() {
     passwordMsg.value = 'Error — check your current password'
   } finally {
     savingPassword.value = false
+  }
+}
+
+function linkedOidc(provider: OidcProvider) {
+  return linkedOidcProviders.value.find(p => p.provider === provider)
+}
+
+async function handleLinkOidc(provider: OidcProvider) {
+  oidcMsg.value = ''
+  try {
+    const { data } = await api.post<{ url: string }>(`/api/auth/oidc/${provider}/link-url?returnUrl=/settings`)
+    window.location.href = data.url
+  } catch {
+    oidcMsg.value = 'Error starting account link'
+  }
+}
+
+async function handleUnlinkOidc(provider: OidcProvider) {
+  if (!confirm('Unlink this sign-in account?')) return
+  oidcMsg.value = ''
+  try {
+    await api.delete(`/api/auth/oidc/${provider}`)
+    linkedOidcProviders.value = linkedOidcProviders.value.filter(p => p.provider !== provider)
+    oidcMsg.value = 'Account unlinked'
+  } catch {
+    oidcMsg.value = 'Error unlinking account'
   }
 }
 

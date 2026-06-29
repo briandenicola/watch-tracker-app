@@ -35,6 +35,22 @@
         </button>
         <p v-if="error" class="text-danger text-sm text-center">{{ error }}</p>
       </form>
+      <div v-if="oidcProviders.length" class="mt-5 space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="h-px bg-border flex-1" />
+          <span class="text-xs text-text-muted">or</span>
+          <div class="h-px bg-border flex-1" />
+        </div>
+        <button
+          v-for="provider in oidcProviders"
+          :key="provider.provider"
+          type="button"
+          @click="startOidcLogin(provider.provider)"
+          class="w-full py-3 bg-bg-surface border border-border hover:border-accent/50 text-text font-medium rounded-lg transition-colors"
+        >
+          Continue with {{ provider.displayName }}
+        </button>
+      </div>
       <p class="mt-6 text-center text-sm text-text-muted">
         No account?
         <RouterLink to="/register" class="text-accent hover:underline">Create one</RouterLink>
@@ -44,16 +60,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { api } from '@/services/api'
+import type { OidcProvider, OidcProviderPublic } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
-const error = ref('')
+const error = ref(typeof route.query.oidcError === 'string' ? 'OIDC login failed. Please try again.' : '')
+const oidcProviders = ref<OidcProviderPublic[]>([])
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get<OidcProviderPublic[]>('/api/auth/oidc/providers')
+    oidcProviders.value = data
+  } catch {
+    oidcProviders.value = []
+  }
+})
 
 async function handleLogin() {
   loading.value = true
@@ -66,5 +95,9 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+}
+
+function startOidcLogin(provider: OidcProvider) {
+  window.location.href = `/api/auth/oidc/${provider}/login?returnUrl=/`
 }
 </script>

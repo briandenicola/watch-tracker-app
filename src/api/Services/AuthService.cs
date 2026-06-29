@@ -111,6 +111,16 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         }
     }
 
+    public async Task<AuthResponseDto?> IssueTokensForUserAsync(int userId)
+    {
+        var user = await context.Users.FindAsync(userId);
+        if (user is null) return null;
+
+        var response = BuildResponse(user);
+        response.RefreshToken = await CreateRefreshTokenAsync(user.Id);
+        return response;
+    }
+
     private AuthResponseDto BuildResponse(User user) => new()
     {
         Token = GenerateAccessToken(user),

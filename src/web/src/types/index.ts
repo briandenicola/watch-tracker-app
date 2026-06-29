@@ -90,6 +90,37 @@ export interface RegisterCredentials {
   password: string
 }
 
+export type OidcProvider = 'Entra' | 'PocketId'
+
+export interface OidcProviderPublic {
+  provider: OidcProvider
+  displayName: string
+}
+
+export interface OidcProviderSettings {
+  provider: OidcProvider
+  enabled: boolean
+  displayName: string
+  authority: string
+  clientId: string
+  scopes: string
+  hasClientSecret: boolean
+  updatedAt: string
+}
+
+export interface OidcProviderTestResult {
+  success: boolean
+  message: string
+}
+
+export interface LinkedOidcProvider {
+  provider: OidcProvider
+  displayName: string
+  email: string
+  linkedAt: string
+  lastUsedAt: string
+}
+
 export interface UserDto {
   id: number
   username: string

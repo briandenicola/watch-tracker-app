@@ -23,6 +23,11 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/oidc/callback',
+      name: 'oidc-callback',
+      component: () => import('@/pages/OidcCallbackPage.vue'),
+    },
+    {
       path: '/',
       component: () => import('@/components/common/AppLayout.vue'),
       meta: { auth: true },
