@@ -27,6 +27,127 @@
           <p class="text-3xl font-display font-semibold text-accent">{{ avgWears }}</p>
           <p class="text-sm text-text-secondary mt-1">Avg Wears / Watch</p>
         </div>
+        <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
+          <p class="text-3xl font-display font-semibold text-accent">{{ formatCurrency(totalCollectionValue) }}</p>
+          <p class="text-sm text-text-secondary mt-1">Collection Value</p>
+        </div>
+        <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
+          <p class="text-3xl font-display font-semibold text-accent">{{ formatCurrency(medianValue) }}</p>
+          <p class="text-sm text-text-secondary mt-1">Median Value</p>
+        </div>
+        <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
+          <p class="text-3xl font-display font-semibold text-accent">{{ formatCurrency(avgCostPerWear) }}</p>
+          <p class="text-sm text-text-secondary mt-1">Avg Cost / Wear</p>
+        </div>
+      </div>
+
+      <!-- Collection Value Over Time -->
+      <div class="bg-bg-card border border-border rounded-xl p-4">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-lg font-medium text-text">Collection Value Over Time</h3>
+            <p class="text-xs text-text-muted mt-1">Based on purchase price by acquisition date</p>
+          </div>
+          <span class="text-sm font-medium text-accent flex-shrink-0">{{ formatCurrency(totalCollectionValue) }}</span>
+        </div>
+        <div v-if="valueTimeline.length === 0" class="text-sm text-text-muted">Add purchase prices to see value trends</div>
+        <div v-else class="space-y-3">
+          <div class="h-48 rounded-lg bg-bg-surface border border-border p-3">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="w-full h-full overflow-visible">
+              <polyline
+                :points="valueTimelinePoints"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                vector-effect="non-scaling-stroke"
+                class="text-accent"
+              />
+              <circle
+                v-for="point in valueTimelinePlot"
+                :key="`${point.date}-${point.total}`"
+                :cx="point.x"
+                :cy="point.y"
+                r="1.6"
+                vector-effect="non-scaling-stroke"
+                class="fill-accent"
+              />
+            </svg>
+          </div>
+          <div class="flex justify-between text-xs text-text-muted">
+            <span>{{ formatDate(valueTimeline[0].date) }}</span>
+            <span>{{ formatDate(valueTimeline[valueTimeline.length - 1].date) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-4">
+        <!-- Top Value Watches -->
+        <div class="bg-bg-card border border-border rounded-xl p-4">
+          <h3 class="text-lg font-medium text-text mb-4">Top 5 Most Valuable</h3>
+          <div v-if="topValuable.length === 0" class="text-sm text-text-muted">Add purchase prices to rank watches</div>
+          <div v-else class="space-y-3">
+            <RouterLink
+              v-for="(w, i) in topValuable"
+              :key="w.id"
+              :to="`/watches/${w.id}`"
+              class="flex items-center gap-3 group"
+            >
+              <span class="text-sm font-medium text-accent w-5 text-right">{{ i + 1 }}.</span>
+              <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
+                <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+                <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ w.brand }} {{ w.model }}</p>
+                <p class="text-xs text-text-muted">{{ valueShare(w.purchasePrice) }}% of collection value</p>
+              </div>
+              <span class="text-sm text-text-secondary">{{ formatCurrency(w.purchasePrice) }}</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Value By Brand -->
+        <div class="bg-bg-card border border-border rounded-xl p-4">
+          <h3 class="text-lg font-medium text-text mb-4">Value by Brand</h3>
+          <div v-if="brandValueBreakdown.length === 0" class="text-sm text-text-muted">Add purchase prices to compare brands</div>
+          <div v-else class="space-y-3">
+            <div v-for="item in brandValueBreakdown" :key="item.brand" class="space-y-1.5">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm text-text truncate">{{ item.brand }}</span>
+                <span class="text-xs text-text-muted flex-shrink-0">
+                  {{ formatCurrency(item.value) }} · {{ item.count }} watch{{ item.count > 1 ? 'es' : '' }}
+                </span>
+              </div>
+              <div class="h-2 bg-bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-accent/60 rounded-full transition-all" :style="{ width: item.pct + '%' }" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost Per Wear -->
+      <div class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">Best Cost per Wear</h3>
+        <div v-if="costPerWearLeaders.length === 0" class="text-sm text-text-muted">Record wears on priced watches to calculate cost per wear</div>
+        <div v-else class="space-y-3">
+          <RouterLink
+            v-for="w in costPerWearLeaders"
+            :key="w.id"
+            :to="`/watches/${w.id}`"
+            class="flex items-center gap-3 group"
+          >
+            <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
+              <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+              <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ w.brand }} {{ w.model }}</p>
+              <p class="text-xs text-text-muted">{{ formatCurrency(w.purchasePrice) }} / {{ w.timesWorn }} wears</p>
+            </div>
+            <span class="text-sm text-text-secondary">{{ formatCurrency(costPerWear(w)) }}/wear</span>
+          </RouterLink>
+        </div>
       </div>
 
       <!-- Movement Type Breakdown -->
@@ -178,9 +299,80 @@ const deletingLogId = ref<number | null>(null)
 
 const totalWears = computed(() => watches.value.reduce((sum, w) => sum + w.timesWorn, 0))
 const avgWears = computed(() => watches.value.length ? (totalWears.value / watches.value.length).toFixed(1) : '0')
+const pricedWatches = computed(() => watches.value.filter(w => hasValue(w.purchasePrice)))
+const totalCollectionValue = computed(() => pricedWatches.value.reduce((sum, w) => sum + (w.purchasePrice ?? 0), 0))
+const medianValue = computed(() => {
+  const values = pricedWatches.value.map(w => w.purchasePrice ?? 0).sort((a, b) => a - b)
+  if (values.length === 0) return 0
+
+  const middle = Math.floor(values.length / 2)
+  return values.length % 2 === 0 ? (values[middle - 1] + values[middle]) / 2 : values[middle]
+})
+const avgCostPerWear = computed(() => {
+  const watchesWithWearCost = pricedWatches.value.filter(w => w.timesWorn > 0)
+  if (watchesWithWearCost.length === 0) return 0
+
+  const total = watchesWithWearCost.reduce((sum, w) => sum + costPerWear(w), 0)
+  return total / watchesWithWearCost.length
+})
 
 const mostWorn = computed(() =>
   [...watches.value].filter(w => w.timesWorn > 0).sort((a, b) => b.timesWorn - a.timesWorn).slice(0, 5)
+)
+
+const topValuable = computed(() =>
+  [...pricedWatches.value].sort((a, b) => (b.purchasePrice ?? 0) - (a.purchasePrice ?? 0)).slice(0, 5)
+)
+
+const brandValueBreakdown = computed(() => {
+  const brands: Record<string, { value: number; count: number }> = {}
+  pricedWatches.value.forEach(w => {
+    const brand = w.brand.trim() || 'Unknown'
+    const current = brands[brand] ?? { value: 0, count: 0 }
+    brands[brand] = {
+      value: current.value + (w.purchasePrice ?? 0),
+      count: current.count + 1,
+    }
+  })
+  const max = Math.max(...Object.values(brands).map(item => item.value), 1)
+  return Object.entries(brands)
+    .map(([brand, item]) => ({ brand, ...item, pct: Math.round((item.value / max) * 100) }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5)
+})
+
+const valueTimeline = computed(() => {
+  let runningTotal = 0
+  return [...pricedWatches.value]
+    .sort((a, b) => acquisitionTime(a) - acquisitionTime(b))
+    .map(w => {
+      runningTotal += w.purchasePrice ?? 0
+      return {
+        date: acquisitionDate(w),
+        total: runningTotal,
+      }
+    })
+})
+
+const valueTimelinePlot = computed(() => {
+  const values = valueTimeline.value
+  const max = Math.max(...values.map(point => point.total), 1)
+  return values.map((point, index) => ({
+    ...point,
+    x: values.length === 1 ? 50 : (index / (values.length - 1)) * 100,
+    y: 100 - (point.total / max) * 90,
+  }))
+})
+
+const valueTimelinePoints = computed(() =>
+  valueTimelinePlot.value.map(point => `${point.x},${point.y}`).join(' ')
+)
+
+const costPerWearLeaders = computed(() =>
+  [...pricedWatches.value]
+    .filter(w => w.timesWorn > 0)
+    .sort((a, b) => costPerWear(a) - costPerWear(b))
+    .slice(0, 5)
 )
 
 const neglected = computed(() => {
@@ -215,6 +407,36 @@ const brandBreakdown = computed(() => {
 })
 
 const recentLogs = computed(() => [...wearLogs.value].sort((a, b) => new Date(b.wornDate).getTime() - new Date(a.wornDate).getTime()).slice(0, 10))
+
+function hasValue(value: number | undefined): boolean {
+  return value !== undefined && value > 0
+}
+
+function costPerWear(watch: Watch): number {
+  if (!hasValue(watch.purchasePrice) || watch.timesWorn <= 0) return 0
+  return (watch.purchasePrice ?? 0) / watch.timesWorn
+}
+
+function acquisitionDate(watch: Watch): string {
+  return watch.purchaseDate ?? watch.createdAt
+}
+
+function acquisitionTime(watch: Watch): number {
+  return new Date(acquisitionDate(watch)).getTime()
+}
+
+function valueShare(value: number | undefined): number {
+  if (!hasValue(value) || totalCollectionValue.value === 0) return 0
+  return Math.round(((value ?? 0) / totalCollectionValue.value) * 100)
+}
+
+function formatCurrency(value: number | undefined): string {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value ?? 0)
+}
 
 function movementColor(type: string): string {
   const map: Record<string, string> = {
