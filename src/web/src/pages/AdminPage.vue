@@ -134,6 +134,12 @@
               />
             </div>
 
+            <div class="p-3 bg-bg-card border border-border rounded-lg">
+              <label class="block text-xs font-medium text-text-secondary mb-2">Redirect URI to register with the provider</label>
+              <code class="block text-sm text-text break-all">{{ oidcRedirectUrl(provider.provider) }}</code>
+              <p class="text-xs text-text-muted mt-2">Use this as a Web redirect URI in Entra or Pocket ID.</p>
+            </div>
+
             <div class="flex flex-wrap items-center gap-3">
               <button
                 @click="handleSaveOidcProvider(provider)"
@@ -209,6 +215,10 @@ const ollamaUrl = ref('')
 const testingOllama = ref(false)
 const ollamaModels = ref<string[]>([])
 const ollamaError = ref('')
+
+function oidcRedirectUrl(provider: OidcProvider) {
+  return `${window.location.origin}/api/auth/oidc/${provider}/complete`
+}
 
 async function load() {
   loading.value = true

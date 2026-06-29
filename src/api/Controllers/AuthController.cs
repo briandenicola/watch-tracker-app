@@ -141,6 +141,20 @@ public class AuthController(IAuthService authService, IOidcService oidcService) 
         return url is null ? BadRequest(new { error = "OIDC provider is not enabled or configured." }) : Redirect(url);
     }
 
+    [HttpPost("oidc/{provider}/login-url")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<object>> CreateOidcLoginUrl(
+        OidcProvider provider,
+        [FromQuery] string? returnUrl,
+        CancellationToken ct)
+    {
+        var url = await oidcService.BuildLoginUrlAsync(provider, Request, returnUrl, null, ct);
+        return url is null ? BadRequest(new { error = "OIDC provider is not enabled or configured." }) : Ok(new { url });
+    }
+
     [HttpGet("oidc/{provider}/link")]
     [Authorize]
     [EnableRateLimiting("auth")]
