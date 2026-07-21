@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users => Set<User>();
     public DbSet<WatchImage> WatchImages => Set<WatchImage>();
     public DbSet<WearLog> WearLogs => Set<WearLog>();
+    public DbSet<ResaleValueEntry> ResaleValueEntries => Set<ResaleValueEntry>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -110,6 +111,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(w => w.PurchasePrice)
                 .HasColumnType("decimal(18,2)");
 
+            entity.Property(w => w.CurrentResaleValue)
+                .HasColumnType("decimal(18,2)");
+
             entity.HasMany(w => w.Images)
                 .WithOne(i => i.Watch)
                 .HasForeignKey(i => i.WatchId)
@@ -120,8 +124,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(wl => wl.WatchId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasMany(w => w.ResaleValueEntries)
+                .WithOne(r => r.Watch)
+                .HasForeignKey(r => r.WatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.Property(w => w.RowVersion)
                 .IsRowVersion();
+        });
+
+        modelBuilder.Entity<ResaleValueEntry>(entity =>
+        {
+            entity.Property(r => r.Source)
+                .HasConversion<string>();
+
+            entity.Property(r => r.Value)
+                .HasColumnType("decimal(18,2)");
+
+            entity.HasIndex(r => new { r.WatchId, r.RecordedAt });
         });
     }
 }

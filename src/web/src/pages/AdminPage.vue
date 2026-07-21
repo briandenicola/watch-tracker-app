@@ -72,6 +72,7 @@
             <label class="text-sm text-text-secondary w-48 flex-shrink-0 pt-3">{{ setting.key }}</label>
             <input
               v-model="setting.value"
+              :type="setting.key === 'BraveSearchApiKey' ? 'password' : 'text'"
               class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
             />
           </div>
@@ -188,13 +189,30 @@
         </div>
         <p v-if="ollamaError" class="text-sm text-danger mt-2">{{ ollamaError }}</p>
       </section>
+
+      <!-- Resale Values -->
+      <section class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">Resale Values</h3>
+        <p class="text-xs text-text-muted mb-3">
+          Runs a resale value refresh for every watch now, ignoring the scheduled interval. Requires the
+          Brave Search API key and Ollama settings above to be configured.
+        </p>
+        <button
+          @click="handleRefreshAllResale"
+          :disabled="refreshingAllResale"
+          class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+        >
+          {{ refreshingAllResale ? 'Refreshing…' : 'Run Resale Refresh For All Watches' }}
+        </button>
+        <p v-if="resaleSummaryMsg" class="text-sm text-text-secondary mt-2">{{ resaleSummaryMsg }}</p>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcProviderTestResult } from '@/types'
+import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcProviderTestResult, ResaleRefreshSummary } from '@/types'
 import { api } from '@/services/api'
 
 const loading = ref(true)
@@ -215,6 +233,10 @@ const ollamaUrl = ref('')
 const testingOllama = ref(false)
 const ollamaModels = ref<string[]>([])
 const ollamaError = ref('')
+
+// Resale values
+const refreshingAllResale = ref(false)
+const resaleSummaryMsg = ref('')
 
 function oidcRedirectUrl(provider: OidcProvider) {
   return `${window.location.origin}/api/auth/oidc/${provider}/complete`
@@ -332,6 +354,19 @@ async function handleTestOllama() {
     ollamaError.value = 'Failed to connect to Ollama'
   } finally {
     testingOllama.value = false
+  }
+}
+
+async function handleRefreshAllResale() {
+  refreshingAllResale.value = true
+  resaleSummaryMsg.value = ''
+  try {
+    const { data } = await api.post<ResaleRefreshSummary>('/api/admin/resale-values/refresh-all')
+    resaleSummaryMsg.value = `${data.refreshed}/${data.due} refreshed, ${data.skipped} skipped, ${data.failed} failed`
+  } catch {
+    resaleSummaryMsg.value = 'Error running resale refresh'
+  } finally {
+    refreshingAllResale.value = false
   }
 }
 

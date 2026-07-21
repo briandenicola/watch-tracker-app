@@ -15,6 +15,8 @@ public class Watch
     public string? AiAnalysis { get; set; }
     public DateTime? LastWornDate { get; set; }
     public int TimesWorn { get; set; }
+    public decimal? CurrentResaleValue { get; set; }
+    public DateTime? ResaleValueUpdatedAt { get; set; }
     public string? CrystalType { get; set; }
     public string? CaseShape { get; set; }
     public string? CrownType { get; set; }
@@ -37,6 +39,7 @@ public class Watch
     public User User { get; set; } = null!;
     public ICollection<WatchImage> Images { get; set; } = [];
     public ICollection<WearLog> WearLogs { get; set; } = [];
+    public ICollection<ResaleValueEntry> ResaleValueEntries { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
 using WatchTracker.Api.Services;
@@ -14,6 +15,7 @@ public class AdminController(
     IAppSettingsService appSettings,
     IOidcService oidcService,
     IWatchAnalysisService analysisService,
+    IResaleValueRefreshService resaleRefreshService,
     DynamicConfigurationProvider dynamicConfig,
     ILogger<AdminController> logger) : ControllerBase
 {
@@ -127,5 +129,14 @@ public class AdminController(
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    [HttpPost("resale-values/refresh-all")]
+    [EnableRateLimiting("resale-refresh")]
+    [ProducesResponseType(typeof(ResaleRefreshSummaryDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ResaleRefreshSummaryDto>> RefreshAllResaleValues(CancellationToken ct)
+    {
+        var summary = await resaleRefreshService.RefreshAllNowAsync(ct);
+        return Ok(summary);
     }
 }
