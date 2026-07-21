@@ -72,7 +72,7 @@
             <label class="text-sm text-text-secondary w-48 flex-shrink-0 pt-3">{{ setting.key }}</label>
             <input
               v-model="setting.value"
-              :type="setting.key === 'BraveSearchApiKey' ? 'password' : 'text'"
+              :type="setting.key === 'BraveSearchApiKey' || setting.key === 'EbayClientSecret' ? 'password' : 'text'"
               class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
             />
           </div>

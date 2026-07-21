@@ -4,21 +4,30 @@ using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
-public class BraveOllamaResaleValueEstimator(
-    IBraveSearchClient braveSearchClient,
+public class WebSearchOllamaResaleValueEstimator(
+    IEnumerable<IWebSearchClient> webSearchClients,
     IAppSettingsService appSettings,
     HttpClient httpClient,
-    ILogger<BraveOllamaResaleValueEstimator> logger) : IResaleValueEstimator
+    ILogger<WebSearchOllamaResaleValueEstimator> logger) : IResaleValueEstimator
 {
     private const string SourceName = "Web Search Estimate";
 
     public async Task<ResaleEstimateResult?> EstimateAsync(Watch watch, CancellationToken ct = default)
     {
+        var providerName = await appSettings.GetAsync(AppSettingsService.Keys.WebSearchProvider, "Brave");
+        var client = webSearchClients.FirstOrDefault(c => c.ProviderName.Equals(providerName, StringComparison.OrdinalIgnoreCase))
+            ?? webSearchClients.FirstOrDefault();
+        if (client is null)
+        {
+            logger.LogWarning("No web search client is registered; skipping web search estimate leg.");
+            return null;
+        }
+
         var query = $"{watch.Brand} {watch.Model} watch resale price used";
-        var results = await braveSearchClient.SearchAsync(query, ct);
+        var results = await client.SearchAsync(query, ct);
         if (results.Count == 0)
         {
-            logger.LogInformation("No Brave Search results for {Brand} {Model}; skipping estimate.", watch.Brand, watch.Model);
+            logger.LogInformation("No {Provider} search results for {Brand} {Model}; skipping estimate.", client.ProviderName, watch.Brand, watch.Model);
             return null;
         }
 
