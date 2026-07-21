@@ -67,14 +67,28 @@
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">App Settings</h3>
 
-        <div class="space-y-3">
-          <div v-for="setting in settings" :key="setting.key" class="flex flex-col sm:flex-row gap-2">
-            <label class="text-sm text-text-secondary w-48 flex-shrink-0 pt-3">{{ setting.key }}</label>
-            <input
-              v-model="setting.value"
-              :type="setting.key === 'BraveSearchApiKey' || setting.key === 'EbayClientSecret' ? 'password' : 'text'"
-              class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-            />
+        <div class="space-y-6">
+          <div v-for="group in groupedSettings" :key="group.label">
+            <h4 class="text-xs font-semibold uppercase tracking-wide text-text-muted mb-2">{{ group.label }}</h4>
+            <div class="space-y-3">
+              <div v-for="setting in group.settings" :key="setting.key" class="flex flex-col sm:flex-row gap-2">
+                <label class="text-sm text-text-secondary w-48 flex-shrink-0 pt-3">{{ setting.key }}</label>
+                <select
+                  v-if="setting.key === 'WebSearchProvider'"
+                  v-model="setting.value"
+                  class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
+                >
+                  <option value="Brave">Brave</option>
+                  <option value="SearXNG">SearXNG</option>
+                </select>
+                <input
+                  v-else
+                  v-model="setting.value"
+                  :type="setting.key === 'BraveSearchApiKey' || setting.key === 'EbayClientSecret' ? 'password' : 'text'"
+                  class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div class="flex items-center gap-3 mt-4">
@@ -194,8 +208,8 @@
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Resale Values</h3>
         <p class="text-xs text-text-muted mb-3">
-          Runs a resale value refresh for every watch now, ignoring the scheduled interval. Requires the
-          Brave Search API key and Ollama settings above to be configured.
+          Runs a resale value refresh for every watch now, ignoring the scheduled interval. Requires at least
+          one of the Web Search or eBay Pricing settings above, plus Ollama, to be configured.
         </p>
         <button
           @click="handleRefreshAllResale"
@@ -211,9 +225,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcProviderTestResult, ResaleRefreshSummary } from '@/types'
 import { api } from '@/services/api'
+
+const SETTING_GROUPS: { label: string; keys: string[] }[] = [
+  { label: 'Security', keys: ['MaxFailedAttempts', 'LockoutDurationMinutes'] },
+  { label: 'Logging', keys: ['LogLevel'] },
+  { label: 'AI Analysis (Ollama)', keys: ['AiAnalysisPrompt', 'OllamaUrl', 'OllamaModel'] },
+  { label: 'Web Search', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
+  { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },
+  { label: 'Resale Value', keys: ['ResaleValueRefreshIntervalDays', 'ResaleValuePrompt'] },
+]
 
 const loading = ref(true)
 const error = ref(false)
@@ -227,6 +250,25 @@ const oidcSecrets = ref<Partial<Record<OidcProvider, string>>>({})
 const oidcMessages = ref<Partial<Record<OidcProvider, string>>>({})
 const savingOidc = ref<OidcProvider | ''>('')
 const testingOidc = ref<OidcProvider | ''>('')
+
+const groupedSettings = computed(() => {
+  const remaining = new Map(settings.value.map(s => [s.key, s]))
+  const groups = SETTING_GROUPS.map(group => {
+    const groupSettings = group.keys
+      .filter(key => remaining.has(key))
+      .map(key => {
+        const setting = remaining.get(key)!
+        remaining.delete(key)
+        return setting
+      })
+    return { label: group.label, settings: groupSettings }
+  }).filter(group => group.settings.length > 0)
+
+  if (remaining.size > 0) {
+    groups.push({ label: 'Other', settings: Array.from(remaining.values()) })
+  }
+  return groups
+})
 
 // Ollama
 const ollamaUrl = ref('')

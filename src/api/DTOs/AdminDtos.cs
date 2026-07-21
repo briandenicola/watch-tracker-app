@@ -25,8 +25,8 @@ public class AppSettingDto
     [Required, StringLength(200)]
     public required string Key { get; set; }
 
-    [Required, StringLength(10000)]
-    public required string Value { get; set; }
+    [StringLength(10000)]
+    public string Value { get; set; } = "";
 }
 
 public class OllamaUrlDto
