@@ -136,8 +136,12 @@ builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
-builder.Services.AddHttpClient<IBraveSearchClient, BraveSearchClient>();
-builder.Services.AddHttpClient<IResaleValueEstimator, BraveOllamaResaleValueEstimator>();
+builder.Services.AddHttpClient<IWebSearchClient, BraveSearchClient>();
+builder.Services.AddHttpClient<IWebSearchClient, SearXngSearchClient>();
+builder.Services.AddHttpClient<IResaleValueEstimator, WebSearchOllamaResaleValueEstimator>();
+builder.Services.AddSingleton<IEbayTokenProvider, EbayTokenProvider>();
+builder.Services.AddHttpClient<IEbayBrowseClient, EbayBrowseClient>();
+builder.Services.AddScoped<IResaleValueEstimator, EbayResaleValueEstimator>();
 builder.Services.AddScoped<IResaleValueRefreshService, ResaleValueRefreshService>();
 builder.Services.AddHostedService<ResaleValueRefreshBackgroundService>();
 

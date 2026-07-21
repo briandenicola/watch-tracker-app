@@ -17,6 +17,10 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string BraveSearchApiKey = "BraveSearchApiKey";
         public const string ResaleValueRefreshIntervalDays = "ResaleValueRefreshIntervalDays";
         public const string ResaleValuePrompt = "ResaleValuePrompt";
+        public const string WebSearchProvider = "WebSearchProvider";
+        public const string SearXngUrl = "SearXngUrl";
+        public const string EbayClientId = "EbayClientId";
+        public const string EbayClientSecret = "EbayClientSecret";
     }
 
     private static readonly Dictionary<string, string> Defaults = new()
@@ -29,7 +33,11 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.OllamaModel] = "",
         [Keys.BraveSearchApiKey] = "",
         [Keys.ResaleValueRefreshIntervalDays] = "7",
-        [Keys.ResaleValuePrompt] = "You are a watch resale value expert. Given web search results about a specific watch's secondhand/resale listings, estimate its current fair resale value in USD, assuming good used condition unless the listings suggest otherwise."
+        [Keys.ResaleValuePrompt] = "You are a watch resale value expert. Given web search results about a specific watch's secondhand/resale listings, estimate its current fair resale value in USD, assuming good used condition unless the listings suggest otherwise.",
+        [Keys.WebSearchProvider] = "Brave",
+        [Keys.SearXngUrl] = "",
+        [Keys.EbayClientId] = "",
+        [Keys.EbayClientSecret] = ""
     };
 
     public async Task<string> GetAsync(string key, string defaultValue = "")

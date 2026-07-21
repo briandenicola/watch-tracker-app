@@ -2,27 +2,26 @@ using System.Text.Json;
 
 namespace WatchTracker.Api.Services;
 
-public class BraveSearchClient(
+public class SearXngSearchClient(
     HttpClient httpClient,
     IAppSettingsService appSettings,
-    ILogger<BraveSearchClient> logger) : IWebSearchClient
+    ILogger<SearXngSearchClient> logger) : IWebSearchClient
 {
-    public string ProviderName => "Brave";
+    public string ProviderName => "SearXNG";
 
     public async Task<List<WebSearchResultItem>> SearchAsync(string query, CancellationToken ct = default)
     {
-        var apiKey = await appSettings.GetAsync(AppSettingsService.Keys.BraveSearchApiKey);
-        if (string.IsNullOrWhiteSpace(apiKey))
+        var baseUrl = await appSettings.GetAsync(AppSettingsService.Keys.SearXngUrl);
+        if (string.IsNullOrWhiteSpace(baseUrl))
         {
-            logger.LogInformation("Brave Search API key is not configured; skipping web search leg.");
+            logger.LogInformation("SearXNG URL is not configured; skipping SearXNG search.");
             return [];
         }
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"https://api.search.brave.com/res/v1/web/search?q={Uri.EscapeDataString(query)}&count=10");
+            $"{baseUrl.TrimEnd('/')}/search?q={Uri.EscapeDataString(query)}&format=json");
         request.Headers.Add("Accept", "application/json");
-        request.Headers.Add("X-Subscription-Token", apiKey);
 
         try
         {
@@ -31,25 +30,25 @@ public class BraveSearchClient(
 
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("Brave Search API error {Status}: {Body}", response.StatusCode, body);
+                logger.LogWarning("SearXNG API error {Status}: {Body}", response.StatusCode, body);
                 return [];
             }
 
             using var doc = JsonDocument.Parse(body);
-            if (!doc.RootElement.TryGetProperty("web", out var web) ||
-                !web.TryGetProperty("results", out var results))
+            if (!doc.RootElement.TryGetProperty("results", out var results))
                 return [];
 
             return results.EnumerateArray()
+                .Take(10)
                 .Select(r => new WebSearchResultItem(
                     r.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
-                    r.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "",
+                    r.TryGetProperty("content", out var c) ? c.GetString() ?? "" : "",
                     r.TryGetProperty("url", out var u) ? u.GetString() ?? "" : ""))
                 .ToList();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "Brave Search call failed; skipping web search leg.");
+            logger.LogWarning(ex, "SearXNG call failed; skipping SearXNG search.");
             return [];
         }
     }
