@@ -15,4 +15,7 @@ public interface IWatchService
     Task<bool> UpdateWearLogDateAsync(int logId, int userId, DateTime newDate, CancellationToken ct = default);
     Task<WatchDto?> RetireAsync(int id, int userId, CancellationToken ct = default);
     Task<WatchDto?> UnretireAsync(int id, int userId, CancellationToken ct = default);
+    Task<WatchDto?> AddManualResaleValueAsync(int watchId, int userId, CreateResaleValueEntryDto dto, CancellationToken ct = default);
+    Task<IEnumerable<ResaleValueEntryDto>> GetResaleHistoryAsync(int watchId, int userId, CancellationToken ct = default);
+    Task<bool> DeleteResaleValueEntryAsync(int entryId, int userId, CancellationToken ct = default);
 }

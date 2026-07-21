@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Services;
 
@@ -9,7 +10,10 @@ namespace WatchTracker.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class WatchesController(IWatchService watchService, IWatchAnalysisService analysisService) : ControllerBase
+public class WatchesController(
+    IWatchService watchService,
+    IWatchAnalysisService analysisService,
+    IResaleValueRefreshService resaleRefreshService) : ControllerBase
 {
     private int UserId => int.Parse(
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -106,6 +110,50 @@ public class WatchesController(IWatchService watchService, IWatchAnalysisService
     {
         var updated = await watchService.UpdateWearLogDateAsync(logId, UserId, dto.WornDate, ct);
         return updated ? NoContent() : NotFound();
+    }
+
+    [HttpGet("{id}/resale-history")]
+    [ProducesResponseType(typeof(IEnumerable<ResaleValueEntryDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ResaleValueEntryDto>>> GetResaleHistory(int id, CancellationToken ct)
+    {
+        var history = await watchService.GetResaleHistoryAsync(id, UserId, ct);
+        return Ok(history);
+    }
+
+    [HttpPost("{id}/resale-value")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<WatchDto>> AddManualResaleValue(int id, CreateResaleValueEntryDto dto, CancellationToken ct)
+    {
+        var watch = await watchService.AddManualResaleValueAsync(id, UserId, dto, ct);
+        return watch is null ? NotFound() : Ok(watch);
+    }
+
+    [HttpDelete("resale-history/{entryId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteResaleValueEntry(int entryId, CancellationToken ct)
+    {
+        var deleted = await watchService.DeleteResaleValueEntryAsync(entryId, UserId, ct);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    [HttpPost("{id}/resale-value/refresh")]
+    [EnableRateLimiting("resale-refresh")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<WatchDto>> RefreshResaleValue(int id, CancellationToken ct)
+    {
+        try
+        {
+            var watch = await resaleRefreshService.RefreshWatchAsync(id, UserId, ct);
+            return watch is null ? NotFound() : Ok(watch);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id}/retire")]

@@ -14,6 +14,9 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string LogLevel = "LogLevel";
         public const string OllamaUrl = "OllamaUrl";
         public const string OllamaModel = "OllamaModel";
+        public const string BraveSearchApiKey = "BraveSearchApiKey";
+        public const string ResaleValueRefreshIntervalDays = "ResaleValueRefreshIntervalDays";
+        public const string ResaleValuePrompt = "ResaleValuePrompt";
     }
 
     private static readonly Dictionary<string, string> Defaults = new()
@@ -23,7 +26,10 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.LogLevel] = "Information",
         [Keys.AiAnalysisPrompt] = "You are a watch expert. Analyze this watch image and provide a detailed description including the brand, model (if identifiable), movement type, case material, approximate case size, dial color, and any notable features or complications. Be concise but informative.",
         [Keys.OllamaUrl] = "http://localhost:11434",
-        [Keys.OllamaModel] = ""
+        [Keys.OllamaModel] = "",
+        [Keys.BraveSearchApiKey] = "",
+        [Keys.ResaleValueRefreshIntervalDays] = "7",
+        [Keys.ResaleValuePrompt] = "You are a watch resale value expert. Given web search results about a specific watch's secondhand/resale listings, estimate its current fair resale value in USD, assuming good used condition unless the listings suggest otherwise."
     };
 
     public async Task<string> GetAsync(string key, string defaultValue = "")

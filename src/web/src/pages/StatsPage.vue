@@ -126,6 +126,58 @@
         </div>
       </div>
 
+      <div class="grid lg:grid-cols-2 gap-4">
+        <!-- Top 10 Best Resale Values -->
+        <div class="bg-bg-card border border-border rounded-xl p-4">
+          <h3 class="text-lg font-medium text-text mb-4">Top 10 Best Resale Values</h3>
+          <div v-if="topResaleValue.length === 0" class="text-sm text-text-muted">Refresh a resale estimate to rank watches</div>
+          <div v-else class="space-y-3">
+            <RouterLink
+              v-for="(w, i) in topResaleValue"
+              :key="w.id"
+              :to="`/watches/${w.id}`"
+              class="flex items-center gap-3 group"
+            >
+              <span class="text-sm font-medium text-accent w-5 text-right">{{ i + 1 }}.</span>
+              <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
+                <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+                <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ w.brand }} {{ w.model }}</p>
+              </div>
+              <span class="text-sm text-text-secondary">{{ formatCurrency(w.currentResaleValue) }}</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Top 10 Resale Gain -->
+        <div class="bg-bg-card border border-border rounded-xl p-4">
+          <h3 class="text-lg font-medium text-text mb-4">Top 10 Resale Gain</h3>
+          <div v-if="topResaleGain.length === 0" class="text-sm text-text-muted">Add purchase prices and resale estimates to rank gains</div>
+          <div v-else class="space-y-3">
+            <RouterLink
+              v-for="(item, i) in topResaleGain"
+              :key="item.watch.id"
+              :to="`/watches/${item.watch.id}`"
+              class="flex items-center gap-3 group"
+            >
+              <span class="text-sm font-medium text-accent w-5 text-right">{{ i + 1 }}.</span>
+              <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
+                <img v-if="item.watch.imageUrls.length" :src="imageUrl(item.watch.imageUrls[0].url)" class="w-full h-full object-contain" />
+                <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ item.watch.brand }} {{ item.watch.model }}</p>
+              </div>
+              <span class="text-sm" :class="item.gain >= 0 ? 'text-success' : 'text-danger'">
+                {{ item.gain >= 0 ? '+' : '' }}{{ formatCurrency(item.gain) }}
+              </span>
+            </RouterLink>
+          </div>
+        </div>
+      </div>
+
       <!-- Cost Per Wear -->
       <div class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Best Cost per Wear</h3>
@@ -322,6 +374,22 @@ const mostWorn = computed(() =>
 
 const topValuable = computed(() =>
   [...pricedWatches.value].sort((a, b) => (b.purchasePrice ?? 0) - (a.purchasePrice ?? 0)).slice(0, 5)
+)
+
+const resaleValuedWatches = computed(() => watches.value.filter(w => hasValue(w.currentResaleValue)))
+
+const topResaleValue = computed(() =>
+  [...resaleValuedWatches.value]
+    .sort((a, b) => (b.currentResaleValue ?? 0) - (a.currentResaleValue ?? 0))
+    .slice(0, 10)
+)
+
+const topResaleGain = computed(() =>
+  [...resaleValuedWatches.value]
+    .filter(w => hasValue(w.purchasePrice))
+    .map(w => ({ watch: w, gain: (w.currentResaleValue ?? 0) - (w.purchasePrice ?? 0) }))
+    .sort((a, b) => b.gain - a.gain)
+    .slice(0, 10)
 )
 
 const brandValueBreakdown = computed(() => {

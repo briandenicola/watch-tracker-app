@@ -114,6 +114,16 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+    options.AddPolicy("resale-refresh", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 
 builder.Services.AddHttpClient();
@@ -126,6 +136,10 @@ builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
+builder.Services.AddHttpClient<IBraveSearchClient, BraveSearchClient>();
+builder.Services.AddHttpClient<IResaleValueEstimator, BraveOllamaResaleValueEstimator>();
+builder.Services.AddScoped<IResaleValueRefreshService, ResaleValueRefreshService>();
+builder.Services.AddHostedService<ResaleValueRefreshBackgroundService>();
 
 var app = builder.Build();
 

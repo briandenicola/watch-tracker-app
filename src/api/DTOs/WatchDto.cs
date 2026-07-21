@@ -17,6 +17,8 @@ public class WatchDto
     public string? AiAnalysis { get; set; }
     public DateTime? LastWornDate { get; set; }
     public int TimesWorn { get; set; }
+    public decimal? CurrentResaleValue { get; set; }
+    public DateTime? ResaleValueUpdatedAt { get; set; }
     public List<WatchImageDto> ImageUrls { get; set; } = [];
     public string? CrystalType { get; set; }
     public string? CaseShape { get; set; }

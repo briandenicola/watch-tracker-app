@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Watch, CreateWatch, UpdateWatch, WearLog } from '@/types'
+import type { Watch, CreateWatch, UpdateWatch, WearLog, ResaleValueEntry, CreateResaleValueEntry } from '@/types'
 
 const BASE_URL = window.location.origin
 
@@ -77,4 +77,23 @@ export async function deleteWearLog(logId: number): Promise<void> {
 
 export async function updateWearLogDate(logId: number, wornDate: string): Promise<void> {
   await api.put(`/api/watches/wear-logs/${logId}`, { wornDate })
+}
+
+export async function getResaleHistory(watchId: number): Promise<ResaleValueEntry[]> {
+  const { data } = await api.get<ResaleValueEntry[]>(`/api/watches/${watchId}/resale-history`)
+  return data
+}
+
+export async function addManualResaleValue(watchId: number, entry: CreateResaleValueEntry): Promise<Watch> {
+  const { data } = await api.post<Watch>(`/api/watches/${watchId}/resale-value`, entry)
+  return data
+}
+
+export async function deleteResaleValueEntry(entryId: number): Promise<void> {
+  await api.delete(`/api/watches/resale-history/${entryId}`)
+}
+
+export async function refreshResaleValue(watchId: number): Promise<Watch> {
+  const { data } = await api.post<Watch>(`/api/watches/${watchId}/resale-value/refresh`)
+  return data
 }

@@ -19,6 +19,8 @@ export interface Watch {
   aiAnalysis?: string
   lastWornDate?: string
   timesWorn: number
+  currentResaleValue?: number
+  resaleValueUpdatedAt?: string
   imageUrls: WatchImage[]
   crystalType?: string
   caseShape?: string
@@ -137,6 +139,30 @@ export interface WearLog {
   watchBrand: string
   watchModel: string
   wornDate: string
+}
+
+export type ResaleValueSource = 'Manual' | 'WebSearchEstimate'
+
+export interface ResaleValueEntry {
+  id: number
+  watchId: number
+  value: number
+  source: ResaleValueSource
+  reasoning?: string
+  recordedAt: string
+}
+
+export interface CreateResaleValueEntry {
+  value: number
+  recordedAt?: string
+  notes?: string
+}
+
+export interface ResaleRefreshSummary {
+  due: number
+  refreshed: number
+  skipped: number
+  failed: number
 }
 
 export interface AppSettingDto {
