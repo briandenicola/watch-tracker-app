@@ -64,7 +64,11 @@ public class WebSearchOllamaResaleValueEstimator(
 
             return new ResaleEstimateResult(parsed.Value.Value, parsed.Value.Reasoning, SourceName);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             logger.LogWarning(ex, "Web search resale value estimate failed for {Brand} {Model}.", watch.Brand, watch.Model);
             return null;

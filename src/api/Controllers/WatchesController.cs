@@ -13,7 +13,9 @@ namespace WatchTracker.Api.Controllers;
 public class WatchesController(
     IWatchService watchService,
     IWatchAnalysisService analysisService,
-    IResaleValueRefreshService resaleRefreshService) : ControllerBase
+    IResaleValueRefreshService resaleRefreshService,
+    IBackgroundTaskQueue taskQueue,
+    ILogger<WatchesController> logger) : ControllerBase
 {
     private int UserId => int.Parse(
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -140,20 +142,28 @@ public class WatchesController(
 
     [HttpPost("{id}/resale-value/refresh")]
     [EnableRateLimiting("resale-refresh")]
-    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<WatchDto>> RefreshResaleValue(int id, CancellationToken ct)
     {
-        try
+        var watch = await watchService.GetByIdAsync(id, UserId, ct);
+        if (watch is null) return NotFound();
+
+        var userId = UserId;
+        taskQueue.QueueBackgroundWorkItem(async (services, workCt) =>
         {
-            var watch = await resaleRefreshService.RefreshWatchAsync(id, UserId, ct);
-            return watch is null ? NotFound() : Ok(watch);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+            var refreshService = services.GetRequiredService<IResaleValueRefreshService>();
+            try
+            {
+                await refreshService.RefreshWatchAsync(id, userId, workCt);
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogInformation("Queued resale value refresh skipped for watch {WatchId}: {Reason}", id, ex.Message);
+            }
+        });
+
+        return Accepted(watch);
     }
 
     [HttpPut("{id}/retire")]

@@ -52,7 +52,11 @@ public class EbayBrowseClient(
 
             return listings;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             logger.LogWarning(ex, "eBay Browse API call failed; skipping eBay leg.");
             return [];

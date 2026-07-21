@@ -47,7 +47,11 @@ public class BraveSearchClient(
                     r.TryGetProperty("url", out var u) ? u.GetString() ?? "" : ""))
                 .ToList();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             logger.LogWarning(ex, "Brave Search call failed; skipping web search leg.");
             return [];

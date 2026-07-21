@@ -97,7 +97,7 @@
             :disabled="refreshingResale"
             class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50"
           >
-            {{ refreshingResale ? 'Refreshing…' : '🔄 Refresh Resale Value' }}
+            {{ refreshingResale ? 'Queuing…' : '🔄 Refresh Resale Value' }}
           </button>
           <button @click="handleRetire" class="px-4 py-2 bg-bg-surface border border-border text-text-secondary text-sm rounded-lg hover:border-accent/50 transition-colors">
             Retire
@@ -139,6 +139,7 @@
           </button>
         </div>
         <p v-if="resaleError" class="text-xs text-danger mb-2">{{ resaleError }}</p>
+        <p v-if="resaleQueuedMsg" class="text-xs text-success mb-2">{{ resaleQueuedMsg }}</p>
 
         <div v-if="showManualResaleForm" class="flex flex-wrap items-end gap-2 mb-4 p-3 bg-bg-surface border border-border rounded-lg">
           <div>
@@ -278,6 +279,7 @@ const purchasing = ref(false)
 const resaleHistory = ref<ResaleValueEntry[]>([])
 const refreshingResale = ref(false)
 const resaleError = ref('')
+const resaleQueuedMsg = ref('')
 const showManualResaleForm = ref(false)
 const manualResaleValue = ref<number | null>(null)
 const manualResaleDate = ref('')
@@ -406,11 +408,12 @@ async function handleRefreshResale() {
   if (!watch.value) return
   refreshingResale.value = true
   resaleError.value = ''
+  resaleQueuedMsg.value = ''
   try {
-    watch.value = await refreshResaleValue(watch.value.id)
-    resaleHistory.value = await getResaleHistory(watch.value.id)
+    await refreshResaleValue(watch.value.id)
+    resaleQueuedMsg.value = 'Refresh queued — check back in a bit for the updated value.'
   } catch (e: any) {
-    resaleError.value = e?.response?.data?.error || 'Could not refresh resale value. Check that Brave Search / Ollama are configured in Admin settings.'
+    resaleError.value = e?.response?.data?.error || 'Could not queue a resale value refresh.'
   } finally {
     refreshingResale.value = false
   }

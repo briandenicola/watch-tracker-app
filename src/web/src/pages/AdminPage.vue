@@ -71,22 +71,45 @@
           <div v-for="group in groupedSettings" :key="group.label">
             <h4 class="text-xs font-semibold uppercase tracking-wide text-text-muted mb-2">{{ group.label }}</h4>
             <div class="space-y-3">
-              <div v-for="setting in group.settings" :key="setting.key" class="flex flex-col sm:flex-row gap-2">
-                <label class="text-sm text-text-secondary w-48 flex-shrink-0 pt-3">{{ setting.key }}</label>
-                <select
-                  v-if="setting.key === 'WebSearchProvider'"
-                  v-model="setting.value"
-                  class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
+              <div v-for="setting in group.settings" :key="setting.key">
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <label class="text-sm text-text-secondary w-48 flex-shrink-0 pt-3">{{ setting.key }}</label>
+                  <select
+                    v-if="setting.key === 'WebSearchProvider'"
+                    v-model="setting.value"
+                    class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
+                  >
+                    <option value="Brave">Brave</option>
+                    <option value="SearXNG">SearXNG</option>
+                  </select>
+                  <template v-else-if="setting.key === 'SearXngUrl'">
+                    <input
+                      v-model="setting.value"
+                      class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                    />
+                    <button
+                      type="button"
+                      @click="handleTestSearXng(setting.value)"
+                      :disabled="testingSearXng"
+                      class="px-4 py-2 bg-bg-surface border border-border text-text text-sm rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50 flex-shrink-0"
+                    >
+                      {{ testingSearXng ? 'Testing...' : 'Test Connection' }}
+                    </button>
+                  </template>
+                  <input
+                    v-else
+                    v-model="setting.value"
+                    :type="setting.key === 'BraveSearchApiKey' || setting.key === 'EbayClientSecret' ? 'password' : 'text'"
+                    class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                  />
+                </div>
+                <p
+                  v-if="setting.key === 'SearXngUrl' && searXngTestMsg"
+                  class="text-xs mt-1 sm:ml-[13rem]"
+                  :class="searXngTestSuccess ? 'text-success' : 'text-danger'"
                 >
-                  <option value="Brave">Brave</option>
-                  <option value="SearXNG">SearXNG</option>
-                </select>
-                <input
-                  v-else
-                  v-model="setting.value"
-                  :type="setting.key === 'BraveSearchApiKey' || setting.key === 'EbayClientSecret' ? 'password' : 'text'"
-                  class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-                />
+                  {{ searXngTestMsg }}
+                </p>
               </div>
             </div>
           </div>
@@ -226,7 +249,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcProviderTestResult, ResaleRefreshSummary } from '@/types'
+import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcProviderTestResult } from '@/types'
 import { api } from '@/services/api'
 
 const SETTING_GROUPS: { label: string; keys: string[] }[] = [
@@ -275,6 +298,11 @@ const ollamaUrl = ref('')
 const testingOllama = ref(false)
 const ollamaModels = ref<string[]>([])
 const ollamaError = ref('')
+
+// SearXNG
+const testingSearXng = ref(false)
+const searXngTestMsg = ref('')
+const searXngTestSuccess = ref(false)
 
 // Resale values
 const refreshingAllResale = ref(false)
@@ -399,14 +427,29 @@ async function handleTestOllama() {
   }
 }
 
+async function handleTestSearXng(url: string) {
+  testingSearXng.value = true
+  searXngTestMsg.value = ''
+  try {
+    const { data } = await api.post<{ success: boolean; message: string }>('/api/admin/searxng/test', { url })
+    searXngTestSuccess.value = data.success
+    searXngTestMsg.value = data.message
+  } catch {
+    searXngTestSuccess.value = false
+    searXngTestMsg.value = 'Failed to test SearXNG connection'
+  } finally {
+    testingSearXng.value = false
+  }
+}
+
 async function handleRefreshAllResale() {
   refreshingAllResale.value = true
   resaleSummaryMsg.value = ''
   try {
-    const { data } = await api.post<ResaleRefreshSummary>('/api/admin/resale-values/refresh-all')
-    resaleSummaryMsg.value = `${data.refreshed}/${data.due} refreshed, ${data.skipped} skipped, ${data.failed} failed`
+    const { data } = await api.post<{ message: string }>('/api/admin/resale-values/refresh-all')
+    resaleSummaryMsg.value = data.message
   } catch {
-    resaleSummaryMsg.value = 'Error running resale refresh'
+    resaleSummaryMsg.value = 'Error queuing resale refresh'
   } finally {
     refreshingAllResale.value = false
   }
