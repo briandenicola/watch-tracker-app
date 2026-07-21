@@ -136,14 +136,25 @@ builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
-builder.Services.AddHttpClient<IWebSearchClient, BraveSearchClient>();
-builder.Services.AddHttpClient<IWebSearchClient, SearXngSearchClient>();
+builder.Services.AddHttpClient<IWebSearchClient, BraveSearchClient>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddHttpClient<IWebSearchClient, SearXngSearchClient>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddHttpClient<ISearXngTestClient, SearXngSearchClient>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
+// No explicit timeout override here — this client's HttpClient is used for the Ollama call,
+// which (like WatchAnalysisService's) can legitimately take longer than a typical HTTP API call.
 builder.Services.AddHttpClient<IResaleValueEstimator, WebSearchOllamaResaleValueEstimator>();
+builder.Services.AddHttpClient("EbayToken")
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddSingleton<IEbayTokenProvider, EbayTokenProvider>();
-builder.Services.AddHttpClient<IEbayBrowseClient, EbayBrowseClient>();
+builder.Services.AddHttpClient<IEbayBrowseClient, EbayBrowseClient>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddScoped<IResaleValueEstimator, EbayResaleValueEstimator>();
 builder.Services.AddScoped<IResaleValueRefreshService, ResaleValueRefreshService>();
 builder.Services.AddHostedService<ResaleValueRefreshBackgroundService>();
+builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+builder.Services.AddHostedService<QueuedHostedService>();
 
 var app = builder.Build();
 

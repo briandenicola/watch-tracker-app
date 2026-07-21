@@ -16,6 +16,8 @@ public class AdminController(
     IOidcService oidcService,
     IWatchAnalysisService analysisService,
     IResaleValueRefreshService resaleRefreshService,
+    IBackgroundTaskQueue taskQueue,
+    ISearXngTestClient searXngTestClient,
     DynamicConfigurationProvider dynamicConfig,
     ILogger<AdminController> logger) : ControllerBase
 {
@@ -131,12 +133,29 @@ public class AdminController(
         }
     }
 
+    [HttpPost("searxng/test")]
+    [ProducesResponseType(typeof(ConnectionTestResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ConnectionTestResultDto>> TestSearXng([FromBody] SearXngUrlDto dto, CancellationToken ct)
+    {
+        var (success, message) = await searXngTestClient.TestConnectionAsync(dto.Url, ct);
+        return Ok(new ConnectionTestResultDto { Success = success, Message = message });
+    }
+
     [HttpPost("resale-values/refresh-all")]
     [EnableRateLimiting("resale-refresh")]
-    [ProducesResponseType(typeof(ResaleRefreshSummaryDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ResaleRefreshSummaryDto>> RefreshAllResaleValues(CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public IActionResult RefreshAllResaleValues()
     {
-        var summary = await resaleRefreshService.RefreshAllNowAsync(ct);
-        return Ok(summary);
+        taskQueue.QueueBackgroundWorkItem(async (services, workCt) =>
+        {
+            var refreshService = services.GetRequiredService<IResaleValueRefreshService>();
+            var summary = await refreshService.RefreshAllNowAsync(workCt);
+            logger.LogInformation(
+                "Resale value refresh (admin-triggered) finished: {Refreshed}/{Due} refreshed, {Skipped} skipped, {Failed} failed.",
+                summary.Refreshed, summary.Due, summary.Skipped, summary.Failed);
+        });
+
+        return Accepted(new { message = "Resale value refresh queued for all watches. Check individual watches or the server logs for results." });
     }
 }

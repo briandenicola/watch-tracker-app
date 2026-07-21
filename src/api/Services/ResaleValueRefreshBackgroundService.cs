@@ -19,7 +19,11 @@ public class ResaleValueRefreshBackgroundService(
                 if (count > 0)
                     logger.LogInformation("Resale value refresh: updated {Count} watch(es).", count);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
             {
                 logger.LogError(ex, "Resale value refresh background pass failed.");
             }

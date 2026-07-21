@@ -48,7 +48,11 @@ public class ResaleValueRefreshService(
                 var (succeeded, _) = await RefreshWatchInternalAsync(watch, ct);
                 if (succeeded) refreshed++;
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
             {
                 logger.LogWarning(ex, "Scheduled resale value refresh failed for watch {WatchId}.", watch.Id);
             }
@@ -73,7 +77,11 @@ public class ResaleValueRefreshService(
                 if (succeeded) summary.Refreshed++;
                 else summary.Skipped++;
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
             {
                 summary.Failed++;
                 logger.LogWarning(ex, "Manual resale value refresh failed for watch {WatchId}.", watch.Id);
@@ -85,12 +93,8 @@ public class ResaleValueRefreshService(
 
     private async Task<(bool Succeeded, string? Error)> RefreshWatchInternalAsync(Watch watch, CancellationToken ct)
     {
-        var results = new List<ResaleEstimateResult>();
-        foreach (var estimator in estimators)
-        {
-            var result = await estimator.EstimateAsync(watch, ct);
-            if (result is not null) results.Add(result);
-        }
+        var estimateResults = await Task.WhenAll(estimators.Select(e => e.EstimateAsync(watch, ct)));
+        var results = estimateResults.Where(r => r is not null).Select(r => r!).ToList();
 
         if (results.Count == 0)
             return (false, "No resale value source is configured or returned a result.");

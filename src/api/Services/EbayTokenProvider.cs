@@ -6,7 +6,7 @@ namespace WatchTracker.Api.Services;
 
 public class EbayTokenProvider(
     IHttpClientFactory httpClientFactory,
-    IAppSettingsService appSettings,
+    IServiceScopeFactory scopeFactory,
     ILogger<EbayTokenProvider> logger) : IEbayTokenProvider
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -24,15 +24,20 @@ public class EbayTokenProvider(
             if (_cachedToken is not null && DateTimeOffset.UtcNow < _expiresAt)
                 return _cachedToken;
 
-            var clientId = await appSettings.GetAsync(AppSettingsService.Keys.EbayClientId);
-            var clientSecret = await appSettings.GetAsync(AppSettingsService.Keys.EbayClientSecret);
+            string clientId, clientSecret;
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var appSettings = scope.ServiceProvider.GetRequiredService<IAppSettingsService>();
+                clientId = await appSettings.GetAsync(AppSettingsService.Keys.EbayClientId);
+                clientSecret = await appSettings.GetAsync(AppSettingsService.Keys.EbayClientSecret);
+            }
             if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
             {
                 logger.LogInformation("eBay API credentials are not configured; skipping eBay leg.");
                 return null;
             }
 
-            var httpClient = httpClientFactory.CreateClient();
+            var httpClient = httpClientFactory.CreateClient("EbayToken");
             var request = new HttpRequestMessage(HttpMethod.Post, "https://api.ebay.com/identity/v1/oauth2/token");
             var basicAuth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
             request.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicAuth);
@@ -59,7 +64,11 @@ public class EbayTokenProvider(
             _expiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60);
             return _cachedToken;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             logger.LogWarning(ex, "eBay OAuth token request threw; skipping eBay leg.");
             return null;

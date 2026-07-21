@@ -34,3 +34,15 @@ public class OllamaUrlDto
     [Required, StringLength(2000), Url]
     public required string Url { get; set; }
 }
+
+public class SearXngUrlDto
+{
+    [Required, StringLength(2000), Url]
+    public required string Url { get; set; }
+}
+
+public class ConnectionTestResultDto
+{
+    public bool Success { get; set; }
+    public required string Message { get; set; }
+}
