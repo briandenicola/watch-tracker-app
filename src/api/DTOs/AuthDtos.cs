@@ -31,6 +31,7 @@ public class AuthResponseDto
     public required string Email { get; set; }
     public required string Role { get; set; }
     public string? ProfileImage { get; set; }
+    public List<string> StorageLocations { get; set; } = [];
 }
 
 public class RefreshTokenRequestDto
@@ -52,4 +53,21 @@ public class UpdateUsernameDto
 {
     [Required, StringLength(100, MinimumLength = 2)]
     public required string Username { get; set; }
+}
+
+public class UpdateStorageLocationsDto : IValidatableObject
+{
+    [MaxLength(50)]
+    public List<string> StorageLocations { get; set; } = [];
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        foreach (var location in StorageLocations)
+        {
+            if (string.IsNullOrWhiteSpace(location) || location.Length > 100)
+                yield return new ValidationResult(
+                    "Storage locations must be between 1 and 100 characters.",
+                    [nameof(StorageLocations)]);
+        }
+    }
 }

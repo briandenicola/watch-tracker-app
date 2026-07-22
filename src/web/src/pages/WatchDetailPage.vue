@@ -231,6 +231,9 @@
         <span v-if="watch.serialNumber" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
           S/N {{ watch.serialNumber }}
         </span>
+        <span v-if="watch.storageLocation" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
+          Stored: {{ watch.storageLocation }}
+        </span>
       </div>
 
       <!-- Link -->
@@ -345,6 +348,7 @@ async function handlePurchase() {
       waterResistance: w.waterResistance,
       linkUrl: w.linkUrl,
       linkText: w.linkText,
+      storageLocation: w.storageLocation,
       isWishList: false,
     })
     watch.value = await getWatch(w.id)

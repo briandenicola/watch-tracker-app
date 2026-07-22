@@ -57,6 +57,7 @@ public class WatchService(AppDbContext context) : IWatchService
             BatteryType = dto.BatteryType,
             LinkUrl = dto.LinkUrl,
             LinkText = dto.LinkText,
+            StorageLocation = dto.StorageLocation,
             IsWishList = dto.IsWishList,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
@@ -99,6 +100,7 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.BatteryType = dto.BatteryType;
         watch.LinkUrl = dto.LinkUrl;
         watch.LinkText = dto.LinkText;
+        watch.StorageLocation = dto.StorageLocation;
         watch.IsWishList = dto.IsWishList;
         watch.UpdatedAt = DateTime.UtcNow;
 
@@ -357,6 +359,7 @@ public class WatchService(AppDbContext context) : IWatchService
         BatteryType = watch.BatteryType,
         LinkUrl = watch.LinkUrl,
         LinkText = watch.LinkText,
+        StorageLocation = watch.StorageLocation,
         IsWishList = watch.IsWishList,
         IsRetired = watch.IsRetired,
         RetiredAt = watch.RetiredAt,

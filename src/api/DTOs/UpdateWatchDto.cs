@@ -72,5 +72,8 @@ public class UpdateWatchDto
     [StringLength(200)]
     public string? LinkText { get; set; }
 
+    [StringLength(100)]
+    public string? StorageLocation { get; set; }
+
     public bool IsWishList { get; set; }
 }

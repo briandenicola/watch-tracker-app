@@ -85,6 +85,17 @@ public class AuthController(IAuthService authService, IOidcService oidcService) 
     }
 
     [Authorize]
+    [HttpPut("storage-locations")]
+    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<string>>> UpdateStorageLocations(UpdateStorageLocationsDto dto)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await authService.UpdateStorageLocationsAsync(userId, dto.StorageLocations);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [Authorize]
     [HttpPost("profile-image")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<object>> UploadProfileImage([FromForm] IFormFile file)

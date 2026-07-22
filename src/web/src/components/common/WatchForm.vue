@@ -213,6 +213,18 @@
           </div>
 
           <div>
+            <label class="block text-xs font-medium text-text-muted mb-1">Storage Location</label>
+            <select
+              v-model="formData.storageLocation"
+              :disabled="storageLocationOptions.length === 0"
+              class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none disabled:opacity-60"
+            >
+              <option value="">{{ storageLocationOptions.length ? 'Select...' : 'Define locations in Settings' }}</option>
+              <option v-for="location in storageLocationOptions" :key="location" :value="location">{{ location }}</option>
+            </select>
+          </div>
+
+          <div>
             <label class="block text-xs font-medium text-text-muted mb-1">Notes</label>
             <textarea v-model="formData.notes" rows="6" placeholder="Any additional notes..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors resize-y" />
           </div>
@@ -240,6 +252,7 @@ const props = defineProps<{
   initial?: Partial<Watch>
   loading?: boolean
   existingBrands?: string[]
+  storageLocations?: string[]
   hidePhoto?: boolean
   mode?: 'collection' | 'wishlist'
 }>()
@@ -264,6 +277,13 @@ const imageUrlInput = ref('')
 const imageUrlPreview = computed(() => {
   if (imageUrlInput.value && imageUrlInput.value.startsWith('http')) return imageUrlInput.value
   return ''
+})
+const storageLocationOptions = computed(() => {
+  const locations = [...(props.storageLocations || [])]
+  if (props.initial?.storageLocation && !locations.includes(props.initial.storageLocation)) {
+    locations.push(props.initial.storageLocation)
+  }
+  return locations
 })
 
 // Show existing image from the watch being edited
@@ -302,6 +322,7 @@ const formData = reactive({
   dialColor: props.initial?.dialColor || '',
   waterResistance: props.initial?.waterResistance || '',
   linkUrl: props.initial?.linkUrl || '',
+  storageLocation: props.initial?.storageLocation || '',
 })
 
 // If editing with a band type not in the predefined list, show custom input
@@ -327,7 +348,7 @@ vueWatch(() => formData.crystalType, (val) => {
 })
 
 // Auto-expand optional section if editing and has optional data
-if (props.initial && (props.initial.caseSizeMm || props.initial.bandType || props.initial.purchaseDate || props.initial.purchasePrice || props.initial.notes || props.initial.crystalType || props.initial.linkUrl)) {
+if (props.initial && (props.initial.caseSizeMm || props.initial.bandType || props.initial.purchaseDate || props.initial.purchasePrice || props.initial.notes || props.initial.crystalType || props.initial.linkUrl || props.initial.storageLocation)) {
   showOptional.value = true
 }
 

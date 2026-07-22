@@ -4,7 +4,7 @@
     <div v-if="loading" class="flex justify-center py-20">
       <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
     </div>
-    <WatchForm v-else-if="watch" :initial="watch" @submit="handleSubmit" :loading="saving" :existing-brands="brands" />
+    <WatchForm v-else-if="watch" :initial="watch" @submit="handleSubmit" :loading="saving" :existing-brands="brands" :storage-locations="storageLocations" />
     <p v-if="error" class="text-danger text-sm mt-4">{{ error }}</p>
   </div>
 </template>
@@ -13,8 +13,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getWatch, getWatches, updateWatch, uploadImage, importImageFromUrl } from '@/services/watches'
+import { api } from '@/services/api'
 import WatchForm from '@/components/common/WatchForm.vue'
-import type { Watch, UpdateWatch } from '@/types'
+import type { AuthResponse, Watch, UpdateWatch } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,15 +24,18 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const brands = ref<string[]>([])
+const storageLocations = ref<string[]>([])
 
 onMounted(async () => {
   try {
-    const [w, allWatches] = await Promise.all([
+    const [w, allWatches, profileResp] = await Promise.all([
       getWatch(Number(route.params.id)),
       getWatches(),
+      api.get<AuthResponse>('/api/auth/me'),
     ])
     watch.value = w
     brands.value = [...new Set(allWatches.map(w => w.brand))].sort()
+    storageLocations.value = profileResp.data.storageLocations || []
   } finally {
     loading.value = false
   }

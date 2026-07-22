@@ -36,6 +36,7 @@ export interface Watch {
   batteryType?: string
   linkUrl?: string
   linkText?: string
+  storageLocation?: string
   isWishList: boolean
   isRetired: boolean
   retiredAt?: string
@@ -67,6 +68,7 @@ export interface CreateWatch {
   batteryType?: string
   linkUrl?: string
   linkText?: string
+  storageLocation?: string
   isWishList?: boolean
 }
 
@@ -79,6 +81,7 @@ export interface AuthResponse {
   email: string
   role: string
   profileImage?: string
+  storageLocations: string[]
 }
 
 export interface LoginCredentials {
