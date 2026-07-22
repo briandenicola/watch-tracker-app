@@ -18,6 +18,15 @@
       <circle cx="17" cy="9" r="1" :fill="color" stroke="none" />
     </template>
 
+    <!-- Storage: shelf / case display -->
+    <template v-else-if="name === 'storage'">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <circle cx="8" cy="8.5" r="1.4" />
+      <circle cx="16" cy="8.5" r="1.4" />
+      <circle cx="12" cy="15.5" r="1.4" />
+    </template>
+
     <!-- Retired: watch on cushion / resting -->
     <template v-else-if="name === 'retired'">
       <ellipse cx="12" cy="16" rx="9" ry="4" />

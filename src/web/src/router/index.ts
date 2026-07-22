@@ -33,6 +33,7 @@ const router = createRouter({
       meta: { auth: true },
       children: [
         { path: '', name: 'collection', component: () => import('@/pages/CollectionPage.vue') },
+        { path: 'storage', name: 'storage', component: () => import('@/pages/StoragePage.vue') },
         { path: 'watches/:id', name: 'watch-detail', component: () => import('@/pages/WatchDetailPage.vue') },
         { path: 'watches/new', name: 'add-watch', component: () => import('@/pages/AddWatchPage.vue') },
         { path: 'watches/:id/edit', name: 'edit-watch', component: () => import('@/pages/EditWatchPage.vue') },
