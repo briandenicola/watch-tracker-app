@@ -65,6 +65,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                     Esc(w.BatteryType),
                     Esc(w.LinkUrl),
                     Esc(w.LinkText),
+                    Esc(w.StorageLocation),
                     w.IsWishList ? "true" : "false",
                     w.TimesWorn.ToString(),
                     Esc(w.LastWornDate?.ToString("yyyy-MM-dd")),
@@ -204,6 +205,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                 BatteryType = NullIfEmpty(Val("BatteryType")),
                 LinkUrl = NullIfEmpty(Val("LinkUrl")),
                 LinkText = NullIfEmpty(Val("LinkText")),
+                StorageLocation = NullIfEmpty(Val("StorageLocation")),
                 IsWishList = Val("IsWishList").Equals("true", StringComparison.OrdinalIgnoreCase),
                 TimesWorn = int.TryParse(Val("TimesWorn"), out var tw) ? tw : 0,
                 LastWornDate = DateTime.TryParse(Val("LastWornDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var lwd) ? lwd : null,
@@ -268,7 +270,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         "PurchaseDate", "PurchasePrice", "Notes", "CrystalType", "CaseShape",
         "CrownType", "CalendarType", "CountryOfOrigin", "WaterResistance",
         "LugWidthMm", "DialColor", "BezelType", "PowerReserveHours", "SerialNumber",
-        "BatteryType", "LinkUrl", "LinkText", "IsWishList", "TimesWorn",
+        "BatteryType", "LinkUrl", "LinkText", "StorageLocation", "IsWishList", "TimesWorn",
         "LastWornDate", "CreatedAt", "Images", "WearDates"
     ];
 

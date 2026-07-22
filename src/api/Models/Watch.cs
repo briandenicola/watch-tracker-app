@@ -31,6 +31,7 @@ public class Watch
     public string? BatteryType { get; set; }
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
+    public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
     public bool IsRetired { get; set; }
     public DateTime? RetiredAt { get; set; }

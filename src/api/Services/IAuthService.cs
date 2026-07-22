@@ -11,6 +11,7 @@ public interface IAuthService
     Task SetProfileImageAsync(int userId, string fileName);
     Task<string?> DeleteProfileImageAsync(int userId);
     Task<bool> UpdateUsernameAsync(int userId, string username);
+    Task<List<string>?> UpdateStorageLocationsAsync(int userId, IEnumerable<string> storageLocations);
     Task<AuthResponseDto?> RefreshAsync(string refreshToken);
     Task RevokeRefreshTokenAsync(string refreshToken);
     Task<AuthResponseDto?> IssueTokensForUserAsync(int userId);

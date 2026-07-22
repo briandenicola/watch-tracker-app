@@ -86,6 +86,43 @@
             {{ opt.label }}
           </button>
         </div>
+
+        <div class="mt-5 pt-5 border-t border-border">
+          <label class="text-sm text-text-secondary mb-2 block">Storage Locations</label>
+          <div v-if="storageLocations.length" class="flex flex-wrap gap-2 mb-3">
+            <span v-for="location in storageLocations" :key="location" class="inline-flex items-center gap-2 px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
+              {{ location }}
+              <button type="button" @click="removeStorageLocation(location)" class="text-text-muted hover:text-danger transition-colors" :aria-label="`Remove ${location}`">×</button>
+            </span>
+          </div>
+          <p v-else class="text-sm text-text-muted mb-3">No storage locations defined yet.</p>
+          <form @submit.prevent="addStorageLocation" class="flex gap-2 mb-3">
+            <input
+              v-model="newStorageLocation"
+              maxlength="100"
+              placeholder="e.g. Watch box, Safe, Winder"
+              class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+            />
+            <button
+              type="submit"
+              :disabled="!newStorageLocation.trim()"
+              class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50"
+            >
+              Add
+            </button>
+          </form>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              @click="saveStorageLocations"
+              :disabled="savingStorageLocations"
+              class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              {{ savingStorageLocations ? 'Saving...' : 'Save' }}
+            </button>
+            <p v-if="storageLocationsMsg" class="text-sm" :class="storageLocationsMsg.includes('Error') ? 'text-danger' : 'text-success'">{{ storageLocationsMsg }}</p>
+          </div>
+        </div>
       </section>
 
       <!-- Password Section -->
@@ -240,6 +277,11 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'timesWorn', label: 'Most Worn' },
 ]
 
+const storageLocations = ref<string[]>([])
+const newStorageLocation = ref('')
+const savingStorageLocations = ref(false)
+const storageLocationsMsg = ref('')
+
 // Profile
 const newUsername = ref('')
 const savingUsername = ref(false)
@@ -271,13 +313,14 @@ const dataMsg = ref('')
 onMounted(async () => {
   try {
     const [meResp, keysResp, oidcProvidersResp, linkedOidcResp] = await Promise.all([
-      api.get<{ username: string; email: string; profileImage?: string }>('/api/auth/me'),
+      api.get<{ username: string; email: string; profileImage?: string; storageLocations: string[] }>('/api/auth/me'),
       api.get<ApiKey[]>('/api/apikeys'),
       api.get<OidcProviderPublic[]>('/api/auth/oidc/providers'),
       api.get<LinkedOidcProvider[]>('/api/auth/oidc/linked'),
     ])
     newUsername.value = meResp.data.username
     profileImage.value = meResp.data.profileImage || null
+    storageLocations.value = [...(meResp.data.storageLocations || [])]
     apiKeys.value = keysResp.data
     oidcProviders.value = oidcProvidersResp.data
     linkedOidcProviders.value = linkedOidcResp.data
@@ -285,6 +328,35 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function addStorageLocation() {
+  const location = newStorageLocation.value.trim()
+  if (!location) return
+  if (!storageLocations.value.some(l => l.toLowerCase() === location.toLowerCase())) {
+    storageLocations.value = [...storageLocations.value, location]
+  }
+  newStorageLocation.value = ''
+  storageLocationsMsg.value = ''
+}
+
+function removeStorageLocation(location: string) {
+  storageLocations.value = storageLocations.value.filter(l => l !== location)
+  storageLocationsMsg.value = ''
+}
+
+async function saveStorageLocations() {
+  savingStorageLocations.value = true
+  storageLocationsMsg.value = ''
+  try {
+    const { data } = await api.put<string[]>('/api/auth/storage-locations', { storageLocations: storageLocations.value })
+    storageLocations.value = data
+    storageLocationsMsg.value = 'Locations saved'
+  } catch {
+    storageLocationsMsg.value = 'Error saving locations'
+  } finally {
+    savingStorageLocations.value = false
+  }
+}
 
 async function handleAvatarUpload(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]

@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using WatchTracker.Api.Data;
@@ -127,7 +128,8 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         Username = user.Username,
         Email = user.Email,
         Role = user.Role.ToString(),
-        ProfileImage = user.ProfileImage is not null ? $"/uploads/{user.ProfileImage}" : null
+        ProfileImage = user.ProfileImage is not null ? $"/uploads/{user.ProfileImage}" : null,
+        StorageLocations = ParseStorageLocations(user.StorageLocationsJson)
     };
 
     private string GenerateAccessToken(User user)
@@ -219,5 +221,41 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         user.Username = username;
         await context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<List<string>?> UpdateStorageLocationsAsync(int userId, IEnumerable<string> storageLocations)
+    {
+        var user = await context.Users.FindAsync(userId);
+        if (user is null) return null;
+
+        var normalized = NormalizeStorageLocations(storageLocations);
+        user.StorageLocationsJson = JsonSerializer.Serialize(normalized);
+        await context.SaveChangesAsync();
+        return normalized;
+    }
+
+    private static List<string> NormalizeStorageLocations(IEnumerable<string> storageLocations)
+    {
+        var normalized = new List<string>();
+        foreach (var location in storageLocations.Select(l => l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l)))
+        {
+            if (normalized.Any(l => string.Equals(l, location, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            normalized.Add(location);
+            if (normalized.Count == 50)
+                break;
+        }
+
+        return normalized;
+    }
+
+    private static List<string> ParseStorageLocations(string? storageLocationsJson)
+    {
+        if (string.IsNullOrWhiteSpace(storageLocationsJson))
+            return [];
+
+        var locations = JsonSerializer.Deserialize<List<string>>(storageLocationsJson) ?? [];
+        return NormalizeStorageLocations(locations);
     }
 }
