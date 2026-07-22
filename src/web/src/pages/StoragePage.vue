@@ -106,7 +106,7 @@ const groupedWatches = computed(() => {
 })
 
 function watchSize(index: number): number {
-  const sizes = [92, 74, 104, 66, 82, 70, 96, 76]
+  const sizes = [124, 104, 138, 96, 112, 100, 130, 108]
   return sizes[index % sizes.length]
 }
 
@@ -126,13 +126,13 @@ onMounted(async () => {
 
 <style scoped>
 .storage-shelf {
-  min-height: 18rem;
-  padding: 3.5rem 2rem;
+  min-height: 22rem;
+  padding: 4rem 2.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   align-items: center;
   justify-items: center;
-  gap: 3rem 4rem;
+  gap: 4rem 4.5rem;
   background:
     radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.08), transparent 22rem),
     linear-gradient(180deg, rgba(30, 48, 82, 0.95), rgba(9, 24, 47, 0.98));
@@ -141,7 +141,7 @@ onMounted(async () => {
 .watch-token {
   --watch-size: 80px;
   width: var(--watch-size);
-  min-height: calc(var(--watch-size) + 2rem);
+  min-height: calc(var(--watch-size) + 2.25rem);
   position: relative;
   display: flex;
   align-items: center;
@@ -205,10 +205,10 @@ onMounted(async () => {
 
 @media (max-width: 640px) {
   .storage-shelf {
-    min-height: 14rem;
-    padding: 2rem 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
-    gap: 2.25rem 1.5rem;
+    min-height: 16rem;
+    padding: 2.5rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+    gap: 2.75rem 1.75rem;
   }
 }
 </style>
