@@ -11,6 +11,8 @@ public class WatchAnalysisService(
     HttpClient httpClient,
     IWebHostEnvironment env) : IWatchAnalysisService
 {
+    private const string AnalysisNotesSeparator = "\n\n---\n\n## AI Analysis\n\n";
+
     public async Task<string> AnalyzeAsync(int watchId, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
@@ -32,10 +34,17 @@ public class WatchAnalysisService(
             AppSettingsService.Keys.AiAnalysisPrompt,
             "Analyze this watch image and describe the watch.");
 
-        return await AnalyzeWithOllamaAsync(base64, prompt);
+        var analysis = await AnalyzeWithOllamaAsync(base64, prompt, ct);
+
+        watch.AiAnalysis = analysis;
+        watch.Notes = MergeAnalysisIntoNotes(watch.Notes, analysis);
+        watch.UpdatedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync(ct);
+
+        return analysis;
     }
 
-    private async Task<string> AnalyzeWithOllamaAsync(string base64, string prompt)
+    private async Task<string> AnalyzeWithOllamaAsync(string base64, string prompt, CancellationToken ct)
     {
         var ollamaUrl = await appSettings.GetAsync(AppSettingsService.Keys.OllamaUrl, "http://localhost:11434");
         if (string.IsNullOrWhiteSpace(ollamaUrl))
@@ -66,8 +75,8 @@ public class WatchAnalysisService(
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
-        var response = await httpClient.SendAsync(request);
-        var responseBody = await response.Content.ReadAsStringAsync();
+        var response = await httpClient.SendAsync(request, ct);
+        var responseBody = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException($"Ollama API error: {responseBody}");
@@ -78,6 +87,25 @@ public class WatchAnalysisService(
             ?? throw new InvalidOperationException("No content in Ollama response.");
 
         return analysis;
+    }
+
+    private static string MergeAnalysisIntoNotes(string? notes, string analysis)
+    {
+        if (string.IsNullOrWhiteSpace(notes))
+            return analysis;
+
+        var existingNotes = notes.TrimEnd();
+        var existingAnalysisStart = existingNotes.IndexOf(AnalysisNotesSeparator, StringComparison.Ordinal);
+        if (existingAnalysisStart >= 0)
+            existingNotes = existingNotes[..existingAnalysisStart].TrimEnd();
+
+        if (string.Equals(existingNotes.Trim(), analysis.Trim(), StringComparison.Ordinal))
+            return analysis;
+
+        if (string.IsNullOrWhiteSpace(existingNotes))
+            return analysis;
+
+        return $"{existingNotes}{AnalysisNotesSeparator}{analysis}";
     }
 
     public async Task<List<string>> GetOllamaModelsAsync(string url, CancellationToken ct = default)
