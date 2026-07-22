@@ -44,11 +44,10 @@
 
         <div class="storage-shelf">
           <RouterLink
-            v-for="(watch, index) in group.watches"
+            v-for="watch in group.watches"
             :key="watch.id"
             :to="`/watches/${watch.id}`"
             class="watch-token group"
-            :style="{ '--watch-size': `${watchSize(index)}px` }"
             :title="`${watch.brand} ${watch.model}`"
           >
             <img
@@ -105,11 +104,6 @@ const groupedWatches = computed(() => {
     }))
 })
 
-function watchSize(index: number): number {
-  const sizes = [124, 104, 138, 96, 112, 100, 130, 108]
-  return sizes[index % sizes.length]
-}
-
 onMounted(async () => {
   try {
     const [watches, profileResp] = await Promise.all([
@@ -139,7 +133,7 @@ onMounted(async () => {
 }
 
 .watch-token {
-  --watch-size: 80px;
+  --watch-size: 124px;
   width: var(--watch-size);
   min-height: calc(var(--watch-size) + 2.25rem);
   position: relative;
