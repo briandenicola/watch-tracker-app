@@ -204,6 +204,7 @@ function cycleTheme() {
 
 const navItems = computed(() => [
   { to: '/', icon: 'collection', label: 'Collection' },
+  { to: '/storage', icon: 'storage', label: 'Storage' },
   { to: '/stats', icon: 'stats', label: 'Statistics' },
   { to: '/retired', icon: 'retired', label: 'Retired' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
