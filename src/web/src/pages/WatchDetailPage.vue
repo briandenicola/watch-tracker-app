@@ -308,6 +308,7 @@ async function handleAnalyze() {
     const img = watch.value.imageUrls[imageIndex.value]
     const analysis = await analyzeWatch(watch.value.id, img.id)
     watch.value.aiAnalysis = analysis
+    watch.value = await getWatch(watch.value.id)
   } finally {
     analyzing.value = false
   }
