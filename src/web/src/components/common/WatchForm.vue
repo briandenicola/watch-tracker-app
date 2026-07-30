@@ -109,11 +109,11 @@
       <input v-model="formData.purchaseDate" type="date" required class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors" />
     </div>
 
-    <div v-if="!isWishlist">
-      <label class="block text-sm font-medium text-text-secondary mb-1">Purchase Price *</label>
+    <div>
+      <label class="block text-sm font-medium text-text-secondary mb-1">{{ isWishlist ? 'Target Price' : 'Purchase Price *' }}</label>
       <div class="relative">
         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-sm">$</span>
-        <input v-model.number="formData.purchasePrice" type="number" step="0.01" min="0" required placeholder="0.00" class="w-full pl-8 pr-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+        <input v-model.number="formData.purchasePrice" type="number" step="0.01" min="0" :required="!isWishlist" placeholder="0.00" class="w-full pl-8 pr-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
       </div>
     </div>
 

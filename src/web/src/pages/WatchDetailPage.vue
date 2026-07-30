@@ -54,8 +54,8 @@
         <span v-if="watch.purchasePrice" class="inline-block px-4 py-2 bg-accent/10 border border-accent/30 rounded-lg text-lg font-display font-semibold text-accent">
           ${{ watch.purchasePrice.toFixed(2) }}
         </span>
-        <span v-if="watch.purchaseDate" class="text-xs text-text-muted">
-          {{ watch.isWishList ? 'Target price' : `Purchased ${new Date(watch.purchaseDate).toLocaleDateString()}` }}
+        <span v-if="watch.purchaseDate || (watch.isWishList && watch.purchasePrice)" class="text-xs text-text-muted">
+          {{ watch.isWishList ? 'Target price' : `Purchased ${new Date(watch.purchaseDate!).toLocaleDateString()}` }}
         </span>
         <template v-if="!watch.isWishList && watch.currentResaleValue">
           <span class="inline-block px-4 py-2 bg-bg-surface border border-border rounded-lg text-lg font-display font-semibold text-text">
