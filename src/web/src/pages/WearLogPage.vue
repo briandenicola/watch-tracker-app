@@ -30,39 +30,36 @@
 
     <template v-else>
       <section v-if="activeView === 'calendar'" class="space-y-5">
-        <div class="flex items-center justify-between">
-          <button @click="moveMonth(-1)" class="p-2 text-text-muted hover:text-text transition-colors" aria-label="Previous month">‹</button>
-          <h3 class="font-display text-3xl text-text">{{ monthTitle }}</h3>
-          <button @click="moveMonth(1)" class="p-2 text-text-muted hover:text-text transition-colors" aria-label="Next month">›</button>
-        </div>
+        <div class="bg-bg-card border border-border rounded-3xl p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-6">
+            <button @click="moveMonth(-1)" class="calendar-nav-button" aria-label="Previous month">‹</button>
+            <h3 class="font-display text-3xl sm:text-4xl text-text text-center">{{ monthTitle }}</h3>
+            <button @click="moveMonth(1)" class="calendar-nav-button" aria-label="Next month">›</button>
+          </div>
 
-        <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-text-muted">
-          <span v-for="day in weekDays" :key="day">{{ day }}</span>
-        </div>
+          <div class="grid grid-cols-7 gap-1 sm:gap-3 text-center text-xs sm:text-sm font-semibold text-text-muted mb-2">
+            <span v-for="day in weekDays" :key="day" class="py-2">{{ day }}</span>
+          </div>
 
-        <div class="grid grid-cols-7 gap-2">
-          <button
-            v-for="day in calendarDays"
-            :key="day.key"
-            @click="selectedDate = day.dateKey"
-            class="min-h-20 rounded-2xl border p-2 text-left transition-colors"
-            :class="[
-              day.inMonth ? 'bg-bg-card' : 'bg-bg-surface/40 opacity-50',
-              selectedDate === day.dateKey ? 'border-accent bg-accent/10' : 'border-transparent hover:border-border'
-            ]"
-          >
-            <span class="block text-sm text-text-secondary">{{ day.date.getDate() }}</span>
-            <div class="mt-2 flex flex-wrap gap-1">
-              <img
-                v-for="log in logsByDate[day.dateKey]?.slice(0, 3)"
-                :key="log.id"
-                :src="log.watchImageUrl ? imageUrl(log.watchImageUrl) : ''"
-                :alt="`${log.watchBrand} ${log.watchModel}`"
-                class="w-6 h-6 rounded-full bg-bg-surface border border-border object-contain"
+          <div class="grid grid-cols-7 gap-1 sm:gap-3">
+            <button
+              v-for="day in calendarDays"
+              :key="day.key"
+              @click="selectedDate = day.dateKey"
+              class="calendar-day"
+              :class="[
+                day.inMonth ? 'text-text-secondary' : 'text-text-muted/40',
+                selectedDate === day.dateKey ? 'calendar-day-selected' : 'hover:bg-bg-elevated/60'
+              ]"
+            >
+              <span class="calendar-day-number">{{ day.date.getDate() }}</span>
+              <span
+                v-if="logsByDate[day.dateKey]?.length"
+                class="calendar-wear-dot"
+                :aria-label="`${logsByDate[day.dateKey].length} wear logs`"
               />
-              <span v-if="logsByDate[day.dateKey]?.length > 3" class="text-[10px] text-text-muted">+{{ logsByDate[day.dateKey].length - 3 }}</span>
-            </div>
-          </button>
+            </button>
+          </div>
         </div>
 
         <div class="bg-bg-card border border-border rounded-2xl p-4">
@@ -119,12 +116,12 @@ import { deleteWearLog, getWearLogs, imageUrl, updateWearLogDate } from '@/servi
 type ViewMode = 'calendar' | 'timeline'
 
 const tabs: { value: ViewMode; label: string }[] = [
-  { value: 'calendar', label: 'Calendar' },
   { value: 'timeline', label: 'Timeline' },
+  { value: 'calendar', label: 'Calendar' },
 ]
 const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
-const activeView = ref<ViewMode>('calendar')
+const activeView = ref<ViewMode>('timeline')
 const wearLogs = ref<WearLog[]>([])
 const loading = ref(true)
 const error = ref(false)
@@ -381,5 +378,63 @@ onMounted(load)
 :deep(.wear-action-danger) {
   border: 1px solid rgb(239 68 68 / 0.5);
   color: var(--color-danger);
+}
+
+.calendar-nav-button {
+  color: var(--color-text-muted);
+  font-size: 2.5rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  transition: color 150ms ease;
+}
+
+.calendar-nav-button:hover {
+  color: var(--color-text);
+}
+
+.calendar-day {
+  align-items: center;
+  aspect-ratio: 1 / 1;
+  border: 1px solid transparent;
+  border-radius: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  justify-content: center;
+  min-width: 0;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.calendar-day-selected {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  color: var(--color-text);
+}
+
+.calendar-day-number {
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.calendar-wear-dot {
+  background: var(--color-accent);
+  border-radius: 999px;
+  height: 0.42rem;
+  width: 0.42rem;
+}
+
+@media (min-width: 640px) {
+  .calendar-day-number {
+    font-size: 1.1rem;
+  }
+
+  .calendar-wear-dot {
+    height: 0.5rem;
+    width: 0.5rem;
+  }
 }
 </style>
