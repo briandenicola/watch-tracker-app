@@ -145,6 +145,28 @@
         <div v-if="showOptional" class="mt-4 space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Serial Number</label>
+              <input v-model="formData.serialNumber" placeholder="Optional" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Production Year</label>
+              <input v-model.number="formData.productionYear" type="number" min="1800" max="2200" placeholder="e.g. 1998" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Battery Type</label>
+              <input v-model="formData.batteryType" placeholder="e.g. SR626SW" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Last Battery Changed</label>
+              <input v-model="formData.lastBatteryChangedDate" type="date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
               <label class="block text-xs font-medium text-text-muted mb-1">Case Size (mm)</label>
               <input v-model.number="formData.caseSizeMm" type="number" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
             </div>
@@ -321,6 +343,10 @@ const formData = reactive({
   crystalType: props.initial?.crystalType ? matchListValue(props.initial.crystalType, crystalTypes) : '',
   dialColor: props.initial?.dialColor || '',
   waterResistance: props.initial?.waterResistance || '',
+  serialNumber: props.initial?.serialNumber || '',
+  productionYear: props.initial?.productionYear,
+  batteryType: props.initial?.batteryType || '',
+  lastBatteryChangedDate: formatDateForInput(props.initial?.lastBatteryChangedDate),
   linkUrl: props.initial?.linkUrl || '',
   storageLocation: props.initial?.storageLocation || '',
 })
@@ -348,7 +374,7 @@ vueWatch(() => formData.crystalType, (val) => {
 })
 
 // Auto-expand optional section if editing and has optional data
-if (props.initial && (props.initial.caseSizeMm || props.initial.bandType || props.initial.purchaseDate || props.initial.purchasePrice || props.initial.notes || props.initial.crystalType || props.initial.linkUrl || props.initial.storageLocation)) {
+if (props.initial && (props.initial.caseSizeMm || props.initial.bandType || props.initial.purchaseDate || props.initial.purchasePrice || props.initial.notes || props.initial.crystalType || props.initial.serialNumber || props.initial.productionYear || props.initial.batteryType || props.initial.lastBatteryChangedDate || props.initial.linkUrl || props.initial.storageLocation)) {
   showOptional.value = true
 }
 

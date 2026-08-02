@@ -63,8 +63,13 @@ public class UpdateWatchDto
     [StringLength(200)]
     public string? SerialNumber { get; set; }
 
+    [Range(1800, 2200)]
+    public int? ProductionYear { get; set; }
+
     [StringLength(100)]
     public string? BatteryType { get; set; }
+
+    public DateTime? LastBatteryChangedDate { get; set; }
 
     [StringLength(2000), Url]
     public string? LinkUrl { get; set; }

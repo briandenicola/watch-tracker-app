@@ -33,7 +33,9 @@ export interface Watch {
   bezelType?: string
   powerReserveHours?: number
   serialNumber?: string
+  productionYear?: number
   batteryType?: string
+  lastBatteryChangedDate?: string
   linkUrl?: string
   linkText?: string
   storageLocation?: string
@@ -65,7 +67,9 @@ export interface CreateWatch {
   bezelType?: string
   powerReserveHours?: number
   serialNumber?: string
+  productionYear?: number
   batteryType?: string
+  lastBatteryChangedDate?: string
   linkUrl?: string
   linkText?: string
   storageLocation?: string
@@ -142,6 +146,10 @@ export interface WearLog {
   watchBrand: string
   watchModel: string
   wornDate: string
+  startedAt?: string
+  endedAt?: string
+  durationMinutes?: number
+  watchImageUrl?: string
 }
 
 export type ResaleValueSource = 'Manual' | 'WebSearchEstimate'
