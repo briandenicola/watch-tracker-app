@@ -5,6 +5,46 @@
       <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
     </div>
     <div v-else-if="watch" class="max-w-5xl mx-auto">
+      <!-- Header -->
+      <div class="relative mb-5 flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : 'Collection' }}</p>
+          <h1 class="font-display text-3xl font-semibold text-text leading-tight">{{ watch.brand }} {{ watch.model }}</h1>
+        </div>
+        <div class="relative flex-shrink-0">
+          <button
+            @click="actionsOpen = !actionsOpen"
+            class="w-10 h-10 rounded-lg bg-bg-surface border border-border text-text text-xl leading-none hover:border-accent/50 transition-colors"
+            aria-label="Watch actions"
+          >
+            …
+          </button>
+          <div v-if="actionsOpen" class="absolute right-0 top-12 z-30 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+            <template v-if="!watch.isWishList">
+              <button @click="handleWearFromMenu" :disabled="wearLoading" class="menu-action text-accent">{{ wearLoading ? 'Recording...' : 'Wore Today' }}</button>
+              <RouterLink :to="`/watches/${watch.id}/edit`" class="menu-action">Edit</RouterLink>
+              <label class="menu-action cursor-pointer">
+                {{ uploading ? 'Uploading…' : 'Upload Images' }}
+                <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
+              </label>
+              <button @click="handleAnalyzeFromMenu" :disabled="analyzing || !watch.imageUrls.length" class="menu-action">{{ analyzing ? 'Analyzing…' : 'AI Analyze' }}</button>
+              <button @click="handleRefreshResaleFromMenu" :disabled="refreshingResale" class="menu-action">{{ refreshingResale ? 'Queuing…' : 'Refresh Resale' }}</button>
+              <button @click="handleRetireFromMenu" class="menu-action">Retire</button>
+              <button @click="handleDeleteFromMenu" class="menu-action text-danger">Delete</button>
+            </template>
+            <template v-else>
+              <button @click="handlePurchaseFromMenu" :disabled="purchasing" class="menu-action text-accent">{{ purchasing ? 'Moving…' : 'Mark Purchased' }}</button>
+              <RouterLink :to="`/wishlist/${watch.id}/edit`" class="menu-action">Edit</RouterLink>
+              <label class="menu-action cursor-pointer">
+                {{ uploading ? 'Uploading…' : 'Upload Images' }}
+                <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
+              </label>
+              <button @click="handleDeleteFromMenu" class="menu-action text-danger">Delete</button>
+            </template>
+          </div>
+        </div>
+      </div>
+
       <!-- Image Gallery -->
       <div v-if="watch.imageUrls.length > 0" class="relative rounded-xl overflow-hidden bg-bg-surface mb-6">
         <div class="h-[300px] lg:h-[400px] flex items-center justify-center">
@@ -25,8 +65,7 @@
         </div>
       </div>
 
-      <!-- Image management buttons -->
-      <div v-if="watch.imageUrls.length > 0" class="flex flex-wrap gap-2 mb-4">
+      <div v-if="watch.imageUrls.length > 0" class="flex flex-wrap gap-2 mb-6">
         <button
           @click="handleRemoveBackground"
           :disabled="removingBg"
@@ -42,93 +81,15 @@
         </button>
       </div>
 
-      <!-- Header -->
-      <div class="mb-5">
-        <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : 'Collection' }}</p>
-        <h1 class="font-display text-3xl font-semibold text-text">{{ watch.brand }} {{ watch.model }}</h1>
-        <p v-if="!watch.isWishList" class="text-sm text-text-muted mt-1">{{ watch.movementType }} · Worn {{ watch.timesWorn }} times</p>
-      </div>
-
-      <!-- Price callout -->
-      <div v-if="watch.purchasePrice || watch.currentResaleValue" class="mb-4 flex flex-wrap items-center gap-3">
-        <span v-if="watch.purchasePrice" class="inline-block px-4 py-2 bg-accent/10 border border-accent/30 rounded-lg text-lg font-display font-semibold text-accent">
-          ${{ watch.purchasePrice.toFixed(2) }}
-        </span>
-        <span v-if="watch.purchaseDate || (watch.isWishList && watch.purchasePrice)" class="text-xs text-text-muted">
-          {{ watch.isWishList ? 'Target price' : `Purchased ${new Date(watch.purchaseDate!).toLocaleDateString()}` }}
-        </span>
-        <template v-if="!watch.isWishList && watch.currentResaleValue">
-          <span class="inline-block px-4 py-2 bg-bg-surface border border-border rounded-lg text-lg font-display font-semibold text-text">
-            ${{ watch.currentResaleValue.toFixed(2) }}
-            <span class="text-xs font-normal text-text-muted">resale</span>
-          </span>
-          <span v-if="resaleGain !== null" class="text-sm font-medium" :class="resaleGain >= 0 ? 'text-success' : 'text-danger'">
-            {{ resaleGain >= 0 ? '+' : '' }}${{ resaleGain.toFixed(2) }}
-          </span>
-          <span v-if="watch.resaleValueUpdatedAt" class="text-xs text-text-muted">
-            Updated {{ new Date(watch.resaleValueUpdatedAt).toLocaleDateString() }}
-          </span>
-        </template>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex flex-wrap gap-2 mb-6">
-        <!-- Collection watch actions -->
-        <template v-if="!watch.isWishList">
-          <button @click="handleWear" :disabled="wearLoading" class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
-            {{ wearLoading ? 'Recording...' : '⌚ Wore Today' }}
-          </button>
-          <RouterLink :to="`/watches/${watch.id}/edit`" class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors">
-            Edit
-          </RouterLink>
-          <label class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors cursor-pointer">
-            {{ uploading ? 'Uploading…' : 'Upload Images' }}
-            <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
-          </label>
-          <button
-            @click="handleAnalyze"
-            :disabled="analyzing || !watch.imageUrls.length"
-            class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50"
-          >
-            {{ analyzing ? 'Analyzing…' : '🤖 AI Analyze' }}
-          </button>
-          <button
-            @click="handleRefreshResale"
-            :disabled="refreshingResale"
-            class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50"
-          >
-            {{ refreshingResale ? 'Queuing…' : '🔄 Refresh Resale Value' }}
-          </button>
-          <button @click="handleRetire" class="px-4 py-2 bg-bg-surface border border-border text-text-secondary text-sm rounded-lg hover:border-accent/50 transition-colors">
-            Retire
-          </button>
-          <button @click="handleDelete" class="px-4 py-2 bg-bg-surface border border-danger/50 text-danger text-sm rounded-lg hover:bg-danger/10 transition-colors">
-            Delete
-          </button>
-        </template>
-        <!-- Wish list actions -->
-        <template v-else>
-          <button @click="handlePurchase" :disabled="purchasing" class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
-            {{ purchasing ? 'Moving…' : '🛒 Mark as Purchased' }}
-          </button>
-          <RouterLink :to="`/wishlist/${watch.id}/edit`" class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors">
-            Edit
-          </RouterLink>
-          <label class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors cursor-pointer">
-            {{ uploading ? 'Uploading…' : 'Upload Images' }}
-            <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
-          </label>
-          <button @click="handleDelete" class="px-4 py-2 bg-bg-surface border border-danger/50 text-danger text-sm rounded-lg hover:bg-danger/10 transition-colors">
-            Delete
-          </button>
-        </template>
-      </div>
-
       <section class="detail-card mb-6">
         <h2 class="detail-heading">Watch Details</h2>
         <dl class="detail-list">
           <DetailRow label="Brand" :value="watch.brand" />
           <DetailRow label="Model" :value="watch.model" />
+          <DetailRow :label="watch.isWishList ? 'Target Price' : 'Purchase Price'" :value="watch.purchasePrice ? `$${watch.purchasePrice.toFixed(2)}` : undefined" />
+          <DetailRow label="Current Value" :value="watch.currentResaleValue ? `$${watch.currentResaleValue.toFixed(2)}` : undefined" />
+          <DetailRow label="Movement Type" :value="watch.movementType" />
+          <DetailRow label="Wear Count" :value="!watch.isWishList ? watch.timesWorn.toString() : undefined" />
           <DetailRow label="Serial" :value="watch.serialNumber" />
           <DetailRow label="Production Year" :value="watch.productionYear?.toString()" />
           <DetailRow label="Case Size" :value="watch.caseSizeMm ? `${watch.caseSizeMm} mm` : undefined" />
@@ -248,7 +209,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineComponent, h, ref, computed, onMounted } from 'vue'
+import { defineComponent, h, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import type { Watch, ResaleValueEntry } from '@/types'
@@ -290,6 +251,7 @@ const uploading = ref(false)
 const removingBg = ref(false)
 const analyzing = ref(false)
 const purchasing = ref(false)
+const actionsOpen = ref(false)
 
 const resaleHistory = ref<ResaleValueEntry[]>([])
 const refreshingResale = ref(false)
@@ -300,11 +262,6 @@ const manualResaleValue = ref<number | null>(null)
 const manualResaleDate = ref('')
 const manualResaleNotes = ref('')
 const savingManualResale = ref(false)
-
-const resaleGain = computed(() => {
-  if (!watch.value?.currentResaleValue || !watch.value?.purchasePrice) return null
-  return watch.value.currentResaleValue - watch.value.purchasePrice
-})
 
 onMounted(async () => {
   try {
@@ -326,6 +283,36 @@ async function handleWear() {
   } finally {
     wearLoading.value = false
   }
+}
+
+async function handleWearFromMenu() {
+  actionsOpen.value = false
+  await handleWear()
+}
+
+async function handleRetireFromMenu() {
+  actionsOpen.value = false
+  await handleRetire()
+}
+
+async function handleDeleteFromMenu() {
+  actionsOpen.value = false
+  await handleDelete()
+}
+
+async function handlePurchaseFromMenu() {
+  actionsOpen.value = false
+  await handlePurchase()
+}
+
+async function handleAnalyzeFromMenu() {
+  actionsOpen.value = false
+  await handleAnalyze()
+}
+
+async function handleRefreshResaleFromMenu() {
+  actionsOpen.value = false
+  await handleRefreshResale()
 }
 
 async function handleRetire() {
@@ -524,6 +511,28 @@ async function handleDeleteResaleEntry(entryId: number) {
 
 :deep(.detail-empty) {
   color: var(--color-text-muted);
+}
+
+.menu-action {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-action:hover {
+  background: var(--color-bg-surface);
+  color: var(--color-accent);
+}
+
+.menu-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 @media (min-width: 768px) {
