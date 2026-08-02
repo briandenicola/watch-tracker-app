@@ -40,6 +40,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
             {
                 var imageFileNames = string.Join(";", w.Images.Select(i => i.FileName));
                 var wearDates = string.Join(";", w.WearLogs.OrderByDescending(wl => wl.WornDate).Select(wl => wl.WornDate.ToString("yyyy-MM-dd")));
+                var wearLogs = string.Join(";", w.WearLogs.OrderByDescending(wl => wl.WornDate).Select(FormatWearLogExport));
 
                 csv.AppendLine(string.Join(",",
                     Esc(w.Brand),
@@ -62,7 +63,9 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                     Esc(w.BezelType),
                     Esc(w.PowerReserveHours?.ToString()),
                     Esc(w.SerialNumber),
+                    Esc(w.ProductionYear?.ToString(CultureInfo.InvariantCulture)),
                     Esc(w.BatteryType),
+                    Esc(w.LastBatteryChangedDate?.ToString("yyyy-MM-dd")),
                     Esc(w.LinkUrl),
                     Esc(w.LinkText),
                     Esc(w.StorageLocation),
@@ -71,7 +74,8 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                     Esc(w.LastWornDate?.ToString("yyyy-MM-dd")),
                     Esc(w.CreatedAt.ToString("yyyy-MM-dd")),
                     Esc(imageFileNames),
-                    Esc(wearDates)
+                    Esc(wearDates),
+                    Esc(wearLogs)
                 ));
             }
 
@@ -202,7 +206,9 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                 BezelType = NullIfEmpty(Val("BezelType")),
                 PowerReserveHours = int.TryParse(Val("PowerReserveHours"), out var pr) ? pr : null,
                 SerialNumber = NullIfEmpty(Val("SerialNumber")),
+                ProductionYear = int.TryParse(Val("ProductionYear"), out var py) ? py : null,
                 BatteryType = NullIfEmpty(Val("BatteryType")),
+                LastBatteryChangedDate = DateTime.TryParse(Val("LastBatteryChangedDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var lbcd) ? lbcd : null,
                 LinkUrl = NullIfEmpty(Val("LinkUrl")),
                 LinkText = NullIfEmpty(Val("LinkText")),
                 StorageLocation = NullIfEmpty(Val("StorageLocation")),
@@ -234,19 +240,41 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                 });
             }
 
-            // Import wear logs
-            var wearDates = Val("WearDates").Split(';', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var dateStr in wearDates)
+            // Import wear logs. WearLogs preserves start/end times; WearDates keeps older exports compatible.
+            var wearLogEntries = Val("WearLogs").Split(';', StringSplitOptions.RemoveEmptyEntries);
+            if (wearLogEntries.Length > 0)
             {
-                if (DateTime.TryParse(dateStr.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var wornDate))
+                foreach (var entry in wearLogEntries)
                 {
+                    var parsed = ParseWearLogExport(entry);
+                    if (parsed is null) continue;
+
                     context.WearLogs.Add(new WearLog
                     {
                         WatchId = watch.Id,
                         UserId = UserId,
-                        WornDate = wornDate,
+                        WornDate = parsed.Value.WornDate,
+                        StartedAt = parsed.Value.StartedAt,
+                        EndedAt = parsed.Value.EndedAt,
                     });
                     wearLogsImported++;
+                }
+            }
+            else
+            {
+                var wearDates = Val("WearDates").Split(';', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var dateStr in wearDates)
+                {
+                    if (DateTime.TryParse(dateStr.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var wornDate))
+                    {
+                        context.WearLogs.Add(new WearLog
+                        {
+                            WatchId = watch.Id,
+                            UserId = UserId,
+                            WornDate = wornDate,
+                        });
+                        wearLogsImported++;
+                    }
                 }
             }
 
@@ -270,8 +298,9 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         "PurchaseDate", "PurchasePrice", "Notes", "CrystalType", "CaseShape",
         "CrownType", "CalendarType", "CountryOfOrigin", "WaterResistance",
         "LugWidthMm", "DialColor", "BezelType", "PowerReserveHours", "SerialNumber",
-        "BatteryType", "LinkUrl", "LinkText", "StorageLocation", "IsWishList", "TimesWorn",
-        "LastWornDate", "CreatedAt", "Images", "WearDates"
+        "ProductionYear", "BatteryType", "LastBatteryChangedDate", "LinkUrl", "LinkText",
+        "StorageLocation", "IsWishList", "TimesWorn", "LastWornDate", "CreatedAt", "Images",
+        "WearDates", "WearLogs"
     ];
 
     private static string Esc(string? value)
@@ -296,6 +325,33 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
             ".gif" => "image/gif",
             _ => "image/jpeg",
         };
+    }
+
+    private static string FormatWearLogExport(WearLog log) =>
+        string.Join("|",
+            log.WornDate.ToString("O", CultureInfo.InvariantCulture),
+            log.StartedAt?.ToString("O", CultureInfo.InvariantCulture) ?? "",
+            log.EndedAt?.ToString("O", CultureInfo.InvariantCulture) ?? "");
+
+    private static (DateTime WornDate, DateTime? StartedAt, DateTime? EndedAt)? ParseWearLogExport(string value)
+    {
+        var parts = value.Split('|');
+        if (parts.Length == 0 ||
+            !DateTime.TryParse(parts[0], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var wornDate))
+        {
+            return null;
+        }
+
+        DateTime? startedAt = parts.Length > 1 &&
+            DateTime.TryParse(parts[1], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedStart)
+                ? parsedStart
+                : null;
+        DateTime? endedAt = parts.Length > 2 &&
+            DateTime.TryParse(parts[2], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedEnd)
+                ? parsedEnd
+                : null;
+
+        return (wornDate, startedAt, endedAt);
     }
 
     /// <summary>Simple RFC 4180 CSV parser that handles quoted fields.</summary>

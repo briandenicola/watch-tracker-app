@@ -289,65 +289,22 @@
         </div>
       </div>
 
-      <!-- Recent Activity -->
-      <div class="bg-bg-card border border-border rounded-xl p-4">
-        <h3 class="text-lg font-medium text-text mb-4">Recent Activity</h3>
-        <div v-if="recentLogs.length === 0" class="text-sm text-text-muted">No wear logs yet</div>
-        <div v-else class="relative max-h-[320px] overflow-y-auto">
-          <!-- Timeline line -->
-          <div class="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
-          <div class="space-y-4">
-            <div
-              v-for="(log, i) in recentLogs"
-              :key="log.id"
-              class="flex items-start gap-4 group relative"
-            >
-              <!-- Timeline dot -->
-              <div class="relative z-10 flex-shrink-0 mt-1">
-                <div
-                  class="w-[9px] h-[9px] rounded-full border-2 transition-colors ml-[11px]"
-                  :class="i === 0 ? 'bg-accent border-accent' : 'bg-bg-card border-text-muted group-hover:border-accent'"
-                />
-              </div>
-              <!-- Card -->
-              <div class="flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg bg-bg-surface/50 border border-transparent group-hover:border-accent/30 transition-all">
-                <RouterLink :to="`/watches/${log.watchId}`" class="flex-1 min-w-0">
-                  <p class="text-sm text-text font-medium truncate group-hover:text-accent transition-colors">
-                    {{ log.watchBrand }} {{ log.watchModel }}
-                  </p>
-                  <p class="text-xs text-text-muted mt-0.5">{{ formatRelativeDate(log.wornDate) }}</p>
-                </RouterLink>
-                <span class="text-xs text-text-muted flex-shrink-0">{{ formatDate(log.wornDate) }}</span>
-                <button
-                  @click="handleDeleteWearLog(log.id)"
-                  :disabled="deletingLogId === log.id"
-                  class="flex-shrink-0 px-2 py-1 text-xs text-danger border border-danger/50 rounded-lg hover:bg-danger/10 transition-colors disabled:opacity-50"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { Watch, WearLog } from '@/types'
-import { getWatches, getWearLogs, deleteWearLog, imageUrl } from '@/services/watches'
+import type { Watch } from '@/types'
+import { getWatches, imageUrl } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 
 const { refreshing, pullDistance, pulling } = usePullToRefresh(load)
 
 const watches = ref<Watch[]>([])
-const wearLogs = ref<WearLog[]>([])
 const loading = ref(true)
 const error = ref(false)
-const deletingLogId = ref<number | null>(null)
 
 const totalWears = computed(() => watches.value.reduce((sum, w) => sum + w.timesWorn, 0))
 const avgWears = computed(() => watches.value.length ? (totalWears.value / watches.value.length).toFixed(1) : '0')
@@ -474,8 +431,6 @@ const brandBreakdown = computed(() => {
     .slice(0, 5)
 })
 
-const recentLogs = computed(() => [...wearLogs.value].sort((a, b) => new Date(b.wornDate).getTime() - new Date(a.wornDate).getTime()).slice(0, 10))
-
 function hasValue(value: number | undefined): boolean {
   return value !== undefined && value > 0
 }
@@ -529,35 +484,12 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function formatRelativeDate(dateStr: string): string {
-  const days = daysSince(dateStr)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return `${days} days ago`
-  if (days < 14) return '1 week ago'
-  return `${Math.floor(days / 7)} weeks ago`
-}
-
-async function handleDeleteWearLog(logId: number) {
-  if (!confirm('Remove this wear log? This will also update the worn count and last worn date.')) return
-  deletingLogId.value = logId
-  try {
-    await deleteWearLog(logId)
-    const [allWatches, logs] = await Promise.all([getWatches(), getWearLogs()])
-    watches.value = allWatches.filter(w => !w.isRetired && !w.isWishList)
-    wearLogs.value = logs
-  } finally {
-    deletingLogId.value = null
-  }
-}
-
 async function load() {
   loading.value = true
   error.value = false
   try {
-    const [allWatches, logs] = await Promise.all([getWatches(), getWearLogs()])
+    const allWatches = await getWatches()
     watches.value = allWatches.filter(w => !w.isRetired && !w.isWishList)
-    wearLogs.value = logs
   } catch {
     error.value = true
   } finally {

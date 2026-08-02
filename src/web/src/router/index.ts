@@ -40,6 +40,7 @@ const router = createRouter({
         { path: 'wishlist/new', name: 'add-wishlist', component: () => import('@/pages/AddWishListPage.vue') },
         { path: 'wishlist/:id/edit', name: 'edit-wishlist', component: () => import('@/pages/EditWishListPage.vue') },
         { path: 'stats', name: 'stats', component: () => import('@/pages/StatsPage.vue') },
+        { path: 'wear-log', name: 'wear-log', component: () => import('@/pages/WearLogPage.vue') },
         { path: 'retired', name: 'retired', component: () => import('@/pages/RetiredWatchesPage.vue') },
         { path: 'settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
         { path: 'admin', name: 'admin', component: () => import('@/pages/AdminPage.vue'), meta: { admin: true } },

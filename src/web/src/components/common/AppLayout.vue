@@ -129,7 +129,7 @@
           :class="{ '!text-accent': isActiveTab(tab.to) }"
         >
           <AppIcon :name="tab.icon" :size="22" :stroke-width="isActiveTab(tab.to) ? 1.75 : 1.25" />
-          <span class="text-[10px] font-medium">{{ tab.label }}</span>
+          <span class="text-[10px] font-medium whitespace-nowrap">{{ tab.label }}</span>
         </RouterLink>
         <!-- Raised FAB for Add -->
         <RouterLink
@@ -146,7 +146,7 @@
           :class="{ '!text-accent': isActiveTab(tab.to) }"
         >
           <AppIcon :name="tab.icon" :size="22" :stroke-width="isActiveTab(tab.to) ? 1.75 : 1.25" />
-          <span class="text-[10px] font-medium">{{ tab.label }}</span>
+          <span class="text-[10px] font-medium whitespace-nowrap">{{ tab.label }}</span>
         </RouterLink>
       </div>
     </nav>
@@ -206,7 +206,7 @@ const navItems = computed(() => [
   { to: '/', icon: 'collection', label: 'Collection' },
   { to: '/storage', icon: 'storage', label: 'Storage' },
   { to: '/stats', icon: 'stats', label: 'Statistics' },
-  { to: '/retired', icon: 'retired', label: 'Retired' },
+  { to: '/wear-log', icon: 'wear-log', label: 'Wear Log' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
   ...(auth.isAdmin ? [{ to: '/admin', icon: 'admin', label: 'Admin' }] : []),
 ])
@@ -217,7 +217,7 @@ const bottomTabs = [
 ]
 
 const bottomTabsRight = [
-  { to: '/retired', icon: 'retired', label: 'Retired' },
+  { to: '/wear-log', icon: 'wear-log', label: 'Wear Log' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
 ]
 

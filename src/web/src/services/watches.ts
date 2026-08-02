@@ -75,8 +75,8 @@ export async function deleteWearLog(logId: number): Promise<void> {
   await api.delete(`/api/watches/wear-logs/${logId}`)
 }
 
-export async function updateWearLogDate(logId: number, wornDate: string): Promise<void> {
-  await api.put(`/api/watches/wear-logs/${logId}`, { wornDate })
+export async function updateWearLogDate(logId: number, wornDate: string, startedAt?: string, endedAt?: string): Promise<void> {
+  await api.put(`/api/watches/wear-logs/${logId}`, { wornDate, startedAt, endedAt })
 }
 
 export async function getResaleHistory(watchId: number): Promise<ResaleValueEntry[]> {

@@ -54,7 +54,9 @@ public class WatchService(AppDbContext context) : IWatchService
             BezelType = dto.BezelType,
             PowerReserveHours = dto.PowerReserveHours,
             SerialNumber = dto.SerialNumber,
+            ProductionYear = dto.ProductionYear,
             BatteryType = dto.BatteryType,
+            LastBatteryChangedDate = dto.LastBatteryChangedDate,
             LinkUrl = dto.LinkUrl,
             LinkText = dto.LinkText,
             StorageLocation = dto.StorageLocation,
@@ -97,7 +99,9 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.BezelType = dto.BezelType;
         watch.PowerReserveHours = dto.PowerReserveHours;
         watch.SerialNumber = dto.SerialNumber;
+        watch.ProductionYear = dto.ProductionYear;
         watch.BatteryType = dto.BatteryType;
+        watch.LastBatteryChangedDate = dto.LastBatteryChangedDate;
         watch.LinkUrl = dto.LinkUrl;
         watch.LinkText = dto.LinkText;
         watch.StorageLocation = dto.StorageLocation;
@@ -137,11 +141,13 @@ public class WatchService(AppDbContext context) : IWatchService
             watch.LastWornDate = DateTime.UtcNow;
             watch.UpdatedAt = DateTime.UtcNow;
 
+            var wornAt = DateTime.UtcNow;
             context.WearLogs.Add(new WearLog
             {
                 WatchId = watch.Id,
                 UserId = userId,
-                WornDate = DateTime.UtcNow,
+                WornDate = wornAt,
+                StartedAt = wornAt,
             });
 
             try
@@ -164,16 +170,10 @@ public class WatchService(AppDbContext context) : IWatchService
     {
         return await context.WearLogs
             .Include(wl => wl.Watch)
+            .ThenInclude(w => w.Images)
             .Where(wl => wl.UserId == userId)
             .OrderByDescending(wl => wl.WornDate)
-            .Select(wl => new WearLogDto
-            {
-                Id = wl.Id,
-                WatchId = wl.WatchId,
-                WatchBrand = wl.Watch.Brand,
-                WatchModel = wl.Watch.Model,
-                WornDate = wl.WornDate,
-            })
+            .Select(wl => MapWearLogDto(wl))
             .ToListAsync(ct);
     }
 
@@ -200,7 +200,7 @@ public class WatchService(AppDbContext context) : IWatchService
         return true;
     }
 
-    public async Task<bool> UpdateWearLogDateAsync(int logId, int userId, DateTime newDate, CancellationToken ct = default)
+    public async Task<bool> UpdateWearLogAsync(int logId, int userId, UpdateWearLogDateDto dto, CancellationToken ct = default)
     {
         var log = await context.WearLogs
             .Include(wl => wl.Watch)
@@ -209,11 +209,13 @@ public class WatchService(AppDbContext context) : IWatchService
 
         if (log is null) return false;
 
-        log.WornDate = newDate;
+        log.WornDate = dto.WornDate;
+        log.StartedAt = dto.StartedAt;
+        log.EndedAt = dto.EndedAt;
 
         // Recalculate LastWornDate for the watch
         var latestDate = log.Watch.WearLogs
-            .Select(wl => wl.Id == logId ? newDate : wl.WornDate)
+            .Select(wl => wl.Id == logId ? dto.WornDate : wl.WornDate)
             .OrderByDescending(d => d)
             .FirstOrDefault();
         log.Watch.LastWornDate = latestDate;
@@ -356,7 +358,9 @@ public class WatchService(AppDbContext context) : IWatchService
         BezelType = watch.BezelType,
         PowerReserveHours = watch.PowerReserveHours,
         SerialNumber = watch.SerialNumber,
+        ProductionYear = watch.ProductionYear,
         BatteryType = watch.BatteryType,
+        LastBatteryChangedDate = watch.LastBatteryChangedDate,
         LinkUrl = watch.LinkUrl,
         LinkText = watch.LinkText,
         StorageLocation = watch.StorageLocation,
@@ -371,4 +375,24 @@ public class WatchService(AppDbContext context) : IWatchService
         CreatedAt = watch.CreatedAt,
         UpdatedAt = watch.UpdatedAt
     };
+
+    private static WearLogDto MapWearLogDto(WearLog log)
+    {
+        var duration = log.StartedAt is not null && log.EndedAt is not null && log.EndedAt > log.StartedAt
+            ? (int)Math.Round((log.EndedAt.Value - log.StartedAt.Value).TotalMinutes)
+            : (int?)null;
+
+        return new WearLogDto
+        {
+            Id = log.Id,
+            WatchId = log.WatchId,
+            WatchBrand = log.Watch.Brand,
+            WatchModel = log.Watch.Model,
+            WornDate = log.WornDate,
+            StartedAt = log.StartedAt,
+            EndedAt = log.EndedAt,
+            DurationMinutes = duration,
+            WatchImageUrl = log.Watch.Images.OrderBy(i => i.SortOrder).Select(i => $"/uploads/{i.FileName}").FirstOrDefault(),
+        };
+    }
 }

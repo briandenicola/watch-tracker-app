@@ -110,7 +110,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateWearLogDate(int logId, [FromBody] UpdateWearLogDateDto dto, CancellationToken ct)
     {
-        var updated = await watchService.UpdateWearLogDateAsync(logId, UserId, dto.WornDate, ct);
+        var updated = await watchService.UpdateWearLogAsync(logId, UserId, dto, ct);
         return updated ? NoContent() : NotFound();
     }
 

@@ -4,7 +4,7 @@
     <div v-if="loading" class="flex justify-center py-20">
       <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
     </div>
-    <div v-else-if="watch">
+    <div v-else-if="watch" class="max-w-5xl mx-auto">
       <!-- Image Gallery -->
       <div v-if="watch.imageUrls.length > 0" class="relative rounded-xl overflow-hidden bg-bg-surface mb-6">
         <div class="h-[300px] lg:h-[400px] flex items-center justify-center">
@@ -43,10 +43,10 @@
       </div>
 
       <!-- Header -->
-      <div class="mb-4">
-        <h1 class="font-display text-2xl font-semibold text-text">{{ watch.brand }} {{ watch.model }}</h1>
-        <p v-if="watch.isWishList" class="text-sm text-text-muted mt-1">Wish List</p>
-        <p v-else class="text-sm text-text-muted mt-1">{{ watch.movementType }} · Worn {{ watch.timesWorn }} times</p>
+      <div class="mb-5">
+        <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : 'Collection' }}</p>
+        <h1 class="font-display text-3xl font-semibold text-text">{{ watch.brand }} {{ watch.model }}</h1>
+        <p v-if="!watch.isWishList" class="text-sm text-text-muted mt-1">{{ watch.movementType }} · Worn {{ watch.timesWorn }} times</p>
       </div>
 
       <!-- Price callout -->
@@ -124,16 +124,65 @@
         </template>
       </div>
 
+      <section class="detail-card mb-6">
+        <h2 class="detail-heading">Watch Details</h2>
+        <dl class="detail-list">
+          <DetailRow label="Brand" :value="watch.brand" />
+          <DetailRow label="Model" :value="watch.model" />
+          <DetailRow label="Serial" :value="watch.serialNumber" />
+          <DetailRow label="Production Year" :value="watch.productionYear?.toString()" />
+          <DetailRow label="Case Size" :value="watch.caseSizeMm ? `${watch.caseSizeMm} mm` : undefined" />
+          <DetailRow label="Crystal" :value="watch.crystalType" />
+          <DetailRow label="Dial" :value="watch.dialColor" />
+          <DetailRow label="Water Resistance" :value="watch.waterResistance" />
+          <DetailRow label="Storage" :value="watch.storageLocation" />
+        </dl>
+      </section>
+
+      <section class="detail-card mb-6">
+        <h2 class="detail-heading">Movement</h2>
+        <dl class="detail-list">
+          <DetailRow label="Movement Type" :value="watch.movementType" />
+          <DetailRow label="Power Reserve" :value="watch.powerReserveHours ? `${watch.powerReserveHours} hours` : undefined" />
+          <DetailRow label="Battery Type" :value="watch.batteryType" />
+          <DetailRow label="Last Battery Changed" :value="formatFullDate(watch.lastBatteryChangedDate)" />
+        </dl>
+      </section>
+
+      <section class="detail-card mb-6">
+        <h2 class="detail-heading">Purchase Details</h2>
+        <dl class="detail-list">
+          <DetailRow :label="watch.isWishList ? 'Target Price' : 'Purchase Price'" :value="watch.purchasePrice ? `$${watch.purchasePrice.toFixed(2)}` : undefined" />
+          <DetailRow label="Purchase Date" :value="formatFullDate(watch.purchaseDate)" />
+          <DetailRow label="Current Resale" :value="watch.currentResaleValue ? `$${watch.currentResaleValue.toFixed(2)}` : undefined" />
+          <DetailRow label="Resale Updated" :value="formatFullDate(watch.resaleValueUpdatedAt)" />
+        </dl>
+      </section>
+
+      <section v-if="watch.bandType || watch.bandColor || watch.lugWidthMm || watch.caseShape || watch.bezelType || watch.crownType || watch.calendarType || watch.countryOfOrigin" class="detail-card mb-6">
+        <h2 class="detail-heading">Case & Strap</h2>
+        <dl class="detail-list">
+          <DetailRow label="Band Type" :value="watch.bandType" />
+          <DetailRow label="Band Color" :value="watch.bandColor" />
+          <DetailRow label="Lug Width" :value="watch.lugWidthMm ? `${watch.lugWidthMm} mm` : undefined" />
+          <DetailRow label="Case Shape" :value="watch.caseShape" />
+          <DetailRow label="Bezel" :value="watch.bezelType" />
+          <DetailRow label="Crown" :value="watch.crownType" />
+          <DetailRow label="Calendar" :value="watch.calendarType" />
+          <DetailRow label="Origin" :value="watch.countryOfOrigin" />
+        </dl>
+      </section>
+
       <!-- AI Analysis -->
-      <div v-if="watch.aiAnalysis" class="bg-bg-card border border-border rounded-xl p-4 mb-6">
-        <h3 class="text-sm font-medium text-text-secondary mb-2">🤖 AI Analysis</h3>
+      <section v-if="watch.aiAnalysis" class="detail-card mb-6">
+        <h2 class="detail-heading">AI Analysis</h2>
         <div class="prose-markdown text-sm text-text" v-html="renderMarkdown(watch.aiAnalysis)" />
-      </div>
+      </section>
 
       <!-- Resale Value History -->
-      <div v-if="!watch.isWishList" class="bg-bg-card border border-border rounded-xl p-4 mb-6">
+      <section v-if="!watch.isWishList" class="detail-card mb-6">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-medium text-text-secondary">Resale Value History</h3>
+          <h2 class="detail-heading !mb-0">Resale Value History</h2>
           <button @click="showManualResaleForm = !showManualResaleForm" class="text-xs text-accent hover:underline">
             {{ showManualResaleForm ? 'Cancel' : '+ Log Value' }}
           </button>
@@ -179,62 +228,7 @@
             <button @click="handleDeleteResaleEntry(entry.id)" class="text-xs text-danger hover:underline flex-shrink-0">Remove</button>
           </div>
         </div>
-      </div>
-
-      <!-- Details Chips -->
-      <div class="flex flex-wrap gap-2 mb-6">
-        <span v-if="!watch.isWishList && watch.movementType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.movementType }}
-        </span>
-        <span v-if="watch.caseSizeMm" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.caseSizeMm }}mm case
-        </span>
-        <span v-if="watch.caseShape" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.caseShape }}
-        </span>
-        <span v-if="watch.bandType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.bandType }} band
-        </span>
-        <span v-if="watch.bandColor" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.bandColor }}
-        </span>
-        <span v-if="watch.dialColor" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.dialColor }} dial
-        </span>
-        <span v-if="watch.crystalType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.crystalType }} crystal
-        </span>
-        <span v-if="watch.bezelType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.bezelType }} bezel
-        </span>
-        <span v-if="watch.crownType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.crownType }} crown
-        </span>
-        <span v-if="watch.calendarType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.calendarType }}
-        </span>
-        <span v-if="watch.waterResistance" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.waterResistance }}
-        </span>
-        <span v-if="watch.lugWidthMm" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.lugWidthMm }}mm lug
-        </span>
-        <span v-if="!watch.isWishList && watch.powerReserveHours" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.powerReserveHours }}h reserve
-        </span>
-        <span v-if="watch.countryOfOrigin" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.countryOfOrigin }}
-        </span>
-        <span v-if="watch.batteryType" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          {{ watch.batteryType }} battery
-        </span>
-        <span v-if="watch.serialNumber" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          S/N {{ watch.serialNumber }}
-        </span>
-        <span v-if="watch.storageLocation" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-          Stored: {{ watch.storageLocation }}
-        </span>
-      </div>
+      </section>
 
       <!-- Link -->
       <div v-if="watch.linkUrl" class="mb-6">
@@ -244,17 +238,17 @@
       </div>
 
       <!-- Notes -->
-      <div v-if="watch.notes" class="bg-bg-surface border border-border rounded-xl p-4">
-        <h3 class="text-sm font-medium text-text-secondary mb-2">Notes</h3>
+      <section v-if="watch.notes" class="detail-card">
+        <h2 class="detail-heading">Notes</h2>
         <div class="prose-markdown text-sm text-text" v-html="renderMarkdown(watch.notes)" />
-      </div>
+      </section>
     </div>
     <div v-else class="text-center py-20 text-text-muted">Watch not found.</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { defineComponent, h, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import type { Watch, ResaleValueEntry } from '@/types'
@@ -266,8 +260,26 @@ import {
 const route = useRoute()
 const router = useRouter()
 
+const DetailRow = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    value: { type: String, required: false, default: undefined },
+  },
+  setup(props) {
+    return () => h('div', { class: 'detail-row' }, [
+      h('dt', { class: 'detail-label' }, props.label),
+      h('dd', { class: props.value ? 'detail-value' : 'detail-value detail-empty' }, props.value || 'Not set'),
+    ])
+  },
+})
+
 function renderMarkdown(text: string): string {
   return marked.parse(text, { async: false }) as string
+}
+
+function formatFullDate(dateStr?: string): string | undefined {
+  if (!dateStr) return undefined
+  return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 const watch = ref<Watch | null>(null)
@@ -344,8 +356,19 @@ async function handlePurchase() {
       purchasePrice: w.purchasePrice,
       notes: w.notes,
       crystalType: w.crystalType,
+      caseShape: w.caseShape,
+      crownType: w.crownType,
+      calendarType: w.calendarType,
+      countryOfOrigin: w.countryOfOrigin,
       dialColor: w.dialColor,
+      bezelType: w.bezelType,
+      powerReserveHours: w.powerReserveHours,
+      serialNumber: w.serialNumber,
+      productionYear: w.productionYear,
+      batteryType: w.batteryType,
+      lastBatteryChangedDate: w.lastBatteryChangedDate,
       waterResistance: w.waterResistance,
+      lugWidthMm: w.lugWidthMm,
       linkUrl: w.linkUrl,
       linkText: w.linkText,
       storageLocation: w.storageLocation,
@@ -451,3 +474,61 @@ async function handleDeleteResaleEntry(entryId: number) {
   watch.value = await getWatch(watch.value.id)
 }
 </script>
+
+<style scoped>
+.detail-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+}
+
+.detail-heading {
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  margin-bottom: 0.85rem;
+  text-transform: uppercase;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0;
+}
+
+:deep(.detail-row) {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.7fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+:deep(.detail-row:last-child) {
+  border-bottom: 0;
+}
+
+:deep(.detail-label) {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+:deep(.detail-value) {
+  color: var(--color-text);
+  font-size: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+:deep(.detail-empty) {
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .detail-card {
+    padding: 1.5rem 1.75rem;
+  }
+}
+</style>
