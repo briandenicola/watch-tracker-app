@@ -117,6 +117,11 @@
           <DetailRow label="Purchase Date" :value="formatFullDate(watch.purchaseDate)" />
           <DetailRow label="Current Resale" :value="watch.currentResaleValue ? `$${watch.currentResaleValue.toFixed(2)}` : undefined" />
           <DetailRow label="Resale Updated" :value="formatFullDate(watch.resaleValueUpdatedAt)" />
+          <DetailRow
+            label="Store Link"
+            :value="watch.linkUrl ? (watch.linkText || 'Store Link') : undefined"
+            :href="watch.linkUrl"
+          />
         </dl>
       </section>
 
@@ -191,13 +196,6 @@
         </div>
       </section>
 
-      <!-- Link -->
-      <div v-if="watch.linkUrl" class="mb-6">
-        <a :href="watch.linkUrl" target="_blank" rel="noopener noreferrer" class="text-sm text-accent hover:underline">
-          {{ watch.linkText || 'Store Link' }} ↗
-        </a>
-      </div>
-
       <!-- Notes -->
       <section v-if="watch.notes" class="detail-card">
         <h2 class="detail-heading">Notes</h2>
@@ -225,11 +223,17 @@ const DetailRow = defineComponent({
   props: {
     label: { type: String, required: true },
     value: { type: String, required: false, default: undefined },
+    href: { type: String, required: false, default: undefined },
   },
   setup(props) {
     return () => h('div', { class: 'detail-row' }, [
       h('dt', { class: 'detail-label' }, props.label),
-      h('dd', { class: props.value ? 'detail-value' : 'detail-value detail-empty' }, props.value || 'Not set'),
+      h('dd', { class: props.value ? 'detail-value' : 'detail-value detail-empty' },
+        props.value
+          ? props.href
+            ? [h('a', { href: props.href, target: '_blank', rel: 'noopener noreferrer', class: 'detail-link' }, `${props.value} ↗`)]
+            : props.value
+          : 'Not set'),
     ])
   },
 })
@@ -511,6 +515,14 @@ async function handleDeleteResaleEntry(entryId: number) {
 
 :deep(.detail-empty) {
   color: var(--color-text-muted);
+}
+
+:deep(.detail-link) {
+  color: var(--color-accent);
+}
+
+:deep(.detail-link:hover) {
+  text-decoration: underline;
 }
 
 .menu-action {
