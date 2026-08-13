@@ -1,6 +1,11 @@
 <template>
   <div>
-    <RouterLink to="/" class="text-accent text-sm hover:underline mb-4 inline-block">← Back</RouterLink>
+    <RouterLink
+      :to="watch?.isWishList ? '/?tab=wishlist' : '/'"
+      class="text-accent text-sm hover:underline mb-4 inline-block"
+    >
+      ← Back
+    </RouterLink>
     <div v-if="loading" class="flex justify-center py-20">
       <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
     </div>
@@ -327,8 +332,11 @@ async function handleRetire() {
 
 async function handleDelete() {
   if (!watch.value || !confirm('Delete this watch permanently?')) return
+  const returnTo = watch.value.isWishList
+    ? { path: '/', query: { tab: 'wishlist' } }
+    : { path: '/' }
   await deleteWatch(watch.value.id)
-  router.push('/')
+  router.push(returnTo)
 }
 
 async function handlePurchase() {
