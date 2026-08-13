@@ -60,6 +60,9 @@ public class CreateWatchDto
     [Range(0, 10000)]
     public int? PowerReserveHours { get; set; }
 
+    [StringLength(100)]
+    public string? Sku { get; set; }
+
     [StringLength(200)]
     public string? SerialNumber { get; set; }
 

@@ -32,6 +32,7 @@ export interface Watch {
   dialColor?: string
   bezelType?: string
   powerReserveHours?: number
+  sku?: string
   serialNumber?: string
   productionYear?: number
   batteryType?: string
@@ -66,6 +67,7 @@ export interface CreateWatch {
   dialColor?: string
   bezelType?: string
   powerReserveHours?: number
+  sku?: string
   serialNumber?: string
   productionYear?: number
   batteryType?: string

@@ -27,6 +27,7 @@ public class Watch
     public string? DialColor { get; set; }
     public string? BezelType { get; set; }
     public int? PowerReserveHours { get; set; }
+    public string? Sku { get; set; }
     public string? SerialNumber { get; set; }
     public int? ProductionYear { get; set; }
     public string? BatteryType { get; set; }

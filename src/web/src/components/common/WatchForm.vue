@@ -142,118 +142,188 @@
       </button>
 
       <Transition name="expand">
-        <div v-if="showOptional" class="mt-4 space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Serial Number</label>
-              <input v-model="formData.serialNumber" placeholder="Optional" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+        <div v-if="showOptional" class="mt-4 space-y-5">
+          <!-- Identification -->
+          <div class="space-y-4">
+            <h3 class="form-subheading">Identification</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">SKU / Reference</label>
+                <input v-model="formData.sku" placeholder="e.g. 126610LN" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Serial Number</label>
+                <input v-model="formData.serialNumber" placeholder="Optional" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Production Year</label>
-              <input v-model.number="formData.productionYear" type="number" min="1800" max="2200" placeholder="e.g. 1998" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Production Year</label>
+                <input v-model.number="formData.productionYear" type="number" min="1800" max="2200" placeholder="e.g. 1998" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Country of Origin</label>
+                <input v-model="formData.countryOfOrigin" placeholder="e.g. Switzerland" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Battery Type</label>
-              <input v-model="formData.batteryType" placeholder="e.g. SR626SW" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+          <!-- Case -->
+          <div class="space-y-4">
+            <h3 class="form-subheading">Case</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Case Size (mm)</label>
+                <input v-model.number="formData.caseSizeMm" type="number" step="0.1" min="1" max="200" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Lug Width (mm)</label>
+                <input v-model.number="formData.lugWidthMm" type="number" step="0.5" min="1" max="100" placeholder="e.g. 20" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Last Battery Changed</label>
-              <input v-model="formData.lastBatteryChangedDate" type="date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
-            </div>
-          </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Case Size (mm)</label>
-              <input v-model.number="formData.caseSizeMm" type="number" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Crystal Type</label>
-              <div class="relative">
-                <select
-                  v-if="!customCrystalType"
-                  v-model="formData.crystalType"
-                  class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
-                >
-                  <option value="">Select...</option>
-                  <option v-for="ct in crystalTypes" :key="ct" :value="ct">{{ ct }}</option>
-                  <option value="__custom__">Other...</option>
-                </select>
-                <div v-else class="flex gap-1">
-                  <input
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Case Shape</label>
+                <input v-model="formData.caseShape" placeholder="e.g. Round, Tonneau" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Crystal Type</label>
+                <div class="relative">
+                  <select
+                    v-if="!customCrystalType"
                     v-model="formData.crystalType"
-                    placeholder="Custom type"
-                    class="flex-1 px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-                  />
-                  <button type="button" @click="customCrystalType = false; formData.crystalType = ''" class="px-2 text-text-muted hover:text-text text-xs">✕</button>
+                    class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
+                  >
+                    <option value="">Select...</option>
+                    <option v-for="ct in crystalTypes" :key="ct" :value="ct">{{ ct }}</option>
+                    <option value="__custom__">Other...</option>
+                  </select>
+                  <div v-else class="flex gap-1">
+                    <input
+                      v-model="formData.crystalType"
+                      placeholder="Custom type"
+                      class="flex-1 px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                    />
+                    <button type="button" @click="customCrystalType = false; formData.crystalType = ''" class="px-2 text-text-muted hover:text-text text-xs">✕</button>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Bezel Type</label>
+                <input v-model="formData.bezelType" placeholder="e.g. Ceramic dive" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Crown Type</label>
+                <input v-model="formData.crownType" placeholder="e.g. Screw-down" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Dial Color</label>
+                <input v-model="formData.dialColor" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Water Resistance</label>
+                <input v-model="formData.waterResistance" placeholder="100m" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
               </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Band Type</label>
-              <div class="relative">
-                <select
-                  v-if="!customBandType"
-                  v-model="formData.bandType"
-                  class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
-                >
-                  <option value="">Select...</option>
-                  <option v-for="bt in bandTypes" :key="bt" :value="bt">{{ bt }}</option>
-                  <option value="__custom__">Other...</option>
-                </select>
-                <div v-else class="flex gap-1">
-                  <input
+          <!-- Band -->
+          <div class="space-y-4">
+            <h3 class="form-subheading">Band</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Band Type</label>
+                <div class="relative">
+                  <select
+                    v-if="!customBandType"
                     v-model="formData.bandType"
-                    placeholder="Custom type"
-                    class="flex-1 px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-                  />
-                  <button type="button" @click="customBandType = false; formData.bandType = ''" class="px-2 text-text-muted hover:text-text text-xs">✕</button>
+                    class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
+                  >
+                    <option value="">Select...</option>
+                    <option v-for="bt in bandTypes" :key="bt" :value="bt">{{ bt }}</option>
+                    <option value="__custom__">Other...</option>
+                  </select>
+                  <div v-else class="flex gap-1">
+                    <input
+                      v-model="formData.bandType"
+                      placeholder="Custom type"
+                      class="flex-1 px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                    />
+                    <button type="button" @click="customBandType = false; formData.bandType = ''" class="px-2 text-text-muted hover:text-text text-xs">✕</button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Band Color</label>
-              <input v-model="formData.bandColor" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Dial Color</label>
-              <input v-model="formData.dialColor" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Water Resistance</label>
-              <input v-model="formData.waterResistance" placeholder="100m" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Band Color</label>
+                <input v-model="formData.bandColor" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-medium text-text-muted mb-1">Storage Location</label>
-            <select
-              v-model="formData.storageLocation"
-              :disabled="storageLocationOptions.length === 0"
-              class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none disabled:opacity-60"
-            >
-              <option value="">{{ storageLocationOptions.length ? 'Select...' : 'Define locations in Settings' }}</option>
-              <option v-for="location in storageLocationOptions" :key="location" :value="location">{{ location }}</option>
-            </select>
+          <!-- Movement & Power -->
+          <div class="space-y-4">
+            <h3 class="form-subheading">Movement &amp; Power</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Power Reserve (hours)</label>
+                <input v-model.number="formData.powerReserveHours" type="number" min="0" max="10000" placeholder="e.g. 70" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Calendar Type</label>
+                <input v-model="formData.calendarType" placeholder="e.g. Day-Date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Battery Type</label>
+                <input v-model="formData.batteryType" placeholder="e.g. SR626SW" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Last Battery Changed</label>
+                <input v-model="formData.lastBatteryChangedDate" type="date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
+            </div>
           </div>
 
+          <!-- Storage & Links -->
+          <div class="space-y-4">
+            <h3 class="form-subheading">Storage &amp; Links</h3>
+            <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Storage Location</label>
+              <select
+                v-model="formData.storageLocation"
+                :disabled="storageLocationOptions.length === 0"
+                class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none disabled:opacity-60"
+              >
+                <option value="">{{ storageLocationOptions.length ? 'Select...' : 'Define locations in Settings' }}</option>
+                <option v-for="location in storageLocationOptions" :key="location" :value="location">{{ location }}</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Link URL</label>
+              <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Link Text</label>
+              <input v-model="formData.linkText" placeholder="Label shown for the link" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+            </div>
+          </div>
+
+          <!-- Notes -->
           <div>
             <label class="block text-xs font-medium text-text-muted mb-1">Notes</label>
             <textarea v-model="formData.notes" rows="6" placeholder="Any additional notes..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors resize-y" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-text-muted mb-1">Link URL</label>
-            <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
           </div>
         </div>
       </Transition>
@@ -341,13 +411,22 @@ const formData = reactive({
   purchasePrice: props.initial?.purchasePrice,
   notes: props.initial?.notes || '',
   crystalType: props.initial?.crystalType ? matchListValue(props.initial.crystalType, crystalTypes) : '',
+  caseShape: props.initial?.caseShape || '',
+  crownType: props.initial?.crownType || '',
+  calendarType: props.initial?.calendarType || '',
+  countryOfOrigin: props.initial?.countryOfOrigin || '',
+  lugWidthMm: props.initial?.lugWidthMm,
   dialColor: props.initial?.dialColor || '',
+  bezelType: props.initial?.bezelType || '',
   waterResistance: props.initial?.waterResistance || '',
+  powerReserveHours: props.initial?.powerReserveHours,
+  sku: props.initial?.sku || '',
   serialNumber: props.initial?.serialNumber || '',
   productionYear: props.initial?.productionYear,
   batteryType: props.initial?.batteryType || '',
   lastBatteryChangedDate: formatDateForInput(props.initial?.lastBatteryChangedDate),
   linkUrl: props.initial?.linkUrl || '',
+  linkText: props.initial?.linkText || '',
   storageLocation: props.initial?.storageLocation || '',
 })
 
@@ -373,8 +452,13 @@ vueWatch(() => formData.crystalType, (val) => {
   }
 })
 
+// Fields rendered outside the collapsible section — they shouldn't force it open
+const topLevelFields = new Set(['brand', 'model', 'movementType', 'purchaseDate', 'purchasePrice'])
+
 // Auto-expand optional section if editing and has optional data
-if (props.initial && (props.initial.caseSizeMm || props.initial.bandType || props.initial.purchaseDate || props.initial.purchasePrice || props.initial.notes || props.initial.crystalType || props.initial.serialNumber || props.initial.productionYear || props.initial.batteryType || props.initial.lastBatteryChangedDate || props.initial.linkUrl || props.initial.storageLocation)) {
+if (props.initial && Object.entries(formData).some(
+  ([key, value]) => !topLevelFields.has(key) && value !== '' && value !== null && value !== undefined,
+)) {
   showOptional.value = true
 }
 
@@ -443,6 +527,14 @@ function handleFormSubmit() {
 </script>
 
 <style scoped>
+.form-subheading {
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
 .expand-enter-active,
 .expand-leave-active {
   transition: all 0.25s ease;
@@ -456,6 +548,6 @@ function handleFormSubmit() {
 .expand-enter-to,
 .expand-leave-from {
   opacity: 1;
-  max-height: 1000px;
+  max-height: 4000px;
 }
 </style>
