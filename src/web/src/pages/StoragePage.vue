@@ -136,6 +136,7 @@ onMounted(async () => {
   display: grid;
   grid-template-rows: 1.25rem var(--watch-size) 1.25rem;
   align-items: center;
+  justify-items: center;
   justify-content: center;
   gap: 0.45rem;
   text-align: center;
