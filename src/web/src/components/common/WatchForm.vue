@@ -117,11 +117,18 @@
       </div>
     </div>
 
-    <!-- Wishlist: link URL as top-level optional field -->
-    <div v-if="isWishlist">
-      <label class="block text-sm font-medium text-text-secondary mb-1">Link URL</label>
-      <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
-    </div>
+    <!-- Wishlist: link URL and its label as top-level optional fields -->
+    <template v-if="isWishlist">
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Link URL</label>
+        <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Link Text</label>
+        <input v-model="formData.linkText" placeholder="Label shown for the link" class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+      </div>
+    </template>
 
     <!-- Optional Fields (collapsible) -->
     <div class="border-t border-border pt-4">
@@ -296,7 +303,7 @@
 
           <!-- Storage & Links -->
           <div class="space-y-4">
-            <h3 class="form-subheading">Storage &amp; Links</h3>
+            <h3 class="form-subheading">{{ isWishlist ? 'Storage' : 'Storage & Links' }}</h3>
             <div>
               <label class="block text-xs font-medium text-text-muted mb-1">Storage Location</label>
               <select
@@ -309,15 +316,18 @@
               </select>
             </div>
 
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Link URL</label>
-              <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
-            </div>
+            <!-- Wishlist renders the link pair as a top-level field instead -->
+            <template v-if="!isWishlist">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Link URL</label>
+                <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
 
-            <div>
-              <label class="block text-xs font-medium text-text-muted mb-1">Link Text</label>
-              <input v-model="formData.linkText" placeholder="Label shown for the link" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
-            </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Link Text</label>
+                <input v-model="formData.linkText" placeholder="Label shown for the link" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+            </template>
           </div>
 
           <!-- Notes -->
