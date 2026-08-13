@@ -50,6 +50,7 @@
             class="watch-token group"
             :title="`${watch.brand} ${watch.model}`"
           >
+            <span class="watch-brand font-display">{{ watch.brand }}</span>
             <img
               v-if="watch.imageUrls.length > 0"
               :src="imageUrl(watch.imageUrls[0].url)"
@@ -58,10 +59,7 @@
               loading="lazy"
             />
             <div v-else class="watch-placeholder">⌚</div>
-            <span class="watch-label">
-              <span class="font-medium">{{ watch.brand }}</span>
-              <span class="text-white/70">{{ watch.model }}</span>
-            </span>
+            <span class="watch-model">{{ watch.model }}</span>
           </RouterLink>
         </div>
       </section>
@@ -134,14 +132,13 @@ onMounted(async () => {
 
 .watch-token {
   --watch-size: 124px;
-  width: var(--watch-size);
-  min-height: calc(var(--watch-size) + 2.25rem);
-  position: relative;
-  display: flex;
+  width: min(10rem, 100%);
+  display: grid;
+  grid-template-rows: 1.25rem var(--watch-size) 1.25rem;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.45));
+  gap: 0.45rem;
+  text-align: center;
 }
 
 .watch-image,
@@ -153,6 +150,7 @@ onMounted(async () => {
   padding: 0.2rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.16);
+  filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.45));
   transition: transform 0.25s ease, border-color 0.25s ease;
 }
 
@@ -170,39 +168,52 @@ onMounted(async () => {
   border-color: rgba(212, 175, 55, 0.65);
 }
 
-.watch-label {
-  position: absolute;
-  top: calc(100% + 0.45rem);
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 10rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  padding: 0.35rem 0.55rem;
-  border-radius: 0.6rem;
-  background: rgba(0, 0, 0, 0.52);
-  color: white;
-  font-size: 0.68rem;
-  line-height: 1.1;
-  text-align: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
+.watch-brand,
+.watch-model {
+  width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
-.watch-token:hover .watch-label {
-  opacity: 1;
+.watch-brand {
+  color: rgb(212, 175, 55);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.watch-model {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  letter-spacing: 0.025em;
+}
+
+.watch-token:hover .watch-brand {
+  color: rgb(232, 199, 92);
+}
+
+.watch-token:hover .watch-model {
+  color: white;
 }
 
 @media (max-width: 640px) {
   .storage-shelf {
     min-height: 16rem;
     padding: 2.5rem 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
     gap: 2.75rem 1.75rem;
+  }
+
+  .watch-token {
+    --watch-size: 104px;
+    width: min(7rem, 100%);
+  }
+
+  .watch-brand,
+  .watch-model {
+    width: 7rem;
   }
 }
 </style>
