@@ -220,6 +220,93 @@
         </div>
       </div>
 
+      <div class="grid lg:grid-cols-2 gap-4">
+        <!-- Crystal Type Breakdown -->
+        <div class="bg-bg-card border border-border rounded-xl p-4">
+          <h3 class="text-lg font-medium text-text">Crystal Types</h3>
+          <p class="text-xs text-text-muted mt-1 mb-4">Distribution of watches with crystal data</p>
+          <div v-if="crystalBreakdown.length === 0" class="text-sm text-text-muted">Add crystal types to see the distribution</div>
+          <div v-else class="space-y-3">
+            <div v-for="item in crystalBreakdown" :key="item.label" class="space-y-1.5">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm text-text truncate">{{ item.label }}</span>
+                <span class="text-xs text-text-muted flex-shrink-0">{{ item.count }} ({{ item.pct }}%)</span>
+              </div>
+              <div class="h-2 bg-bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-accent/60 rounded-full transition-all" :style="{ width: item.barPct + '%' }" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Case Size Breakdown -->
+        <div class="bg-bg-card border border-border rounded-xl p-4">
+          <h3 class="text-lg font-medium text-text">Case Size Distribution</h3>
+          <p class="text-xs text-text-muted mt-1 mb-4">Grouped by case diameter in millimeters</p>
+          <div v-if="caseSizeBreakdown.length === 0" class="text-sm text-text-muted">Add case sizes to see the distribution</div>
+          <div v-else class="space-y-3">
+            <div v-for="item in caseSizeBreakdown" :key="item.label" class="space-y-1.5">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm text-text">{{ item.label }}</span>
+                <span class="text-xs text-text-muted flex-shrink-0">{{ item.count }} ({{ item.pct }}%)</span>
+              </div>
+              <div class="h-2 bg-bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-success/70 rounded-full transition-all" :style="{ width: item.barPct + '%' }" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Missing Watch Data -->
+      <div class="bg-bg-card border border-border rounded-xl overflow-hidden">
+        <div class="p-4 border-b border-border">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-lg font-medium text-text">Missing Watch Data</h3>
+              <p class="text-xs text-text-muted mt-1">Movement, crystal, case size, and water resistance</p>
+            </div>
+            <span class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary flex-shrink-0">
+              {{ watchesMissingData.length }} incomplete
+            </span>
+          </div>
+        </div>
+        <div v-if="watchesMissingData.length === 0" class="p-4 text-sm text-success">
+          All watches have these details.
+        </div>
+        <div v-else class="divide-y divide-border">
+          <RouterLink
+            v-for="item in watchesMissingData"
+            :key="item.watch.id"
+            :to="`/watches/${item.watch.id}`"
+            class="flex items-center gap-3 p-4 hover:bg-bg-surface transition-colors group"
+          >
+            <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
+              <img
+                v-if="item.watch.imageUrls.length"
+                :src="imageUrl(item.watch.imageUrls[0].url)"
+                class="w-full h-full object-contain"
+              />
+              <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-text truncate group-hover:text-accent transition-colors">
+                {{ item.watch.brand }} {{ item.watch.model }}
+              </p>
+              <div class="flex flex-wrap gap-1.5 mt-1.5">
+                <span
+                  v-for="field in item.fields"
+                  :key="field"
+                  class="px-2 py-0.5 bg-danger/10 border border-danger/20 rounded-full text-xs text-danger"
+                >
+                  {{ field }}
+                </span>
+              </div>
+            </div>
+          </RouterLink>
+        </div>
+      </div>
+
       <!-- Most Popular Brands -->
       <div class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Top Brands</h3>
@@ -414,12 +501,65 @@ const neglected = computed(() => {
 
 const movementBreakdown = computed(() => {
   const counts: Record<string, number> = {}
-  watches.value.forEach(w => { counts[w.movementType] = (counts[w.movementType] || 0) + 1 })
+  watches.value.forEach(w => {
+    if (!isMissingText(w.movementType)) {
+      counts[w.movementType] = (counts[w.movementType] || 0) + 1
+    }
+  })
   const total = watches.value.length || 1
   return Object.entries(counts)
     .map(([type, count]) => ({ type, count, pct: Math.round((count / total) * 100) }))
     .sort((a, b) => b.count - a.count)
 })
+
+const crystalBreakdown = computed(() => {
+  const counts = new Map<string, { label: string; count: number }>()
+  watches.value.forEach(w => {
+    if (isMissingText(w.crystalType)) return
+
+    const label = w.crystalType!.trim()
+    const key = label.toLocaleLowerCase()
+    const item = counts.get(key)
+    counts.set(key, { label: item?.label ?? label, count: (item?.count ?? 0) + 1 })
+  })
+
+  return toDistribution([...counts.values()])
+})
+
+const caseSizeBreakdown = computed(() => {
+  const bins = [
+    { label: 'Under 36 mm', count: 0 },
+    { label: '36-39.9 mm', count: 0 },
+    { label: '40-42.9 mm', count: 0 },
+    { label: '43 mm and over', count: 0 },
+  ]
+
+  watches.value.forEach(w => {
+    if (!hasValue(w.caseSizeMm)) return
+
+    const size = w.caseSizeMm ?? 0
+    if (size < 36) bins[0].count++
+    else if (size < 40) bins[1].count++
+    else if (size < 43) bins[2].count++
+    else bins[3].count++
+  })
+
+  return toDistribution(bins.filter(bin => bin.count > 0), false)
+})
+
+const watchesMissingData = computed(() =>
+  watches.value
+    .map(watch => {
+      const fields: string[] = []
+      if (isMissingText(watch.movementType)) fields.push('Movement')
+      if (isMissingText(watch.crystalType)) fields.push('Crystal')
+      if (!hasValue(watch.caseSizeMm)) fields.push('Case size')
+      if (isMissingText(watch.waterResistance)) fields.push('Water resistance')
+      return { watch, fields }
+    })
+    .filter(item => item.fields.length > 0)
+    .sort((a, b) => b.fields.length - a.fields.length || a.watch.brand.localeCompare(b.watch.brand))
+)
 
 const brandBreakdown = computed(() => {
   const counts: Record<string, number> = {}
@@ -433,6 +573,25 @@ const brandBreakdown = computed(() => {
 
 function hasValue(value: number | undefined): boolean {
   return value !== undefined && value > 0
+}
+
+function isMissingText(value: string | undefined): boolean {
+  return !value?.trim()
+}
+
+function toDistribution(
+  items: Array<{ label: string; count: number }>,
+  sort = true,
+): Array<{ label: string; count: number; pct: number; barPct: number }> {
+  const total = items.reduce((sum, item) => sum + item.count, 0) || 1
+  const max = Math.max(...items.map(item => item.count), 1)
+  const distribution = items.map(item => ({
+    ...item,
+    pct: Math.round((item.count / total) * 100),
+    barPct: Math.round((item.count / max) * 100),
+  }))
+
+  return sort ? distribution.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)) : distribution
 }
 
 function costPerWear(watch: Watch): number {
