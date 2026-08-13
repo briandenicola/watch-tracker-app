@@ -13,7 +13,7 @@
       <!-- Header -->
       <div class="relative mb-5 flex items-start justify-between gap-4">
         <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : 'Collection' }}</p>
+          <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : watch.isRetired ? 'Retired' : 'Collection' }}</p>
           <h1 class="font-display text-3xl font-semibold text-text leading-tight">{{ watch.brand }} {{ watch.model }}</h1>
         </div>
         <div class="relative flex-shrink-0">
@@ -34,7 +34,7 @@
               </label>
               <button @click="handleAnalyzeFromMenu" :disabled="analyzing || !watch.imageUrls.length" class="menu-action">{{ analyzing ? 'Analyzing…' : 'AI Analyze' }}</button>
               <button @click="handleRefreshResaleFromMenu" :disabled="refreshingResale" class="menu-action">{{ refreshingResale ? 'Queuing…' : 'Refresh Resale' }}</button>
-              <button @click="handleRetireFromMenu" class="menu-action">Retire</button>
+              <button v-if="!watch.isRetired" @click="handleRetireFromMenu" class="menu-action">Retire</button>
               <button @click="handleDeleteFromMenu" class="menu-action text-danger">Delete</button>
             </template>
             <template v-else>
@@ -87,21 +87,30 @@
       </div>
 
       <section class="detail-card mb-6">
-        <h2 class="detail-heading">Watch Details</h2>
+        <h2 class="detail-heading">Identification</h2>
         <dl class="detail-list">
           <DetailRow label="Brand" :value="watch.brand" />
           <DetailRow label="Model" :value="watch.model" />
-          <DetailRow :label="watch.isWishList ? 'Target Price' : 'Purchase Price'" :value="watch.purchasePrice ? `$${watch.purchasePrice.toFixed(2)}` : undefined" />
-          <DetailRow label="Current Value" :value="watch.currentResaleValue ? `$${watch.currentResaleValue.toFixed(2)}` : undefined" />
-          <DetailRow label="Movement Type" :value="watch.movementType" />
-          <DetailRow label="Wear Count" :value="!watch.isWishList ? watch.timesWorn.toString() : undefined" />
+          <DetailRow label="SKU / Reference" :value="watch.sku" />
           <DetailRow label="Serial" :value="watch.serialNumber" />
           <DetailRow label="Production Year" :value="watch.productionYear?.toString()" />
+          <DetailRow label="Origin" :value="watch.countryOfOrigin" />
+        </dl>
+      </section>
+
+      <section class="detail-card mb-6">
+        <h2 class="detail-heading">Case &amp; Band</h2>
+        <dl class="detail-list">
           <DetailRow label="Case Size" :value="watch.caseSizeMm ? `${watch.caseSizeMm} mm` : undefined" />
+          <DetailRow label="Lug Width" :value="watch.lugWidthMm ? `${watch.lugWidthMm} mm` : undefined" />
+          <DetailRow label="Case Shape" :value="watch.caseShape" />
           <DetailRow label="Crystal" :value="watch.crystalType" />
+          <DetailRow label="Bezel" :value="watch.bezelType" />
+          <DetailRow label="Crown" :value="watch.crownType" />
           <DetailRow label="Dial" :value="watch.dialColor" />
           <DetailRow label="Water Resistance" :value="watch.waterResistance" />
-          <DetailRow label="Storage" :value="watch.storageLocation" />
+          <DetailRow label="Band Type" :value="watch.bandType" />
+          <DetailRow label="Band Color" :value="watch.bandColor" />
         </dl>
       </section>
 
@@ -110,6 +119,7 @@
         <dl class="detail-list">
           <DetailRow label="Movement Type" :value="watch.movementType" />
           <DetailRow label="Power Reserve" :value="watch.powerReserveHours ? `${watch.powerReserveHours} hours` : undefined" />
+          <DetailRow label="Calendar" :value="watch.calendarType" />
           <DetailRow label="Battery Type" :value="watch.batteryType" />
           <DetailRow label="Last Battery Changed" :value="formatFullDate(watch.lastBatteryChangedDate)" />
         </dl>
@@ -130,17 +140,15 @@
         </dl>
       </section>
 
-      <section v-if="watch.bandType || watch.bandColor || watch.lugWidthMm || watch.caseShape || watch.bezelType || watch.crownType || watch.calendarType || watch.countryOfOrigin" class="detail-card mb-6">
-        <h2 class="detail-heading">Case & Strap</h2>
+      <section class="detail-card mb-6">
+        <h2 class="detail-heading">Ownership</h2>
         <dl class="detail-list">
-          <DetailRow label="Band Type" :value="watch.bandType" />
-          <DetailRow label="Band Color" :value="watch.bandColor" />
-          <DetailRow label="Lug Width" :value="watch.lugWidthMm ? `${watch.lugWidthMm} mm` : undefined" />
-          <DetailRow label="Case Shape" :value="watch.caseShape" />
-          <DetailRow label="Bezel" :value="watch.bezelType" />
-          <DetailRow label="Crown" :value="watch.crownType" />
-          <DetailRow label="Calendar" :value="watch.calendarType" />
-          <DetailRow label="Origin" :value="watch.countryOfOrigin" />
+          <DetailRow label="Storage" :value="watch.storageLocation" />
+          <DetailRow v-if="!watch.isWishList" label="Wear Count" :value="watch.timesWorn.toString()" />
+          <DetailRow v-if="!watch.isWishList" label="Last Worn" :value="formatFullDate(watch.lastWornDate)" />
+          <DetailRow v-if="!watch.isWishList" label="Status" :value="watch.isRetired ? `Retired${retiredOn ? ` — ${retiredOn}` : ''}` : 'Active'" />
+          <DetailRow label="Added" :value="formatFullDate(watch.createdAt)" />
+          <DetailRow label="Last Updated" :value="formatFullDate(watch.updatedAt)" />
         </dl>
       </section>
 
@@ -212,7 +220,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineComponent, h, ref, onMounted } from 'vue'
+import { computed, defineComponent, h, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import type { Watch, ResaleValueEntry } from '@/types'
@@ -253,6 +261,7 @@ function formatFullDate(dateStr?: string): string | undefined {
 }
 
 const watch = ref<Watch | null>(null)
+const retiredOn = computed(() => formatFullDate(watch.value?.retiredAt))
 const loading = ref(true)
 const imageIndex = ref(0)
 const wearLoading = ref(false)
@@ -362,6 +371,7 @@ async function handlePurchase() {
       dialColor: w.dialColor,
       bezelType: w.bezelType,
       powerReserveHours: w.powerReserveHours,
+      sku: w.sku,
       serialNumber: w.serialNumber,
       productionYear: w.productionYear,
       batteryType: w.batteryType,

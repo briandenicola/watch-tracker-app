@@ -53,6 +53,7 @@ public class WatchService(AppDbContext context) : IWatchService
             DialColor = dto.DialColor,
             BezelType = dto.BezelType,
             PowerReserveHours = dto.PowerReserveHours,
+            Sku = dto.Sku,
             SerialNumber = dto.SerialNumber,
             ProductionYear = dto.ProductionYear,
             BatteryType = dto.BatteryType,
@@ -98,6 +99,7 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.DialColor = dto.DialColor;
         watch.BezelType = dto.BezelType;
         watch.PowerReserveHours = dto.PowerReserveHours;
+        watch.Sku = dto.Sku;
         watch.SerialNumber = dto.SerialNumber;
         watch.ProductionYear = dto.ProductionYear;
         watch.BatteryType = dto.BatteryType;
@@ -357,6 +359,7 @@ public class WatchService(AppDbContext context) : IWatchService
         DialColor = watch.DialColor,
         BezelType = watch.BezelType,
         PowerReserveHours = watch.PowerReserveHours,
+        Sku = watch.Sku,
         SerialNumber = watch.SerialNumber,
         ProductionYear = watch.ProductionYear,
         BatteryType = watch.BatteryType,
