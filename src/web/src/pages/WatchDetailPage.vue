@@ -14,7 +14,7 @@
       <div class="relative mb-5 flex items-start justify-between gap-4">
         <div class="min-w-0">
           <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : watch.isRetired ? 'Retired' : 'Collection' }}</p>
-          <h1 class="font-display text-3xl font-semibold text-text leading-tight">{{ watch.brand }} {{ watch.model }}</h1>
+          <h1 class="font-display text-3xl font-semibold text-text leading-tight"><span class="watch-brand">{{ watch.brand }}</span> {{ watch.model }}</h1>
         </div>
         <div class="relative flex-shrink-0">
           <button
@@ -485,6 +485,14 @@ async function handleDeleteResaleEntry(entryId: number) {
 </script>
 
 <style scoped>
+/* PWA standalone runs at phone width, where "Brand Model" wraps mid-name.
+   Give the brand its own line there; in a browser there is room to keep them inline. */
+@media (display-mode: standalone) {
+  .watch-brand {
+    display: block;
+  }
+}
+
 .detail-card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
