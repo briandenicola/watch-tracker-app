@@ -86,69 +86,17 @@
         </button>
       </div>
 
-      <section class="detail-card mb-6">
-        <h2 class="detail-heading">Identification</h2>
+      <!-- Rows without a value are dropped, and a section with no rows left is not rendered -->
+      <section v-for="section in detailSections" :key="section.heading" class="detail-card mb-6">
+        <h2 class="detail-heading">{{ section.heading }}</h2>
         <dl class="detail-list">
-          <DetailRow label="Brand" :value="watch.brand" />
-          <DetailRow label="Model" :value="watch.model" />
-          <DetailRow label="SKU / Reference" :value="watch.sku" />
-          <DetailRow label="Serial" :value="watch.serialNumber" />
-          <DetailRow label="Production Year" :value="watch.productionYear?.toString()" />
-          <DetailRow label="Origin" :value="watch.countryOfOrigin" />
-        </dl>
-      </section>
-
-      <section class="detail-card mb-6">
-        <h2 class="detail-heading">Case &amp; Band</h2>
-        <dl class="detail-list">
-          <DetailRow label="Case Size" :value="watch.caseSizeMm ? `${watch.caseSizeMm} mm` : undefined" />
-          <DetailRow label="Lug Width" :value="watch.lugWidthMm ? `${watch.lugWidthMm} mm` : undefined" />
-          <DetailRow label="Case Shape" :value="watch.caseShape" />
-          <DetailRow label="Crystal" :value="watch.crystalType" />
-          <DetailRow label="Bezel" :value="watch.bezelType" />
-          <DetailRow label="Crown" :value="watch.crownType" />
-          <DetailRow label="Dial" :value="watch.dialColor" />
-          <DetailRow label="Water Resistance" :value="watch.waterResistance" />
-          <DetailRow label="Band Type" :value="watch.bandType" />
-          <DetailRow label="Band Color" :value="watch.bandColor" />
-        </dl>
-      </section>
-
-      <section class="detail-card mb-6">
-        <h2 class="detail-heading">Movement</h2>
-        <dl class="detail-list">
-          <DetailRow label="Movement Type" :value="watch.movementType" />
-          <DetailRow label="Power Reserve" :value="watch.powerReserveHours ? `${watch.powerReserveHours} hours` : undefined" />
-          <DetailRow label="Calendar" :value="watch.calendarType" />
-          <DetailRow label="Battery Type" :value="watch.batteryType" />
-          <DetailRow label="Last Battery Changed" :value="formatFullDate(watch.lastBatteryChangedDate)" />
-        </dl>
-      </section>
-
-      <section class="detail-card mb-6">
-        <h2 class="detail-heading">Purchase Details</h2>
-        <dl class="detail-list">
-          <DetailRow :label="watch.isWishList ? 'Target Price' : 'Purchase Price'" :value="watch.purchasePrice ? `$${watch.purchasePrice.toFixed(2)}` : undefined" />
-          <DetailRow label="Purchase Date" :value="formatFullDate(watch.purchaseDate)" />
-          <DetailRow label="Current Resale" :value="watch.currentResaleValue ? `$${watch.currentResaleValue.toFixed(2)}` : undefined" />
-          <DetailRow label="Resale Updated" :value="formatFullDate(watch.resaleValueUpdatedAt)" />
           <DetailRow
-            label="Store Link"
-            :value="watch.linkUrl ? (watch.linkText || 'Store Link') : undefined"
-            :href="watch.linkUrl"
+            v-for="row in section.rows"
+            :key="row.label"
+            :label="row.label"
+            :value="row.value"
+            :href="row.href"
           />
-        </dl>
-      </section>
-
-      <section class="detail-card mb-6">
-        <h2 class="detail-heading">Ownership</h2>
-        <dl class="detail-list">
-          <DetailRow label="Storage" :value="watch.storageLocation" />
-          <DetailRow v-if="!watch.isWishList" label="Wear Count" :value="watch.timesWorn.toString()" />
-          <DetailRow v-if="!watch.isWishList" label="Last Worn" :value="formatFullDate(watch.lastWornDate)" />
-          <DetailRow v-if="!watch.isWishList" label="Status" :value="watch.isRetired ? `Retired${retiredOn ? ` — ${retiredOn}` : ''}` : 'Active'" />
-          <DetailRow label="Added" :value="formatFullDate(watch.createdAt)" />
-          <DetailRow label="Last Updated" :value="formatFullDate(watch.updatedAt)" />
         </dl>
       </section>
 
@@ -235,18 +183,16 @@ const router = useRouter()
 const DetailRow = defineComponent({
   props: {
     label: { type: String, required: true },
-    value: { type: String, required: false, default: undefined },
+    value: { type: String, required: true },
     href: { type: String, required: false, default: undefined },
   },
   setup(props) {
     return () => h('div', { class: 'detail-row' }, [
       h('dt', { class: 'detail-label' }, props.label),
-      h('dd', { class: props.value ? 'detail-value' : 'detail-value detail-empty' },
-        props.value
-          ? props.href
-            ? [h('a', { href: props.href, target: '_blank', rel: 'noopener noreferrer', class: 'detail-link' }, `${props.value} ↗`)]
-            : props.value
-          : 'Not set'),
+      h('dd', { class: 'detail-value' },
+        props.href
+          ? [h('a', { href: props.href, target: '_blank', rel: 'noopener noreferrer', class: 'detail-link' }, `${props.value} ↗`)]
+          : props.value),
     ])
   },
 })
@@ -263,6 +209,90 @@ function formatFullDate(dateStr?: string): string | undefined {
 const watch = ref<Watch | null>(null)
 const retiredOn = computed(() => formatFullDate(watch.value?.retiredAt))
 const loading = ref(true)
+
+interface DetailRowData {
+  label: string
+  value?: string
+  href?: string
+}
+
+const detailSections = computed(() => {
+  const w = watch.value
+  if (!w) return []
+
+  const money = (value?: number) => (value ? `$${value.toFixed(2)}` : undefined)
+  const mm = (value?: number) => (value ? `${value} mm` : undefined)
+  const ownership: DetailRowData[] = w.isWishList ? [] : [
+    { label: 'Wear Count', value: w.timesWorn.toString() },
+    { label: 'Last Worn', value: formatFullDate(w.lastWornDate) },
+    { label: 'Status', value: w.isRetired ? `Retired${retiredOn.value ? ` — ${retiredOn.value}` : ''}` : 'Active' },
+  ]
+
+  const sections: { heading: string, rows: DetailRowData[] }[] = [
+    {
+      heading: 'Identification',
+      rows: [
+        { label: 'Brand', value: w.brand },
+        { label: 'Model', value: w.model },
+        { label: 'SKU / Reference', value: w.sku },
+        { label: 'Serial', value: w.serialNumber },
+        { label: 'Production Year', value: w.productionYear?.toString() },
+        { label: 'Origin', value: w.countryOfOrigin },
+      ],
+    },
+    {
+      heading: 'Case & Band',
+      rows: [
+        { label: 'Case Size', value: mm(w.caseSizeMm) },
+        { label: 'Lug Width', value: mm(w.lugWidthMm) },
+        { label: 'Case Shape', value: w.caseShape },
+        { label: 'Crystal', value: w.crystalType },
+        { label: 'Bezel', value: w.bezelType },
+        { label: 'Crown', value: w.crownType },
+        { label: 'Dial', value: w.dialColor },
+        { label: 'Water Resistance', value: w.waterResistance },
+        { label: 'Band Type', value: w.bandType },
+        { label: 'Band Color', value: w.bandColor },
+      ],
+    },
+    {
+      heading: 'Movement',
+      rows: [
+        { label: 'Movement Type', value: w.movementType },
+        { label: 'Power Reserve', value: w.powerReserveHours ? `${w.powerReserveHours} hours` : undefined },
+        { label: 'Calendar', value: w.calendarType },
+        { label: 'Battery Type', value: w.batteryType },
+        { label: 'Last Battery Changed', value: formatFullDate(w.lastBatteryChangedDate) },
+      ],
+    },
+    {
+      heading: 'Purchase Details',
+      rows: [
+        { label: w.isWishList ? 'Target Price' : 'Purchase Price', value: money(w.purchasePrice) },
+        { label: 'Purchase Date', value: formatFullDate(w.purchaseDate) },
+        { label: 'Current Resale', value: money(w.currentResaleValue) },
+        { label: 'Resale Updated', value: formatFullDate(w.resaleValueUpdatedAt) },
+        { label: 'Store Link', value: w.linkUrl ? (w.linkText || 'Store Link') : undefined, href: w.linkUrl },
+      ],
+    },
+    {
+      heading: 'Ownership',
+      rows: [
+        { label: 'Storage', value: w.storageLocation },
+        ...ownership,
+        { label: 'Added', value: formatFullDate(w.createdAt) },
+        { label: 'Last Updated', value: formatFullDate(w.updatedAt) },
+      ],
+    },
+  ]
+
+  return sections
+    .map(section => ({
+      ...section,
+      rows: section.rows.filter((row): row is DetailRowData & { value: string } => Boolean(row.value)),
+    }))
+    .filter(section => section.rows.length > 0)
+})
 
 // Keep brand and model on one line while they fit, and only then split them.
 const titleEl = ref<HTMLElement | null>(null)
@@ -578,10 +608,6 @@ async function handleDeleteResaleEntry(entryId: number) {
   font-size: 1rem;
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-:deep(.detail-empty) {
-  color: var(--color-text-muted);
 }
 
 :deep(.detail-link) {
