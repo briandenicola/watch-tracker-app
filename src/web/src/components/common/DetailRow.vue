@@ -32,7 +32,7 @@
             @input="$emit('update:draft', ($event.target as HTMLInputElement).value)"
             @keydown.enter.prevent="$emit('commit')"
             @keydown.esc.prevent="$emit('cancel')"
-            @blur="onBlur"
+            @blur="$emit('commit')"
           />
           <!-- Suggestions that still allow a value of the user's own -->
           <datalist v-if="choices.length" :id="listId">
@@ -40,14 +40,6 @@
           </datalist>
         </template>
 
-        <button type="button" class="edit-action" :disabled="saving" aria-label="Save" @click="$emit('commit')">✓</button>
-        <button
-          type="button"
-          class="edit-action"
-          aria-label="Cancel"
-          @pointerdown="suppressBlur = true"
-          @click="$emit('cancel')"
-        >✕</button>
       </div>
 
       <!-- Editable, awaiting a tap -->
@@ -103,7 +95,6 @@ const emit = defineEmits<{
 }>()
 
 const control = ref<HTMLInputElement | HTMLSelectElement | null>(null)
-const suppressBlur = ref(false)
 
 const meta = computed(() => (props.field ? fieldMeta[props.field] : undefined))
 const choices = computed(() => props.options ?? [...(meta.value?.options ?? [])])
@@ -112,10 +103,7 @@ const inputType = computed(() => (meta.value?.input === 'number' ? 'number' : me
 
 // Focus the control as it appears, and select existing text so typing replaces it.
 vueWatch(() => props.editing, async (isEditing) => {
-  if (!isEditing) {
-    suppressBlur.value = false
-    return
-  }
+  if (!isEditing) return
   await nextTick()
   control.value?.focus()
   if (control.value instanceof HTMLInputElement && inputType.value === 'text') control.value.select()
@@ -125,19 +113,6 @@ function onSelect(event: Event) {
   emit('update:draft', (event.target as HTMLSelectElement).value)
   // A select has no separate confirm step; choosing a value is the commit.
   nextTick(() => emit('commit'))
-}
-
-function onBlur() {
-  // Disabling a focused control blurs it, so a save in flight would otherwise
-  // trigger a second commit of the same edit.
-  if (props.saving) return
-  // Cancel is a pointer press on a button, which blurs the input first. Without
-  // this the cancel would be overtaken by a commit and never reach its handler.
-  if (suppressBlur.value) {
-    suppressBlur.value = false
-    return
-  }
-  emit('commit')
 }
 </script>
 
@@ -163,23 +138,6 @@ function onBlur() {
 .edit-control:focus {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
-}
-
-.edit-action {
-  flex: 0 0 auto;
-  width: 1.9rem;
-  height: 1.9rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  background: var(--color-bg-surface);
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  line-height: 1;
-}
-
-.edit-action:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
 }
 
 .detail-edit {

@@ -112,6 +112,17 @@
       <line x1="6" y1="6" x2="18" y2="18" />
     </template>
 
+    <!-- Edit -->
+    <template v-else-if="name === 'edit'">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z" />
+    </template>
+
+    <!-- Check -->
+    <template v-else-if="name === 'check'">
+      <polyline points="20 6 9 17 4 12" />
+    </template>
+
     <!-- Chevron Left -->
     <template v-else-if="name === 'chevron-left'">
       <polyline points="15 18 9 12 15 6" />

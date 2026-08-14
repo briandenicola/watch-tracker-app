@@ -16,10 +16,39 @@
           <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : watch.disposition ? dispositionLabel(watch) : 'Collection' }}</p>
           <h1 ref="titleEl" class="font-display text-3xl font-semibold text-text leading-tight" :class="{ 'title-stacked': titleStacked }"><span class="watch-brand">{{ watch.brand }}</span> {{ watch.model }}<span class="title-probe-clip" aria-hidden="true"><span ref="titleProbeEl" class="title-probe">{{ watch.brand }} {{ watch.model }}</span></span></h1>
         </div>
-        <div class="relative flex-shrink-0">
+        <div class="relative flex flex-shrink-0 items-center gap-2">
+          <template v-if="editMode">
+            <button
+              @click="saveEdits"
+              :disabled="savingEdits"
+              class="header-action text-success"
+              aria-label="Save edits"
+              title="Save edits"
+            >
+              <AppIcon name="check" :size="20" :stroke-width="2" />
+            </button>
+            <button
+              @click="discardEdits"
+              :disabled="savingEdits"
+              class="header-action text-danger"
+              aria-label="Discard edits"
+              title="Discard edits"
+            >
+              <AppIcon name="close" :size="20" :stroke-width="2" />
+            </button>
+          </template>
+          <button
+            v-else
+            @click="beginEdit"
+            class="header-action"
+            aria-label="Edit watch"
+            title="Edit watch"
+          >
+            <AppIcon name="edit" :size="20" :stroke-width="1.75" />
+          </button>
           <button
             @click="actionsOpen = !actionsOpen"
-            class="w-10 h-10 rounded-lg bg-bg-surface border border-border text-text text-xl leading-none hover:border-accent/50 transition-colors"
+            class="header-action text-xl leading-none"
             aria-label="Watch actions"
           >
             …
@@ -27,7 +56,6 @@
           <div v-if="actionsOpen" class="absolute right-0 top-12 z-30 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden">
             <template v-if="!watch.isWishList">
               <button v-if="!watch.disposition" @click="handleWearFromMenu" :disabled="wearLoading" class="menu-action text-accent">{{ wearLoading ? 'Recording...' : 'Wore Today' }}</button>
-              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing' : 'Edit' }}</button>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
@@ -40,7 +68,6 @@
             </template>
             <template v-else>
               <button @click="handlePurchaseFromMenu" :disabled="purchasing" class="menu-action text-accent">{{ purchasing ? 'Moving…' : 'Mark Purchased' }}</button>
-              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing' : 'Edit' }}</button>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
@@ -49,6 +76,7 @@
             </template>
           </div>
         </div>
+        <p v-if="editSessionError" class="text-sm text-danger mb-5">{{ editSessionError }}</p>
       </div>
 
       <!-- Image Gallery -->
@@ -100,7 +128,7 @@
             :field="row.field"
             :editable="editMode && !!row.field"
             :editing="editingField === row.field"
-            :saving="savingField === row.field"
+            :saving="savingEdits"
             :error="errorFor(row.field)"
             :options="row.field === 'storageLocation' ? storageLocationOptions : undefined"
             :draft="draft"
@@ -198,6 +226,7 @@ import { fieldMeta, type InlineField } from '@/constants/watch'
 import { api } from '@/services/api'
 import DetailRow from '@/components/common/DetailRow.vue'
 import DispositionModal from '@/components/common/DispositionModal.vue'
+import AppIcon from '@/components/icons/AppIcon.vue'
 import {
   getWatch, getWatches, imageUrl, recordWear, deleteWatch, uploadImage, deleteImage, removeBackground,
   analyzeWatch, updateWatch, toUpdatePayload, getResaleHistory, addManualResaleValue,
@@ -240,7 +269,9 @@ const editMode = ref(false)
 const editingField = ref<InlineField | null>(null)
 const editingLabel = ref('')
 const draft = ref('')
-const savingField = ref<InlineField | null>(null)
+const draftChanges = ref<Partial<UpdateWatch>>({})
+const savingEdits = ref(false)
+const editSessionError = ref('')
 const fieldError = ref<{ field: InlineField, message: string } | null>(null)
 const storageLocations = ref<string[]>([])
 
@@ -270,10 +301,10 @@ function fromInputValue(field: InlineField, text: string): string | number | und
 }
 
 function startEdit(row: DetailRowData) {
-  if (!row.field || !watch.value) return
+  if (!row.field || !editableWatch.value) return
   editingField.value = row.field
   editingLabel.value = row.label
-  draft.value = toInputValue(watch.value, row.field)
+  draft.value = toInputValue(editableWatch.value, row.field)
   fieldError.value = null
 }
 
@@ -311,41 +342,36 @@ function serverMessage(error: unknown): string | undefined {
   return undefined
 }
 
-async function commitEdit() {
-  const w = watch.value
+function commitEdit(): boolean {
+  const w = editableWatch.value
   const field = editingField.value
-  // A commit already in flight must not be re-entered; blur can fire again
-  // while the request is running.
-  if (!w || !field || savingField.value) return
+  if (!w || !field || savingEdits.value) return false
 
   const next = fromInputValue(field, draft.value)
 
-  // Unchanged is not worth a request — this is also what makes an iOS keyboard
-  // dismissal, which fires blur, a no-op rather than a save.
   if (toInputValue(w, field) === draft.value.trim()) {
     cancelEdit()
-    return
+    return true
   }
 
   const problem = validate(field, next)
   if (problem) {
     fieldError.value = { field, message: problem }
-    return
+    return false
   }
 
-  savingField.value = field
+  draftChanges.value = { ...draftChanges.value, [field]: next }
   fieldError.value = null
-  try {
-    watch.value = await updateWatch(w.id, toUpdatePayload(w, { [field]: next } as Partial<UpdateWatch>))
-    cancelEdit()
-  } catch (error) {
-    // Leave the editor open holding what was typed, so a rejected value can be
-    // corrected rather than retyped from scratch.
-    fieldError.value = { field, message: serverMessage(error) || 'Could not save that change.' }
-  } finally {
-    savingField.value = null
-  }
+  cancelEdit()
+  return true
 }
+
+const editableWatch = computed<Watch | null>(() => {
+  if (!watch.value) return null
+  return editMode.value
+    ? { ...watch.value, ...draftChanges.value }
+    : watch.value
+})
 
 // Keeps a location the user already has but that is no longer configured.
 const storageLocationOptions = computed(() => {
@@ -355,15 +381,17 @@ const storageLocationOptions = computed(() => {
   return options
 })
 
-async function toggleEditMode() {
+async function beginEdit() {
   actionsOpen.value = false
-  editMode.value = !editMode.value
+  editMode.value = true
+  draftChanges.value = {}
+  editSessionError.value = ''
   cancelEdit()
   fieldError.value = null
 
   // Only the storage picker needs these, so they are fetched the first time
   // editing starts rather than on every view of the page.
-  if (editMode.value && !storageLocations.value.length) {
+  if (!storageLocations.value.length) {
     try {
       const { data } = await api.get<AuthResponse>('/api/auth/me')
       storageLocations.value = data.storageLocations || []
@@ -373,8 +401,42 @@ async function toggleEditMode() {
   }
 }
 
+async function saveEdits() {
+  if (!watch.value || savingEdits.value) return
+  if (editingField.value && !commitEdit()) return
+
+  if (Object.keys(draftChanges.value).length === 0) {
+    discardEdits()
+    return
+  }
+
+  savingEdits.value = true
+  editSessionError.value = ''
+  try {
+    watch.value = await updateWatch(
+      watch.value.id,
+      toUpdatePayload(watch.value, draftChanges.value),
+    )
+    editMode.value = false
+    draftChanges.value = {}
+  } catch (error) {
+    editSessionError.value = serverMessage(error) || 'Could not save these changes.'
+  } finally {
+    savingEdits.value = false
+  }
+}
+
+function discardEdits() {
+  if (savingEdits.value) return
+  editMode.value = false
+  draftChanges.value = {}
+  editSessionError.value = ''
+  fieldError.value = null
+  cancelEdit()
+}
+
 const detailSections = computed(() => {
-  const w = watch.value
+  const w = editableWatch.value
   if (!w) return []
 
   const money = (value?: number) => (value ? `$${value.toFixed(2)}` : undefined)
@@ -769,6 +831,30 @@ async function handleDeleteResaleEntry(entryId: number) {
   border-radius: 1rem;
   padding: 1.25rem;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+}
+
+.header-action {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-surface);
+  color: var(--color-text);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.header-action:hover:not(:disabled),
+.header-action:focus-visible {
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  color: var(--color-accent);
+}
+
+.header-action:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .detail-heading {
