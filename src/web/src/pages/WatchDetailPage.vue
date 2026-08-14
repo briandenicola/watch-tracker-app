@@ -27,8 +27,7 @@
           <div v-if="actionsOpen" class="absolute right-0 top-12 z-30 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden">
             <template v-if="!watch.isWishList">
               <button v-if="!watch.disposition" @click="handleWearFromMenu" :disabled="wearLoading" class="menu-action text-accent">{{ wearLoading ? 'Recording...' : 'Wore Today' }}</button>
-              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing Fields' : 'Edit Fields Here' }}</button>
-              <RouterLink :to="`/watches/${watch.id}/edit`" class="menu-action">Edit</RouterLink>
+              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing' : 'Edit' }}</button>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
@@ -41,8 +40,7 @@
             </template>
             <template v-else>
               <button @click="handlePurchaseFromMenu" :disabled="purchasing" class="menu-action text-accent">{{ purchasing ? 'Moving…' : 'Mark Purchased' }}</button>
-              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing Fields' : 'Edit Fields Here' }}</button>
-              <RouterLink :to="`/wishlist/${watch.id}/edit`" class="menu-action">Edit</RouterLink>
+              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing' : 'Edit' }}</button>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
