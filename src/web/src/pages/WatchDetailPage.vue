@@ -14,7 +14,7 @@
       <div class="relative mb-5 flex items-start justify-between gap-4">
         <div class="min-w-0">
           <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : watch.isRetired ? 'Retired' : 'Collection' }}</p>
-          <h1 ref="titleEl" class="font-display text-3xl font-semibold text-text leading-tight" :class="{ 'title-stacked': titleStacked }"><span class="watch-brand">{{ watch.brand }}</span> {{ watch.model }}<span ref="titleProbeEl" class="title-probe" aria-hidden="true">{{ watch.brand }} {{ watch.model }}</span></h1>
+          <h1 ref="titleEl" class="font-display text-3xl font-semibold text-text leading-tight" :class="{ 'title-stacked': titleStacked }"><span class="watch-brand">{{ watch.brand }}</span> {{ watch.model }}<span class="title-probe-clip" aria-hidden="true"><span ref="titleProbeEl" class="title-probe">{{ watch.brand }} {{ watch.model }}</span></span></h1>
         </div>
         <div class="relative flex-shrink-0">
           <button
@@ -556,9 +556,22 @@ async function handleDeleteResaleEntry(entryId: number) {
   display: block;
 }
 
-/* Off-flow copy of the full title on one line, used to measure whether it fits. */
-.title-probe {
+/* Off-flow copy of the full title on one line, used to measure whether it fits.
+   An absolutely positioned box still counts toward the page's scrollable
+   overflow even while hidden, so the probe is clipped inside a zero-sized box.
+   Its own width survives that: nowrap makes min-content equal max-content, so
+   the inner span still reports the natural one-line width. */
+.title-probe-clip {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.title-probe {
+  display: inline-block;
   visibility: hidden;
   white-space: nowrap;
   pointer-events: none;
