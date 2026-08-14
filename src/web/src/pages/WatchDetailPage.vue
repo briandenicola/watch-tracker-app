@@ -172,6 +172,7 @@ import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import type { Watch, ResaleValueEntry } from '@/types'
+import type { InlineField } from '@/constants/watch'
 import {
   getWatch, imageUrl, recordWear, retireWatch, deleteWatch, uploadImage, deleteImage, removeBackground,
   analyzeWatch, updateWatch, toUpdatePayload, getResaleHistory, addManualResaleValue,
@@ -215,6 +216,8 @@ interface DetailRowData {
   label: string
   value?: string
   href?: string
+  /** Set on rows the user can edit in place. Absent means derived or system-set. */
+  field?: InlineField
 }
 
 const detailSections = computed(() => {
@@ -233,44 +236,44 @@ const detailSections = computed(() => {
     {
       heading: 'Identification',
       rows: [
-        { label: 'Brand', value: w.brand },
-        { label: 'Model', value: w.model },
-        { label: 'SKU / Reference', value: w.sku },
-        { label: 'Serial', value: w.serialNumber },
-        { label: 'Production Year', value: w.productionYear?.toString() },
-        { label: 'Origin', value: w.countryOfOrigin },
+        { label: 'Brand', value: w.brand, field: 'brand' },
+        { label: 'Model', value: w.model, field: 'model' },
+        { label: 'SKU / Reference', value: w.sku, field: 'sku' },
+        { label: 'Serial', value: w.serialNumber, field: 'serialNumber' },
+        { label: 'Production Year', value: w.productionYear?.toString(), field: 'productionYear' },
+        { label: 'Origin', value: w.countryOfOrigin, field: 'countryOfOrigin' },
       ],
     },
     {
       heading: 'Case & Band',
       rows: [
-        { label: 'Case Size', value: mm(w.caseSizeMm) },
-        { label: 'Lug Width', value: mm(w.lugWidthMm) },
-        { label: 'Case Shape', value: w.caseShape },
-        { label: 'Crystal', value: w.crystalType },
-        { label: 'Bezel', value: w.bezelType },
-        { label: 'Crown', value: w.crownType },
-        { label: 'Dial', value: w.dialColor },
-        { label: 'Water Resistance', value: w.waterResistance },
-        { label: 'Band Type', value: w.bandType },
-        { label: 'Band Color', value: w.bandColor },
+        { label: 'Case Size', value: mm(w.caseSizeMm), field: 'caseSizeMm' },
+        { label: 'Lug Width', value: mm(w.lugWidthMm), field: 'lugWidthMm' },
+        { label: 'Case Shape', value: w.caseShape, field: 'caseShape' },
+        { label: 'Crystal', value: w.crystalType, field: 'crystalType' },
+        { label: 'Bezel', value: w.bezelType, field: 'bezelType' },
+        { label: 'Crown', value: w.crownType, field: 'crownType' },
+        { label: 'Dial', value: w.dialColor, field: 'dialColor' },
+        { label: 'Water Resistance', value: w.waterResistance, field: 'waterResistance' },
+        { label: 'Band Type', value: w.bandType, field: 'bandType' },
+        { label: 'Band Color', value: w.bandColor, field: 'bandColor' },
       ],
     },
     {
       heading: 'Movement',
       rows: [
-        { label: 'Movement Type', value: w.movementType },
-        { label: 'Power Reserve', value: w.powerReserveHours ? `${w.powerReserveHours} hours` : undefined },
-        { label: 'Calendar', value: w.calendarType },
-        { label: 'Battery Type', value: w.batteryType },
-        { label: 'Last Battery Changed', value: formatFullDate(w.lastBatteryChangedDate) },
+        { label: 'Movement Type', value: w.movementType, field: 'movementType' },
+        { label: 'Power Reserve', value: w.powerReserveHours ? `${w.powerReserveHours} hours` : undefined, field: 'powerReserveHours' },
+        { label: 'Calendar', value: w.calendarType, field: 'calendarType' },
+        { label: 'Battery Type', value: w.batteryType, field: 'batteryType' },
+        { label: 'Last Battery Changed', value: formatFullDate(w.lastBatteryChangedDate), field: 'lastBatteryChangedDate' },
       ],
     },
     {
       heading: 'Purchase Details',
       rows: [
-        { label: w.isWishList ? 'Target Price' : 'Purchase Price', value: money(w.purchasePrice) },
-        { label: 'Purchase Date', value: formatFullDate(w.purchaseDate) },
+        { label: w.isWishList ? 'Target Price' : 'Purchase Price', value: money(w.purchasePrice), field: 'purchasePrice' },
+        { label: 'Purchase Date', value: formatFullDate(w.purchaseDate), field: 'purchaseDate' },
         { label: 'Current Resale', value: money(w.currentResaleValue) },
         { label: 'Resale Updated', value: formatFullDate(w.resaleValueUpdatedAt) },
         { label: 'Store Link', value: w.linkUrl ? (w.linkText || 'Store Link') : undefined, href: w.linkUrl },
@@ -279,7 +282,7 @@ const detailSections = computed(() => {
     {
       heading: 'Ownership',
       rows: [
-        { label: 'Storage', value: w.storageLocation },
+        { label: 'Storage', value: w.storageLocation, field: 'storageLocation' },
         ...ownership,
         { label: 'Added', value: formatFullDate(w.createdAt) },
         { label: 'Last Updated', value: formatFullDate(w.updatedAt) },
