@@ -27,6 +27,7 @@
           <div v-if="actionsOpen" class="absolute right-0 top-12 z-30 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden">
             <template v-if="!watch.isWishList">
               <button @click="handleWearFromMenu" :disabled="wearLoading" class="menu-action text-accent">{{ wearLoading ? 'Recording...' : 'Wore Today' }}</button>
+              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing Fields' : 'Edit Fields Here' }}</button>
               <RouterLink :to="`/watches/${watch.id}/edit`" class="menu-action">Edit</RouterLink>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
@@ -39,6 +40,7 @@
             </template>
             <template v-else>
               <button @click="handlePurchaseFromMenu" :disabled="purchasing" class="menu-action text-accent">{{ purchasing ? 'Moving…' : 'Mark Purchased' }}</button>
+              <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing Fields' : 'Edit Fields Here' }}</button>
               <RouterLink :to="`/wishlist/${watch.id}/edit`" class="menu-action">Edit</RouterLink>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
@@ -96,6 +98,17 @@
             :label="row.label"
             :value="row.value"
             :href="row.href"
+            :field="row.field"
+            :editable="editMode && !!row.field"
+            :editing="editingField === row.field"
+            :saving="savingField === row.field"
+            :error="errorFor(row.field)"
+            :options="row.field === 'storageLocation' ? storageLocationOptions : undefined"
+            :draft="draft"
+            @start="startEdit(row)"
+            @commit="commitEdit"
+            @cancel="cancelEdit"
+            @update:draft="draft = $event"
           />
         </dl>
       </section>
@@ -168,11 +181,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, watch as vueWatch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch as vueWatch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
-import type { Watch, ResaleValueEntry } from '@/types'
-import type { InlineField } from '@/constants/watch'
+import type { AuthResponse, UpdateWatch, Watch, ResaleValueEntry } from '@/types'
+import { fieldMeta, type InlineField } from '@/constants/watch'
+import { api } from '@/services/api'
+import DetailRow from '@/components/common/DetailRow.vue'
 import {
   getWatch, imageUrl, recordWear, retireWatch, deleteWatch, uploadImage, deleteImage, removeBackground,
   analyzeWatch, updateWatch, toUpdatePayload, getResaleHistory, addManualResaleValue,
@@ -181,23 +196,6 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-
-const DetailRow = defineComponent({
-  props: {
-    label: { type: String, required: true },
-    value: { type: String, required: true },
-    href: { type: String, required: false, default: undefined },
-  },
-  setup(props) {
-    return () => h('div', { class: 'detail-row' }, [
-      h('dt', { class: 'detail-label' }, props.label),
-      h('dd', { class: 'detail-value' },
-        props.href
-          ? [h('a', { href: props.href, target: '_blank', rel: 'noopener noreferrer', class: 'detail-link' }, `${props.value} ↗`)]
-          : props.value),
-    ])
-  },
-})
 
 function renderMarkdown(text: string): string {
   return marked.parse(text, { async: false }) as string
@@ -218,6 +216,145 @@ interface DetailRowData {
   href?: string
   /** Set on rows the user can edit in place. Absent means derived or system-set. */
   field?: InlineField
+}
+
+// --- Inline editing -------------------------------------------------------
+
+const editMode = ref(false)
+const editingField = ref<InlineField | null>(null)
+const editingLabel = ref('')
+const draft = ref('')
+const savingField = ref<InlineField | null>(null)
+const fieldError = ref<{ field: InlineField, message: string } | null>(null)
+const storageLocations = ref<string[]>([])
+
+function formatDateForInput(value?: string | null): string {
+  if (!value) return ''
+  const date = new Date(value)
+  return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0]
+}
+
+/** The stored value of a field, as the matching input wants to receive it. */
+function toInputValue(w: Watch, field: InlineField): string {
+  const raw = (w as unknown as Record<string, unknown>)[field]
+  if (raw === null || raw === undefined) return ''
+  if (fieldMeta[field].input === 'date') return formatDateForInput(String(raw))
+  return String(raw)
+}
+
+/** What the user typed, as the API wants to receive it. */
+function fromInputValue(field: InlineField, text: string): string | number | undefined {
+  const trimmed = text.trim()
+  if (trimmed === '') return undefined
+  if (fieldMeta[field].input === 'number') {
+    const parsed = Number(trimmed)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+  return trimmed
+}
+
+function startEdit(row: DetailRowData) {
+  if (!row.field || !watch.value) return
+  editingField.value = row.field
+  editingLabel.value = row.label
+  draft.value = toInputValue(watch.value, row.field)
+  fieldError.value = null
+}
+
+function cancelEdit() {
+  editingField.value = null
+  draft.value = ''
+}
+
+/** Client-side mirror of the DTO's validation, so a bad value never round-trips. */
+function validate(field: InlineField, value: string | number | undefined): string | null {
+  const meta = fieldMeta[field]
+  if (meta.required && (value === undefined || value === '')) return `${editingLabel.value} cannot be empty.`
+  if (typeof value === 'number') {
+    if (meta.min !== undefined && value < meta.min) return `Must be ${meta.min} or more.`
+    if (meta.max !== undefined && value > meta.max) return `Must be ${meta.max} or less.`
+  }
+  if (typeof value === 'string' && meta.maxlength && value.length > meta.maxlength) {
+    return `Must be ${meta.maxlength} characters or fewer.`
+  }
+  return null
+}
+
+function errorFor(field?: InlineField): string | undefined {
+  const current = fieldError.value
+  return field && current?.field === field ? current.message : undefined
+}
+
+function serverMessage(error: unknown): string | undefined {
+  const data = (error as { response?: { data?: Record<string, unknown> } })?.response?.data
+  if (typeof data?.error === 'string') return data.error
+  const errors = data?.errors as Record<string, string[]> | undefined
+  const first = errors && Object.values(errors)[0]
+  if (Array.isArray(first) && typeof first[0] === 'string') return first[0]
+  if (typeof data?.title === 'string') return data.title
+  return undefined
+}
+
+async function commitEdit() {
+  const w = watch.value
+  const field = editingField.value
+  // A commit already in flight must not be re-entered; blur can fire again
+  // while the request is running.
+  if (!w || !field || savingField.value) return
+
+  const next = fromInputValue(field, draft.value)
+
+  // Unchanged is not worth a request — this is also what makes an iOS keyboard
+  // dismissal, which fires blur, a no-op rather than a save.
+  if (toInputValue(w, field) === draft.value.trim()) {
+    cancelEdit()
+    return
+  }
+
+  const problem = validate(field, next)
+  if (problem) {
+    fieldError.value = { field, message: problem }
+    return
+  }
+
+  savingField.value = field
+  fieldError.value = null
+  try {
+    watch.value = await updateWatch(w.id, toUpdatePayload(w, { [field]: next } as Partial<UpdateWatch>))
+    cancelEdit()
+  } catch (error) {
+    // Leave the editor open holding what was typed, so a rejected value can be
+    // corrected rather than retyped from scratch.
+    fieldError.value = { field, message: serverMessage(error) || 'Could not save that change.' }
+  } finally {
+    savingField.value = null
+  }
+}
+
+// Keeps a location the user already has but that is no longer configured.
+const storageLocationOptions = computed(() => {
+  const options = [...storageLocations.value]
+  const current = watch.value?.storageLocation
+  if (current && !options.includes(current)) options.push(current)
+  return options
+})
+
+async function toggleEditMode() {
+  actionsOpen.value = false
+  editMode.value = !editMode.value
+  cancelEdit()
+  fieldError.value = null
+
+  // Only the storage picker needs these, so they are fetched the first time
+  // editing starts rather than on every view of the page.
+  if (editMode.value && !storageLocations.value.length) {
+    try {
+      const { data } = await api.get<AuthResponse>('/api/auth/me')
+      storageLocations.value = data.storageLocations || []
+    } catch {
+      // Not fatal — the picker just offers nothing but the current value.
+    }
+  }
 }
 
 const detailSections = computed(() => {
@@ -276,7 +413,15 @@ const detailSections = computed(() => {
         { label: 'Purchase Date', value: formatFullDate(w.purchaseDate), field: 'purchaseDate' },
         { label: 'Current Resale', value: money(w.currentResaleValue) },
         { label: 'Resale Updated', value: formatFullDate(w.resaleValueUpdatedAt) },
-        { label: 'Store Link', value: w.linkUrl ? (w.linkText || 'Store Link') : undefined, href: w.linkUrl },
+        // One display row is two fields underneath, so it splits to be edited.
+        ...(editMode.value
+          ? [
+            { label: 'Link URL', value: w.linkUrl, field: 'linkUrl' as InlineField },
+            { label: 'Link Text', value: w.linkText, field: 'linkText' as InlineField },
+          ]
+          : [
+            { label: 'Store Link', value: w.linkUrl ? (w.linkText || 'Store Link') : undefined, href: w.linkUrl },
+          ]),
       ],
     },
     {
@@ -290,10 +435,13 @@ const detailSections = computed(() => {
     },
   ]
 
+  // Edit mode keeps every editable row, so a field with no value yet can be filled in.
   return sections
     .map(section => ({
       ...section,
-      rows: section.rows.filter((row): row is DetailRowData & { value: string } => Boolean(row.value)),
+      rows: editMode.value
+        ? section.rows.filter(row => row.field || row.value)
+        : section.rows.filter(row => Boolean(row.value)),
     }))
     .filter(section => section.rows.length > 0)
 })
