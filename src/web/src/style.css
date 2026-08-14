@@ -45,6 +45,28 @@
 }
 
 /* === Base Styles === */
+
+/* iOS renders date and time inputs as a native control sized to the localized
+   value ("Mar 5, 2026"), giving it an intrinsic minimum width that width: 100%
+   cannot override. The control then spills past its container, and inside the
+   two-column grids it widens the grid enough to scroll the whole page
+   sideways. Dropping the native appearance lets the control shrink again. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Safari centres the value within the control; keep it flush with text inputs. */
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 html {
   height: 100%;
   -webkit-text-size-adjust: 100%;
