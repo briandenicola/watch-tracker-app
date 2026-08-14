@@ -23,8 +23,59 @@ export async function createWatch(watch: CreateWatch): Promise<Watch> {
   return data
 }
 
-export async function updateWatch(id: number, watch: UpdateWatch): Promise<void> {
-  await api.put(`/api/watches/${id}`, watch)
+// Every field PUT /api/watches/{id} accepts. Typed as a record over UpdateWatch's
+// keys, so adding a field to UpdateWatch fails the build until it is listed here.
+// The endpoint replaces the whole watch, and anything missing from the payload is
+// written back as null — which is how eight fields were silently wiped on save
+// before this list existed.
+const UPDATE_FIELDS: Record<keyof UpdateWatch, true> = {
+  brand: true,
+  model: true,
+  movementType: true,
+  caseSizeMm: true,
+  bandType: true,
+  bandColor: true,
+  purchaseDate: true,
+  purchasePrice: true,
+  notes: true,
+  crystalType: true,
+  caseShape: true,
+  crownType: true,
+  calendarType: true,
+  countryOfOrigin: true,
+  waterResistance: true,
+  lugWidthMm: true,
+  dialColor: true,
+  bezelType: true,
+  powerReserveHours: true,
+  sku: true,
+  serialNumber: true,
+  productionYear: true,
+  batteryType: true,
+  lastBatteryChangedDate: true,
+  linkUrl: true,
+  linkText: true,
+  storageLocation: true,
+  isWishList: true,
+}
+
+/**
+ * Build a complete update payload from a loaded watch, so a change to one field
+ * does not blank every other one. Pass `overrides` for the fields being changed.
+ */
+export function toUpdatePayload(watch: Watch, overrides: Partial<UpdateWatch> = {}): UpdateWatch {
+  const payload: Record<string, unknown> = {}
+  for (const field of Object.keys(UPDATE_FIELDS)) {
+    const value = (watch as unknown as Record<string, unknown>)[field]
+    // An empty string fails the server's [Url] check and means "not set" anyway.
+    payload[field] = value === '' ? undefined : value
+  }
+  return { ...payload, ...overrides } as UpdateWatch
+}
+
+export async function updateWatch(id: number, watch: UpdateWatch): Promise<Watch> {
+  const { data } = await api.put<Watch>(`/api/watches/${id}`, watch)
+  return data
 }
 
 export async function deleteWatch(id: number): Promise<void> {

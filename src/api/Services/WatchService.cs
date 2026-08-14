@@ -76,6 +76,7 @@ public class WatchService(AppDbContext context) : IWatchService
     public async Task<WatchDto?> UpdateAsync(int id, UpdateWatchDto dto, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
+            .Include(w => w.Images)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return null;

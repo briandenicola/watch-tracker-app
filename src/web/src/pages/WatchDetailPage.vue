@@ -174,7 +174,8 @@ import { marked } from 'marked'
 import type { Watch, ResaleValueEntry } from '@/types'
 import {
   getWatch, imageUrl, recordWear, retireWatch, deleteWatch, uploadImage, deleteImage, removeBackground,
-  analyzeWatch, updateWatch, getResaleHistory, addManualResaleValue, deleteResaleValueEntry, refreshResaleValue,
+  analyzeWatch, updateWatch, toUpdatePayload, getResaleHistory, addManualResaleValue,
+  deleteResaleValueEntry, refreshResaleValue,
 } from '@/services/watches'
 
 const route = useRoute()
@@ -417,37 +418,7 @@ async function handlePurchase() {
   purchasing.value = true
   try {
     const w = watch.value
-    await updateWatch(w.id, {
-      brand: w.brand,
-      model: w.model,
-      movementType: w.movementType,
-      caseSizeMm: w.caseSizeMm,
-      bandType: w.bandType,
-      bandColor: w.bandColor,
-      purchaseDate: w.purchaseDate,
-      purchasePrice: w.purchasePrice,
-      notes: w.notes,
-      crystalType: w.crystalType,
-      caseShape: w.caseShape,
-      crownType: w.crownType,
-      calendarType: w.calendarType,
-      countryOfOrigin: w.countryOfOrigin,
-      dialColor: w.dialColor,
-      bezelType: w.bezelType,
-      powerReserveHours: w.powerReserveHours,
-      sku: w.sku,
-      serialNumber: w.serialNumber,
-      productionYear: w.productionYear,
-      batteryType: w.batteryType,
-      lastBatteryChangedDate: w.lastBatteryChangedDate,
-      waterResistance: w.waterResistance,
-      lugWidthMm: w.lugWidthMm,
-      linkUrl: w.linkUrl,
-      linkText: w.linkText,
-      storageLocation: w.storageLocation,
-      isWishList: false,
-    })
-    watch.value = await getWatch(w.id)
+    watch.value = await updateWatch(w.id, toUpdatePayload(w, { isWishList: false }))
   } finally {
     purchasing.value = false
   }
