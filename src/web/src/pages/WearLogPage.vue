@@ -354,6 +354,8 @@ onMounted(load)
   color: var(--color-text);
   font-size: 0.875rem;
   padding: 0.5rem 0.65rem;
+  /* Fill the grid track rather than the native control's intrinsic width */
+  width: 100%;
 }
 
 :deep(.wear-action),
