@@ -1,7 +1,7 @@
 <template>
   <div>
     <RouterLink
-      :to="watch?.isWishList ? '/?tab=wishlist' : '/'"
+      :to="watch?.isWishList ? '/?tab=wishlist' : watch?.disposition ? '/retired' : '/'"
       class="text-accent text-sm hover:underline mb-4 inline-block"
     >
       ← Back
@@ -13,7 +13,7 @@
       <!-- Header -->
       <div class="relative mb-5 flex items-start justify-between gap-4">
         <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : watch.isRetired ? 'Retired' : 'Collection' }}</p>
+          <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : watch.disposition ? dispositionLabel(watch) : 'Collection' }}</p>
           <h1 ref="titleEl" class="font-display text-3xl font-semibold text-text leading-tight" :class="{ 'title-stacked': titleStacked }"><span class="watch-brand">{{ watch.brand }}</span> {{ watch.model }}<span class="title-probe-clip" aria-hidden="true"><span ref="titleProbeEl" class="title-probe">{{ watch.brand }} {{ watch.model }}</span></span></h1>
         </div>
         <div class="relative flex-shrink-0">
@@ -26,7 +26,7 @@
           </button>
           <div v-if="actionsOpen" class="absolute right-0 top-12 z-30 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden">
             <template v-if="!watch.isWishList">
-              <button @click="handleWearFromMenu" :disabled="wearLoading" class="menu-action text-accent">{{ wearLoading ? 'Recording...' : 'Wore Today' }}</button>
+              <button v-if="!watch.disposition" @click="handleWearFromMenu" :disabled="wearLoading" class="menu-action text-accent">{{ wearLoading ? 'Recording...' : 'Wore Today' }}</button>
               <button @click="toggleEditMode" class="menu-action">{{ editMode ? 'Done Editing Fields' : 'Edit Fields Here' }}</button>
               <RouterLink :to="`/watches/${watch.id}/edit`" class="menu-action">Edit</RouterLink>
               <label class="menu-action cursor-pointer">
@@ -35,7 +35,8 @@
               </label>
               <button @click="handleAnalyzeFromMenu" :disabled="analyzing || !watch.imageUrls.length" class="menu-action">{{ analyzing ? 'Analyzing…' : 'AI Analyze' }}</button>
               <button @click="handleRefreshResaleFromMenu" :disabled="refreshingResale" class="menu-action">{{ refreshingResale ? 'Queuing…' : 'Refresh Resale' }}</button>
-              <button v-if="!watch.isRetired" @click="handleRetireFromMenu" class="menu-action">Retire</button>
+              <button @click="openDisposition" class="menu-action">{{ watch.disposition ? 'Edit disposition' : 'Remove from collection' }}</button>
+              <button v-if="watch.disposition" @click="handleRestore" class="menu-action text-accent">Restore to collection</button>
               <button @click="handleDeleteFromMenu" class="menu-action text-danger">Delete</button>
             </template>
             <template v-else>
@@ -177,6 +178,16 @@
       </section>
     </div>
     <div v-else class="text-center py-20 text-text-muted">Watch not found.</div>
+    <DispositionModal
+      v-if="showDispositionModal && watch"
+      :current-watch-id="watch.id"
+      :disposition="watch.disposition"
+      :watches="allWatches"
+      :saving="savingDisposition"
+      :error-message="dispositionError"
+      @cancel="showDispositionModal = false"
+      @save="handleSaveDisposition"
+    />
   </div>
 </template>
 
@@ -184,14 +195,15 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch as vueWatch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
-import type { AuthResponse, UpdateWatch, Watch, ResaleValueEntry } from '@/types'
+import type { AuthResponse, UpdateWatch, UpdateWatchDisposition, Watch, ResaleValueEntry } from '@/types'
 import { fieldMeta, type InlineField } from '@/constants/watch'
 import { api } from '@/services/api'
 import DetailRow from '@/components/common/DetailRow.vue'
+import DispositionModal from '@/components/common/DispositionModal.vue'
 import {
-  getWatch, imageUrl, recordWear, retireWatch, deleteWatch, uploadImage, deleteImage, removeBackground,
+  getWatch, getWatches, imageUrl, recordWear, deleteWatch, uploadImage, deleteImage, removeBackground,
   analyzeWatch, updateWatch, toUpdatePayload, getResaleHistory, addManualResaleValue,
-  deleteResaleValueEntry, refreshResaleValue,
+  deleteResaleValueEntry, refreshResaleValue, setWatchDisposition, clearWatchDisposition,
 } from '@/services/watches'
 
 const route = useRoute()
@@ -207,8 +219,14 @@ function formatFullDate(dateStr?: string): string | undefined {
 }
 
 const watch = ref<Watch | null>(null)
-const retiredOn = computed(() => formatFullDate(watch.value?.retiredAt))
 const loading = ref(true)
+
+function dispositionLabel(w: Watch): string {
+  if (!w.disposition) return 'Active'
+  return w.disposition.type === 'Other'
+    ? (w.disposition.otherLabel || 'Other')
+    : w.disposition.type
+}
 
 interface DetailRowData {
   label: string
@@ -366,7 +384,7 @@ const detailSections = computed(() => {
   const ownership: DetailRowData[] = w.isWishList ? [] : [
     { label: 'Wear Count', value: w.timesWorn.toString() },
     { label: 'Last Worn', value: formatFullDate(w.lastWornDate) },
-    { label: 'Status', value: w.isRetired ? `Retired${retiredOn.value ? ` — ${retiredOn.value}` : ''}` : 'Active' },
+    { label: 'Status', value: dispositionLabel(w) },
   ]
 
   const sections: { heading: string, rows: DetailRowData[] }[] = [
@@ -411,19 +429,41 @@ const detailSections = computed(() => {
       rows: [
         { label: w.isWishList ? 'Target Price' : 'Purchase Price', value: money(w.purchasePrice), field: 'purchasePrice' },
         { label: 'Purchase Date', value: formatFullDate(w.purchaseDate), field: 'purchaseDate' },
+        { label: 'Acquisition Type', value: w.acquisitionType, field: 'acquisitionType' },
+        { label: 'Acquired From', value: w.acquiredFrom, field: 'acquiredFrom' },
+        ...(editMode.value
+          ? [{ label: 'Acquisition Source URL', value: w.acquisitionSourceUrl, field: 'acquisitionSourceUrl' as InlineField }]
+          : [{ label: 'Acquisition Source', value: w.acquisitionSourceUrl ? (w.acquiredFrom || 'Source Link') : undefined, href: w.acquisitionSourceUrl }]),
         { label: 'Current Resale', value: money(w.currentResaleValue) },
         { label: 'Resale Updated', value: formatFullDate(w.resaleValueUpdatedAt) },
         // One display row is two fields underneath, so it splits to be edited.
         ...(editMode.value
           ? [
-            { label: 'Link URL', value: w.linkUrl, field: 'linkUrl' as InlineField },
-            { label: 'Link Text', value: w.linkText, field: 'linkText' as InlineField },
+            { label: 'Product / Reference URL', value: w.linkUrl, field: 'linkUrl' as InlineField },
+            { label: 'Product Link Text', value: w.linkText, field: 'linkText' as InlineField },
           ]
           : [
-            { label: 'Store Link', value: w.linkUrl ? (w.linkText || 'Store Link') : undefined, href: w.linkUrl },
+            { label: 'Product / Reference', value: w.linkUrl ? (w.linkText || 'Product Link') : undefined, href: w.linkUrl },
           ]),
       ],
     },
+    ...(w.disposition
+      ? [{
+          heading: 'Disposition',
+          rows: [
+            { label: 'Action', value: dispositionLabel(w) },
+            { label: 'Date', value: formatFullDate(w.disposition.dispositionDate) },
+            { label: 'Sold To', value: w.disposition.soldTo },
+            { label: 'Sale Price', value: money(w.disposition.salePrice) },
+            { label: 'Received Watch', value: w.disposition.receivedWatchName },
+            { label: 'Trade Details', value: w.disposition.tradeDetails },
+            { label: 'Return Reason', value: w.disposition.returnReason },
+            { label: 'Returned To', value: w.disposition.returnedTo },
+            { label: 'Refund Amount', value: money(w.disposition.refundAmount) },
+            { label: 'Notes', value: w.disposition.notes },
+          ],
+        }]
+      : []),
     {
       heading: 'Ownership',
       rows: [
@@ -496,10 +536,19 @@ const manualResaleValue = ref<number | null>(null)
 const manualResaleDate = ref('')
 const manualResaleNotes = ref('')
 const savingManualResale = ref(false)
+const allWatches = ref<Watch[]>([])
+const showDispositionModal = ref(false)
+const savingDisposition = ref(false)
+const dispositionError = ref('')
 
 onMounted(async () => {
   try {
-    watch.value = await getWatch(Number(route.params.id))
+    const [loadedWatch, loadedWatches] = await Promise.all([
+      getWatch(Number(route.params.id)),
+      getWatches(true),
+    ])
+    watch.value = loadedWatch
+    allWatches.value = loadedWatches
     if (watch.value && !watch.value.isWishList) {
       resaleHistory.value = await getResaleHistory(watch.value.id)
     }
@@ -524,9 +573,10 @@ async function handleWearFromMenu() {
   await handleWear()
 }
 
-async function handleRetireFromMenu() {
+function openDisposition() {
   actionsOpen.value = false
-  await handleRetire()
+  dispositionError.value = ''
+  showDispositionModal.value = true
 }
 
 async function handleDeleteFromMenu() {
@@ -549,10 +599,26 @@ async function handleRefreshResaleFromMenu() {
   await handleRefreshResale()
 }
 
-async function handleRetire() {
-  if (!watch.value || !confirm('Retire this watch?')) return
-  await retireWatch(watch.value.id)
-  router.push('/')
+async function handleSaveDisposition(disposition: UpdateWatchDisposition) {
+  if (!watch.value) return
+  savingDisposition.value = true
+  dispositionError.value = ''
+  try {
+    watch.value = await setWatchDisposition(watch.value.id, disposition)
+    allWatches.value = allWatches.value.map(item => item.id === watch.value?.id ? watch.value : item)
+    showDispositionModal.value = false
+  } catch (error) {
+    dispositionError.value = serverMessage(error) || 'Could not save the disposition.'
+  } finally {
+    savingDisposition.value = false
+  }
+}
+
+async function handleRestore() {
+  actionsOpen.value = false
+  if (!watch.value || !confirm('Restore this watch to your active collection?')) return
+  watch.value = await clearWatchDisposition(watch.value.id)
+  allWatches.value = allWatches.value.map(item => item.id === watch.value?.id ? watch.value : item)
 }
 
 async function handleDelete() {

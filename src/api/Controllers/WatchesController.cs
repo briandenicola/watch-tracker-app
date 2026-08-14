@@ -22,9 +22,12 @@ public class WatchesController(
 
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<WatchDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<WatchDto>>> GetAll([FromQuery] bool includeRetired = false, CancellationToken ct = default)
+    public async Task<ActionResult<IEnumerable<WatchDto>>> GetAll(
+        [FromQuery] bool includeDisposed = false,
+        [FromQuery] bool includeRetired = false,
+        CancellationToken ct = default)
     {
-        var watches = await watchService.GetAllAsync(UserId, includeRetired, ct);
+        var watches = await watchService.GetAllAsync(UserId, includeDisposed || includeRetired, ct);
         return Ok(watches);
     }
 
@@ -84,8 +87,15 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> RecordWear(int id, CancellationToken ct)
     {
-        var watch = await watchService.RecordWearAsync(id, UserId, ct);
-        return watch is null ? NotFound() : Ok(watch);
+        try
+        {
+            var watch = await watchService.RecordWearAsync(id, UserId, ct);
+            return watch is null ? NotFound() : Ok(watch);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpGet("wear-logs")]
@@ -171,8 +181,15 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> Retire(int id, CancellationToken ct)
     {
-        var watch = await watchService.RetireAsync(id, UserId, ct);
-        return watch is null ? NotFound() : Ok(watch);
+        try
+        {
+            var watch = await watchService.RetireAsync(id, UserId, ct);
+            return watch is null ? NotFound() : Ok(watch);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id}/unretire")]
@@ -181,6 +198,43 @@ public class WatchesController(
     public async Task<ActionResult<WatchDto>> Unretire(int id, CancellationToken ct)
     {
         var watch = await watchService.UnretireAsync(id, UserId, ct);
+        return watch is null ? NotFound() : Ok(watch);
+    }
+
+    [HttpPut("{id}/disposition")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<WatchDto>> SetDisposition(
+        int id,
+        UpdateWatchDispositionDto dto,
+        CancellationToken ct)
+    {
+        try
+        {
+            var watch = await watchService.SetDispositionAsync(id, UserId, dto, ct);
+            if (watch is not null)
+                logger.LogInformation(
+                    "Watch {WatchId} disposition set to {DispositionType} by user {UserId}",
+                    id,
+                    dto.Type,
+                    UserId);
+            return watch is null ? NotFound() : Ok(watch);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpDelete("{id}/disposition")]
+    [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<WatchDto>> ClearDisposition(int id, CancellationToken ct)
+    {
+        var watch = await watchService.ClearDispositionAsync(id, UserId, ct);
+        if (watch is not null)
+            logger.LogInformation("Watch {WatchId} disposition cleared by user {UserId}", id, UserId);
         return watch is null ? NotFound() : Ok(watch);
     }
 }

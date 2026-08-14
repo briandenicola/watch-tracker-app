@@ -13,6 +13,9 @@ public class WatchDto
     public string? BandColor { get; set; }
     public DateTime? PurchaseDate { get; set; }
     public decimal? PurchasePrice { get; set; }
+    public AcquisitionType AcquisitionType { get; set; }
+    public string? AcquiredFrom { get; set; }
+    public string? AcquisitionSourceUrl { get; set; }
     public string? Notes { get; set; }
     public string? AiAnalysis { get; set; }
     public DateTime? LastWornDate { get; set; }
@@ -39,8 +42,9 @@ public class WatchDto
     public string? LinkText { get; set; }
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
-    public bool IsRetired { get; set; }
-    public DateTime? RetiredAt { get; set; }
+    public WatchDispositionDto? Disposition { get; set; }
+    public bool IsRetired => Disposition?.Type == DispositionType.Retired;
+    public DateTime? RetiredAt => IsRetired ? Disposition?.DispositionDate : null;
     public string BrandName => Brand;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

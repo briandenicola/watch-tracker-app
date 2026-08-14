@@ -117,6 +117,28 @@
       </div>
     </div>
 
+    <template v-if="!isWishlist">
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Acquisition Type *</label>
+        <select v-model="formData.acquisitionType" required class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors appearance-none">
+          <option value="New">New</option>
+          <option value="Used">Used</option>
+          <option value="Trade">Trade</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Acquired From</label>
+        <input v-model="formData.acquiredFrom" maxlength="200" placeholder="Retailer, marketplace, or person" class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Acquisition Source URL</label>
+        <input v-model="formData.acquisitionSourceUrl" type="url" maxlength="2000" placeholder="https://..." class="w-full px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+      </div>
+    </template>
+
     <!-- Wishlist: link URL and its label as top-level optional fields -->
     <template v-if="isWishlist">
       <div>
@@ -319,12 +341,12 @@
             <!-- Wishlist renders the link pair as a top-level field instead -->
             <template v-if="!isWishlist">
               <div>
-                <label class="block text-xs font-medium text-text-muted mb-1">Link URL</label>
+                <label class="block text-xs font-medium text-text-muted mb-1">Product / Reference URL</label>
                 <input v-model="formData.linkUrl" type="url" placeholder="https://..." class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-text-muted mb-1">Link Text</label>
+                <label class="block text-xs font-medium text-text-muted mb-1">Product Link Text</label>
                 <input v-model="formData.linkText" placeholder="Label shown for the link" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
               </div>
             </template>
@@ -417,6 +439,9 @@ const formData = reactive({
   bandColor: props.initial?.bandColor || '',
   purchaseDate: formatDateForInput(props.initial?.purchaseDate),
   purchasePrice: props.initial?.purchasePrice,
+  acquisitionType: props.initial?.acquisitionType || 'New',
+  acquiredFrom: props.initial?.acquiredFrom || '',
+  acquisitionSourceUrl: props.initial?.acquisitionSourceUrl || '',
   notes: props.initial?.notes || '',
   crystalType: props.initial?.crystalType ? matchListValue(props.initial.crystalType, crystalTypes) : '',
   caseShape: props.initial?.caseShape || '',
@@ -461,7 +486,10 @@ vueWatch(() => formData.crystalType, (val) => {
 })
 
 // Fields rendered outside the collapsible section — they shouldn't force it open
-const topLevelFields = new Set(['brand', 'model', 'movementType', 'purchaseDate', 'purchasePrice'])
+const topLevelFields = new Set([
+  'brand', 'model', 'movementType', 'purchaseDate', 'purchasePrice',
+  'acquisitionType', 'acquiredFrom', 'acquisitionSourceUrl',
+])
 
 // Auto-expand optional section if editing and has optional data
 if (props.initial && Object.entries(formData).some(

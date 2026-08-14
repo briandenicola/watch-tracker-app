@@ -36,7 +36,7 @@ public class ResaleValueRefreshService(
         var cutoff = DateTime.UtcNow.AddDays(-intervalDays);
 
         var dueWatches = await context.Watches
-            .Where(w => !w.IsRetired && !w.IsWishList)
+            .Where(w => w.Disposition == null && !w.IsWishList)
             .Where(w => w.ResaleValueUpdatedAt == null || w.ResaleValueUpdatedAt < cutoff)
             .ToListAsync(ct);
 
@@ -64,7 +64,7 @@ public class ResaleValueRefreshService(
     public async Task<ResaleRefreshSummaryDto> RefreshAllNowAsync(CancellationToken ct = default)
     {
         var watches = await context.Watches
-            .Where(w => !w.IsRetired && !w.IsWishList)
+            .Where(w => w.Disposition == null && !w.IsWishList)
             .ToListAsync(ct);
 
         var summary = new ResaleRefreshSummaryDto { Due = watches.Count };

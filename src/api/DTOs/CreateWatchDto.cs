@@ -27,6 +27,15 @@ public class CreateWatchDto
     [Range(0, 10_000_000)]
     public decimal? PurchasePrice { get; set; }
 
+    [EnumDataType(typeof(AcquisitionType))]
+    public AcquisitionType AcquisitionType { get; set; } = AcquisitionType.New;
+
+    [StringLength(200)]
+    public string? AcquiredFrom { get; set; }
+
+    [StringLength(2000), Url]
+    public string? AcquisitionSourceUrl { get; set; }
+
     [StringLength(10000)]
     public string? Notes { get; set; }
 

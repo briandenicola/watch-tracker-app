@@ -1,5 +1,8 @@
 import { api } from './api'
-import type { Watch, CreateWatch, UpdateWatch, WearLog, ResaleValueEntry, CreateResaleValueEntry } from '@/types'
+import type {
+  Watch, CreateWatch, UpdateWatch, WearLog, ResaleValueEntry, CreateResaleValueEntry,
+  UpdateWatchDisposition,
+} from '@/types'
 
 const BASE_URL = window.location.origin
 
@@ -8,8 +11,10 @@ export function imageUrl(path: string): string {
   return `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`
 }
 
-export async function getWatches(): Promise<Watch[]> {
-  const { data } = await api.get<Watch[]>('/api/watches')
+export async function getWatches(includeDisposed = false): Promise<Watch[]> {
+  const { data } = await api.get<Watch[]>('/api/watches', {
+    params: includeDisposed ? { includeDisposed: true } : undefined,
+  })
   return data
 }
 
@@ -37,6 +42,9 @@ const UPDATE_FIELDS: Record<keyof UpdateWatch, true> = {
   bandColor: true,
   purchaseDate: true,
   purchasePrice: true,
+  acquisitionType: true,
+  acquiredFrom: true,
+  acquisitionSourceUrl: true,
   notes: true,
   crystalType: true,
   caseShape: true,
@@ -92,6 +100,16 @@ export async function retireWatch(id: number): Promise<void> {
 
 export async function unretireWatch(id: number): Promise<void> {
   await api.put(`/api/watches/${id}/unretire`)
+}
+
+export async function setWatchDisposition(id: number, disposition: UpdateWatchDisposition): Promise<Watch> {
+  const { data } = await api.put<Watch>(`/api/watches/${id}/disposition`, disposition)
+  return data
+}
+
+export async function clearWatchDisposition(id: number): Promise<Watch> {
+  const { data } = await api.delete<Watch>(`/api/watches/${id}/disposition`)
+  return data
 }
 
 export async function uploadImage(watchId: number, file: File): Promise<void> {

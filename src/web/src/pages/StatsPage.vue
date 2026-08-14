@@ -16,12 +16,20 @@
       <!-- Summary Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
+          <p class="text-3xl font-display font-semibold text-accent">{{ activeWatches.length }}</p>
+          <p class="text-sm text-text-secondary mt-1">Active Watches</p>
+        </div>
+        <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
           <p class="text-3xl font-display font-semibold text-accent">{{ watches.length }}</p>
-          <p class="text-sm text-text-secondary mt-1">Total Watches</p>
+          <p class="text-sm text-text-secondary mt-1">Lifetime Watches</p>
         </div>
         <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
           <p class="text-3xl font-display font-semibold text-accent">{{ totalWears }}</p>
           <p class="text-sm text-text-secondary mt-1">Total Wears</p>
+        </div>
+        <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
+          <p class="text-3xl font-display font-semibold text-accent">{{ formatDuration(totalWearMinutes) }}</p>
+          <p class="text-sm text-text-secondary mt-1">Recorded Wear Time</p>
         </div>
         <div class="bg-bg-card border border-border rounded-xl p-4 text-center col-span-2 lg:col-span-1">
           <p class="text-3xl font-display font-semibold text-accent">{{ avgWears }}</p>
@@ -29,7 +37,11 @@
         </div>
         <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
           <p class="text-3xl font-display font-semibold text-accent">{{ formatCurrency(totalCollectionValue) }}</p>
-          <p class="text-sm text-text-secondary mt-1">Collection Value</p>
+          <p class="text-sm text-text-secondary mt-1">Active Collection Cost</p>
+        </div>
+        <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
+          <p class="text-3xl font-display font-semibold text-accent">{{ formatCurrency(activeResaleValue) }}</p>
+          <p class="text-sm text-text-secondary mt-1">Active Resale Value</p>
         </div>
         <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
           <p class="text-3xl font-display font-semibold text-accent">{{ formatCurrency(medianValue) }}</p>
@@ -37,7 +49,43 @@
         </div>
         <div class="bg-bg-card border border-border rounded-xl p-4 text-center">
           <p class="text-3xl font-display font-semibold text-accent">{{ formatCurrency(avgCostPerWear) }}</p>
-          <p class="text-sm text-text-secondary mt-1">Avg Cost / Wear</p>
+          <p class="text-sm text-text-secondary mt-1">Lifetime Avg Cost / Wear</p>
+        </div>
+      </div>
+
+      <div class="bg-bg-card border border-border rounded-xl p-4">
+        <div class="mb-4">
+          <h3 class="text-lg font-medium text-text">Lifetime Ownership</h3>
+          <p class="text-xs text-text-muted mt-1">Former watches remain included in wear and ownership history; collection value above is active-only.</p>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-bg-surface border border-border rounded-lg p-3">
+            <p class="text-xs text-text-muted">Acquisition Spend</p>
+            <p class="text-lg font-medium text-text mt-1">{{ formatCurrency(lifetimeSpend) }}</p>
+          </div>
+          <div class="bg-bg-surface border border-border rounded-lg p-3">
+            <p class="text-xs text-text-muted">Sale Proceeds</p>
+            <p class="text-lg font-medium text-text mt-1">{{ formatCurrency(saleProceeds) }}</p>
+          </div>
+          <div class="bg-bg-surface border border-border rounded-lg p-3">
+            <p class="text-xs text-text-muted">Refunds</p>
+            <p class="text-lg font-medium text-text mt-1">{{ formatCurrency(refundsReceived) }}</p>
+          </div>
+          <div class="bg-bg-surface border border-border rounded-lg p-3">
+            <p class="text-xs text-text-muted">Realized Gain / Loss</p>
+            <p class="text-lg font-medium mt-1" :class="realizedGainLoss >= 0 ? 'text-success' : 'text-danger'">
+              {{ realizedGainLoss >= 0 ? '+' : '' }}{{ formatCurrency(realizedGainLoss) }}
+            </p>
+          </div>
+        </div>
+        <div v-if="dispositionBreakdown.length" class="flex flex-wrap gap-2 mt-4">
+          <span
+            v-for="item in dispositionBreakdown"
+            :key="item.label"
+            class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary"
+          >
+            {{ item.label }}: {{ item.count }}
+          </span>
         </div>
       </div>
 
@@ -145,6 +193,7 @@
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ w.brand }} {{ w.model }}</p>
+                <p v-if="w.disposition" class="text-xs text-text-muted">{{ dispositionLabel(w) }}</p>
               </div>
               <span class="text-sm text-text-secondary">{{ formatCurrency(w.currentResaleValue) }}</span>
             </RouterLink>
@@ -169,6 +218,7 @@
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ item.watch.brand }} {{ item.watch.model }}</p>
+                <p v-if="item.watch.disposition" class="text-xs text-text-muted">{{ dispositionLabel(item.watch) }}</p>
               </div>
               <span class="text-sm" :class="item.gain >= 0 ? 'text-success' : 'text-danger'">
                 {{ item.gain >= 0 ? '+' : '' }}{{ formatCurrency(item.gain) }}
@@ -195,6 +245,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ w.brand }} {{ w.model }}</p>
+              <p v-if="w.disposition" class="text-xs text-text-muted">{{ dispositionLabel(w) }}</p>
               <p class="text-xs text-text-muted">{{ formatCurrency(w.purchasePrice) }} / {{ w.timesWorn }} wears</p>
             </div>
             <span class="text-sm text-text-secondary">{{ formatCurrency(costPerWear(w)) }}/wear</span>
@@ -345,6 +396,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm text-text truncate group-hover:text-accent transition-colors">{{ w.brand }} {{ w.model }}</p>
+              <p v-if="w.disposition" class="text-xs text-text-muted">{{ dispositionLabel(w) }}</p>
             </div>
             <span class="text-sm text-text-secondary">{{ w.timesWorn }}×</span>
           </RouterLink>
@@ -382,21 +434,55 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { Watch } from '@/types'
-import { getWatches, imageUrl } from '@/services/watches'
+import type { Watch, WearLog } from '@/types'
+import { getWatches, getWearLogs, imageUrl } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 
 const { refreshing, pullDistance, pulling } = usePullToRefresh(load)
 
 const watches = ref<Watch[]>([])
+const wearLogs = ref<WearLog[]>([])
 const loading = ref(true)
 const error = ref(false)
 
 const totalWears = computed(() => watches.value.reduce((sum, w) => sum + w.timesWorn, 0))
+const totalWearMinutes = computed(() =>
+  wearLogs.value.reduce((sum, log) => sum + (log.durationMinutes ?? 0), 0),
+)
 const avgWears = computed(() => watches.value.length ? (totalWears.value / watches.value.length).toFixed(1) : '0')
-const pricedWatches = computed(() => watches.value.filter(w => hasValue(w.purchasePrice)))
+const activeWatches = computed(() => watches.value.filter(w => !w.disposition))
+const pricedWatches = computed(() => activeWatches.value.filter(w => hasValue(w.purchasePrice)))
+const lifetimePricedWatches = computed(() => watches.value.filter(w => hasValue(w.purchasePrice)))
 const totalCollectionValue = computed(() => pricedWatches.value.reduce((sum, w) => sum + (w.purchasePrice ?? 0), 0))
+const activeResaleValue = computed(() =>
+  activeWatches.value.reduce((sum, watch) => sum + (watch.currentResaleValue ?? 0), 0),
+)
+const lifetimeSpend = computed(() => lifetimePricedWatches.value.reduce((sum, w) => sum + (w.purchasePrice ?? 0), 0))
+const saleProceeds = computed(() => watches.value.reduce((sum, w) => sum + (w.disposition?.salePrice ?? 0), 0))
+const refundsReceived = computed(() => watches.value.reduce((sum, w) => sum + (w.disposition?.refundAmount ?? 0), 0))
+const realizedGainLoss = computed(() => watches.value.reduce((sum, watch) => {
+  const disposition = watch.disposition
+  if (!disposition || !hasValue(watch.purchasePrice)) return sum
+  if (disposition.type === 'Sold' && disposition.salePrice !== undefined) {
+    return sum + disposition.salePrice - (watch.purchasePrice ?? 0)
+  }
+  if (disposition.type === 'Returned' && disposition.refundAmount !== undefined) {
+    return sum + disposition.refundAmount - (watch.purchasePrice ?? 0)
+  }
+  return sum
+}, 0))
+const dispositionBreakdown = computed(() => {
+  const counts = new Map<string, number>()
+  watches.value.forEach(watch => {
+    if (!watch.disposition) return
+    const label = dispositionLabel(watch)
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  })
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+})
 const medianValue = computed(() => {
   const values = pricedWatches.value.map(w => w.purchasePrice ?? 0).sort((a, b) => a - b)
   if (values.length === 0) return 0
@@ -405,7 +491,7 @@ const medianValue = computed(() => {
   return values.length % 2 === 0 ? (values[middle - 1] + values[middle]) / 2 : values[middle]
 })
 const avgCostPerWear = computed(() => {
-  const watchesWithWearCost = pricedWatches.value.filter(w => w.timesWorn > 0)
+  const watchesWithWearCost = lifetimePricedWatches.value.filter(w => w.timesWorn > 0)
   if (watchesWithWearCost.length === 0) return 0
 
   const total = watchesWithWearCost.reduce((sum, w) => sum + costPerWear(w), 0)
@@ -481,7 +567,7 @@ const valueTimelinePoints = computed(() =>
 )
 
 const costPerWearLeaders = computed(() =>
-  [...pricedWatches.value]
+  [...lifetimePricedWatches.value]
     .filter(w => w.timesWorn > 0)
     .sort((a, b) => costPerWear(a) - costPerWear(b))
     .slice(0, 5)
@@ -489,7 +575,7 @@ const costPerWearLeaders = computed(() =>
 
 const neglected = computed(() => {
   const threshold = Date.now() - 30 * 24 * 60 * 60 * 1000
-  return watches.value.filter(w => {
+  return activeWatches.value.filter(w => {
     if (!w.lastWornDate) return true
     return new Date(w.lastWornDate).getTime() < threshold
   }).sort((a, b) => {
@@ -599,6 +685,13 @@ function costPerWear(watch: Watch): number {
   return (watch.purchasePrice ?? 0) / watch.timesWorn
 }
 
+function dispositionLabel(watch: Watch): string {
+  if (!watch.disposition) return 'Active'
+  return watch.disposition.type === 'Other'
+    ? (watch.disposition.otherLabel || 'Other')
+    : watch.disposition.type
+}
+
 function acquisitionDate(watch: Watch): string {
   return watch.purchaseDate ?? watch.createdAt
 }
@@ -618,6 +711,14 @@ function formatCurrency(value: number | undefined): string {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(value ?? 0)
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes <= 0) return '0m'
+  const hours = Math.floor(minutes / 60)
+  const remaining = minutes % 60
+  if (hours === 0) return `${remaining}m`
+  return remaining === 0 ? `${hours}h` : `${hours}h ${remaining}m`
 }
 
 function movementColor(type: string): string {
@@ -647,8 +748,12 @@ async function load() {
   loading.value = true
   error.value = false
   try {
-    const allWatches = await getWatches()
-    watches.value = allWatches.filter(w => !w.isRetired && !w.isWishList)
+    const [allWatches, allWearLogs] = await Promise.all([
+      getWatches(true),
+      getWearLogs(),
+    ])
+    watches.value = allWatches.filter(w => !w.isWishList)
+    wearLogs.value = allWearLogs
   } catch {
     error.value = true
   } finally {

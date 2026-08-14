@@ -11,6 +11,9 @@ public class Watch
     public string? BandColor { get; set; }
     public DateTime? PurchaseDate { get; set; }
     public decimal? PurchasePrice { get; set; }
+    public AcquisitionType AcquisitionType { get; set; } = AcquisitionType.New;
+    public string? AcquiredFrom { get; set; }
+    public string? AcquisitionSourceUrl { get; set; }
     public string? Notes { get; set; }
     public string? AiAnalysis { get; set; }
     public DateTime? LastWornDate { get; set; }
@@ -36,14 +39,13 @@ public class Watch
     public string? LinkText { get; set; }
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
-    public bool IsRetired { get; set; }
-    public DateTime? RetiredAt { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; } = null!;
     public ICollection<WatchImage> Images { get; set; } = [];
     public ICollection<WearLog> WearLogs { get; set; } = [];
     public ICollection<ResaleValueEntry> ResaleValueEntries { get; set; } = [];
+    public WatchDisposition? Disposition { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

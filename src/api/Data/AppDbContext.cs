@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WatchImage> WatchImages => Set<WatchImage>();
     public DbSet<WearLog> WearLogs => Set<WearLog>();
     public DbSet<ResaleValueEntry> ResaleValueEntries => Set<ResaleValueEntry>();
+    public DbSet<WatchDisposition> WatchDispositions => Set<WatchDisposition>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -108,6 +109,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(w => w.MovementType)
                 .HasConversion<string>();
 
+            entity.Property(w => w.AcquisitionType)
+                .HasConversion<string>();
+
             entity.Property(w => w.PurchasePrice)
                 .HasColumnType("decimal(18,2)");
 
@@ -131,6 +135,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(w => w.RowVersion)
                 .IsRowVersion();
+        });
+
+        modelBuilder.Entity<WatchDisposition>(entity =>
+        {
+            entity.HasKey(d => d.WatchId);
+
+            entity.Property(d => d.Type)
+                .HasConversion<string>();
+
+            entity.Property(d => d.SalePrice)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(d => d.RefundAmount)
+                .HasColumnType("decimal(18,2)");
+
+            entity.HasOne(d => d.Watch)
+                .WithOne(w => w.Disposition)
+                .HasForeignKey<WatchDisposition>(d => d.WatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.ReceivedWatch)
+                .WithMany()
+                .HasForeignKey(d => d.ReceivedWatchId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(d => d.ReceivedWatchId);
         });
 
         modelBuilder.Entity<ResaleValueEntry>(entity =>

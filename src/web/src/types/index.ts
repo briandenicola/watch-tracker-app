@@ -1,4 +1,23 @@
 export type MovementType = 'Automatic' | 'Manual' | 'Quartz' | 'Digital'
+export type AcquisitionType = 'New' | 'Used' | 'Trade' | 'Other'
+export type DispositionType = 'Retired' | 'Returned' | 'Sold' | 'Traded' | 'Other'
+
+export interface WatchDisposition {
+  type: DispositionType
+  dispositionDate: string
+  notes?: string
+  soldTo?: string
+  salePrice?: number
+  receivedWatchId?: number
+  receivedWatchName?: string
+  tradeDetails?: string
+  otherLabel?: string
+  returnReason?: string
+  returnedTo?: string
+  refundAmount?: number
+}
+
+export type UpdateWatchDisposition = Omit<WatchDisposition, 'receivedWatchName'>
 
 export interface WatchImage {
   id: number
@@ -15,6 +34,9 @@ export interface Watch {
   bandColor?: string
   purchaseDate?: string
   purchasePrice?: number
+  acquisitionType: AcquisitionType
+  acquiredFrom?: string
+  acquisitionSourceUrl?: string
   notes?: string
   aiAnalysis?: string
   lastWornDate?: string
@@ -41,6 +63,7 @@ export interface Watch {
   linkText?: string
   storageLocation?: string
   isWishList: boolean
+  disposition?: WatchDisposition
   isRetired: boolean
   retiredAt?: string
   createdAt: string
@@ -56,6 +79,9 @@ export interface CreateWatch {
   bandColor?: string
   purchaseDate?: string
   purchasePrice?: number
+  acquisitionType?: AcquisitionType
+  acquiredFrom?: string
+  acquisitionSourceUrl?: string
   notes?: string
   crystalType?: string
   caseShape?: string

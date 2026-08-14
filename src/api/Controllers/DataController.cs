@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO.Compression;
 using System.Security.Claims;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
+using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Controllers;
@@ -25,6 +27,8 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         var watches = await context.Watches
             .Include(w => w.Images.OrderBy(i => i.SortOrder))
             .Include(w => w.WearLogs)
+            .Include(w => w.Disposition)
+                .ThenInclude(d => d!.ReceivedWatch)
             .Where(w => w.UserId == UserId)
             .OrderBy(w => w.Id)
             .ToListAsync();
@@ -43,6 +47,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                 var wearLogs = string.Join(";", w.WearLogs.OrderByDescending(wl => wl.WornDate).Select(FormatWearLogExport));
 
                 csv.AppendLine(string.Join(",",
+                    w.Id.ToString(CultureInfo.InvariantCulture),
                     Esc(w.Brand),
                     Esc(w.Model),
                     Esc(w.MovementType.ToString()),
@@ -51,6 +56,9 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                     Esc(w.BandColor),
                     Esc(w.PurchaseDate?.ToString("yyyy-MM-dd")),
                     Esc(w.PurchasePrice?.ToString(CultureInfo.InvariantCulture)),
+                    Esc(w.AcquisitionType.ToString()),
+                    Esc(w.AcquiredFrom),
+                    Esc(w.AcquisitionSourceUrl),
                     Esc(w.Notes),
                     Esc(w.CrystalType),
                     Esc(w.CaseShape),
@@ -71,6 +79,20 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                     Esc(w.LinkText),
                     Esc(w.StorageLocation),
                     w.IsWishList ? "true" : "false",
+                    Esc(w.Disposition?.Type.ToString()),
+                    Esc(w.Disposition?.DispositionDate.ToString("yyyy-MM-dd")),
+                    Esc(w.Disposition?.Notes),
+                    Esc(w.Disposition?.SoldTo),
+                    Esc(w.Disposition?.SalePrice?.ToString(CultureInfo.InvariantCulture)),
+                    Esc(w.Disposition?.ReceivedWatchId?.ToString(CultureInfo.InvariantCulture)),
+                    Esc(w.Disposition?.ReceivedWatch is null
+                        ? null
+                        : $"{w.Disposition.ReceivedWatch.Brand} {w.Disposition.ReceivedWatch.Model}"),
+                    Esc(w.Disposition?.TradeDetails),
+                    Esc(w.Disposition?.OtherLabel),
+                    Esc(w.Disposition?.ReturnReason),
+                    Esc(w.Disposition?.ReturnedTo),
+                    Esc(w.Disposition?.RefundAmount?.ToString(CultureInfo.InvariantCulture)),
                     w.TimesWorn.ToString(),
                     Esc(w.LastWornDate?.ToString("yyyy-MM-dd")),
                     Esc(w.CreatedAt.ToString("yyyy-MM-dd")),
@@ -179,6 +201,8 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         }
 
         // Import watches
+        var importedWatchIds = new Dictionary<int, int>();
+        var pendingTradeLinks = new List<(WatchDisposition Disposition, int ExportWatchId)>();
         for (int r = 1; r < rows.Count; r++)
         {
             var row = rows[r];
@@ -195,6 +219,11 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                 BandColor = NullIfEmpty(Val("BandColor")),
                 PurchaseDate = DateTime.TryParse(Val("PurchaseDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var pd) ? pd : null,
                 PurchasePrice = decimal.TryParse(Val("PurchasePrice"), CultureInfo.InvariantCulture, out var pp) ? pp : null,
+                AcquisitionType = Enum.TryParse<AcquisitionType>(Val("AcquisitionType"), true, out var at)
+                    ? at
+                    : AcquisitionType.New,
+                AcquiredFrom = NullIfEmpty(Val("AcquiredFrom")),
+                AcquisitionSourceUrl = NullIfEmpty(Val("AcquisitionSourceUrl")),
                 Notes = NullIfEmpty(Val("Notes")),
                 CrystalType = NullIfEmpty(Val("CrystalType")),
                 CaseShape = NullIfEmpty(Val("CaseShape")),
@@ -221,8 +250,99 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                 UpdatedAt = DateTime.UtcNow,
             };
 
+            var hasDisposition = Enum.TryParse<DispositionType>(
+                Val("DispositionType"),
+                true,
+                out var dispositionType);
+            if (!hasDisposition && Val("IsRetired").Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                dispositionType = DispositionType.Retired;
+                hasDisposition = true;
+            }
+
+            if (hasDisposition)
+            {
+                var dispositionDateValue = Val("DispositionDate");
+                if (string.IsNullOrWhiteSpace(dispositionDateValue))
+                    dispositionDateValue = Val("RetiredAt");
+
+                var receivedWatchName = NullIfEmpty(Val("TradeReceivedWatch"));
+                var tradeDetails = NullIfEmpty(Val("TradeDetails"));
+                if (tradeDetails is null)
+                    tradeDetails = receivedWatchName;
+
+                var importedDisposition = new UpdateWatchDispositionDto
+                {
+                    Type = dispositionType,
+                    DispositionDate = DateTime.TryParse(
+                        dispositionDateValue,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out var dispositionDate)
+                            ? dispositionDate
+                            : watch.UpdatedAt,
+                    Notes = NullIfEmpty(Val("DispositionNotes")),
+                    SoldTo = NullIfEmpty(Val("SoldTo")),
+                    SalePrice = decimal.TryParse(Val("SalePrice"), CultureInfo.InvariantCulture, out var salePrice)
+                        ? salePrice
+                        : null,
+                    ReceivedWatchId = int.TryParse(
+                        Val("TradeReceivedWatchExportId"),
+                        CultureInfo.InvariantCulture,
+                        out var receivedWatchExportId)
+                            ? receivedWatchExportId
+                            : null,
+                    TradeDetails = tradeDetails,
+                    OtherLabel = NullIfEmpty(Val("OtherLabel")),
+                    ReturnReason = NullIfEmpty(Val("ReturnReason")),
+                    ReturnedTo = NullIfEmpty(Val("ReturnedTo")),
+                    RefundAmount = decimal.TryParse(Val("RefundAmount"), CultureInfo.InvariantCulture, out var refundAmount)
+                        ? refundAmount
+                        : null,
+                };
+
+                var validationResults = new List<ValidationResult>();
+                if (!Validator.TryValidateObject(
+                    importedDisposition,
+                    new ValidationContext(importedDisposition),
+                    validationResults,
+                    validateAllProperties: true))
+                {
+                    return BadRequest(new
+                    {
+                        error = $"Watch CSV row {r + 1}: {validationResults[0].ErrorMessage}"
+                    });
+                }
+
+                watch.Disposition = new WatchDisposition
+                {
+                    Type = importedDisposition.Type,
+                    DispositionDate = importedDisposition.DispositionDate,
+                    Notes = importedDisposition.Notes,
+                    SoldTo = importedDisposition.SoldTo,
+                    SalePrice = importedDisposition.SalePrice,
+                    TradeDetails = importedDisposition.TradeDetails,
+                    OtherLabel = importedDisposition.OtherLabel,
+                    ReturnReason = importedDisposition.ReturnReason,
+                    ReturnedTo = importedDisposition.ReturnedTo,
+                    RefundAmount = importedDisposition.RefundAmount,
+                };
+            }
+
             context.Watches.Add(watch);
             await context.SaveChangesAsync();
+
+            if (int.TryParse(Val("ExportId"), CultureInfo.InvariantCulture, out var exportId))
+                importedWatchIds[exportId] = watch.Id;
+
+            if (watch.Disposition is not null
+                && int.TryParse(
+                    Val("TradeReceivedWatchExportId"),
+                    CultureInfo.InvariantCulture,
+                    out var receivedWatchExportIdToResolve))
+            {
+                pendingTradeLinks.Add((watch.Disposition, receivedWatchExportIdToResolve));
+            }
 
             // Link images
             var imageFileNames = Val("Images").Split(';', StringSplitOptions.RemoveEmptyEntries);
@@ -284,6 +404,16 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
             watchesImported++;
         }
 
+        foreach (var (disposition, exportWatchId) in pendingTradeLinks)
+        {
+            if (importedWatchIds.TryGetValue(exportWatchId, out var receivedWatchId)
+                && receivedWatchId != disposition.WatchId)
+            {
+                disposition.ReceivedWatchId = receivedWatchId;
+            }
+        }
+        await context.SaveChangesAsync();
+
         return Ok(new ImportResultDto
         {
             WatchesImported = watchesImported,
@@ -296,12 +426,15 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
 
     private static readonly string[] CsvColumns =
     [
-        "Brand", "Model", "MovementType", "CaseSizeMm", "BandType", "BandColor",
-        "PurchaseDate", "PurchasePrice", "Notes", "CrystalType", "CaseShape",
+        "ExportId", "Brand", "Model", "MovementType", "CaseSizeMm", "BandType", "BandColor",
+        "PurchaseDate", "PurchasePrice", "AcquisitionType", "AcquiredFrom", "AcquisitionSourceUrl",
+        "Notes", "CrystalType", "CaseShape",
         "CrownType", "CalendarType", "CountryOfOrigin", "WaterResistance",
         "LugWidthMm", "DialColor", "BezelType", "PowerReserveHours", "Sku", "SerialNumber",
         "ProductionYear", "BatteryType", "LastBatteryChangedDate", "LinkUrl", "LinkText",
-        "StorageLocation", "IsWishList", "TimesWorn", "LastWornDate", "CreatedAt", "Images",
+        "StorageLocation", "IsWishList", "DispositionType", "DispositionDate", "DispositionNotes",
+        "SoldTo", "SalePrice", "TradeReceivedWatchExportId", "TradeReceivedWatch", "TradeDetails", "OtherLabel", "ReturnReason",
+        "ReturnedTo", "RefundAmount", "TimesWorn", "LastWornDate", "CreatedAt", "Images",
         "WearDates", "WearLogs"
     ];
 

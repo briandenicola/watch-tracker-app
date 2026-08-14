@@ -130,7 +130,7 @@
             to="/retired"
             class="inline-flex items-center px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors whitespace-nowrap"
           >
-            Retired Watches
+            Former Watches
           </RouterLink>
         </div>
       </section>

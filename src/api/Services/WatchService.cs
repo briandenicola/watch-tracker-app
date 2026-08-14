@@ -7,14 +7,16 @@ namespace WatchTracker.Api.Services;
 
 public class WatchService(AppDbContext context) : IWatchService
 {
-    public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeRetired = false, CancellationToken ct = default)
+    public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeDisposed = false, CancellationToken ct = default)
     {
         var query = context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Disposition)
+                .ThenInclude(d => d!.ReceivedWatch)
             .Where(w => w.UserId == userId);
 
-        if (!includeRetired)
-            query = query.Where(w => !w.IsRetired);
+        if (!includeDisposed)
+            query = query.Where(w => w.Disposition == null);
 
         return await query
             .Select(w => MapToDto(w))
@@ -25,6 +27,8 @@ public class WatchService(AppDbContext context) : IWatchService
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Disposition)
+                .ThenInclude(d => d!.ReceivedWatch)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         return watch is null ? null : MapToDto(watch);
@@ -42,6 +46,9 @@ public class WatchService(AppDbContext context) : IWatchService
             BandColor = dto.BandColor,
             PurchaseDate = dto.PurchaseDate,
             PurchasePrice = dto.PurchasePrice,
+            AcquisitionType = dto.AcquisitionType,
+            AcquiredFrom = dto.AcquiredFrom,
+            AcquisitionSourceUrl = dto.AcquisitionSourceUrl,
             Notes = dto.Notes,
             CrystalType = dto.CrystalType,
             CaseShape = dto.CaseShape,
@@ -77,6 +84,8 @@ public class WatchService(AppDbContext context) : IWatchService
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Disposition)
+                .ThenInclude(d => d!.ReceivedWatch)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return null;
@@ -89,6 +98,9 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.BandColor = dto.BandColor;
         watch.PurchaseDate = dto.PurchaseDate;
         watch.PurchasePrice = dto.PurchasePrice;
+        watch.AcquisitionType = dto.AcquisitionType;
+        watch.AcquiredFrom = dto.AcquiredFrom;
+        watch.AcquisitionSourceUrl = dto.AcquisitionSourceUrl;
         watch.Notes = dto.Notes;
         watch.CrystalType = dto.CrystalType;
         watch.CaseShape = dto.CaseShape;
@@ -136,9 +148,13 @@ public class WatchService(AppDbContext context) : IWatchService
         {
             var watch = await context.Watches
                 .Include(w => w.Images)
+                .Include(w => w.Disposition)
+                    .ThenInclude(d => d!.ReceivedWatch)
                 .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
             if (watch is null) return null;
+            if (watch.Disposition is not null)
+                throw new InvalidOperationException("Wear cannot be recorded for a former watch.");
 
             watch.TimesWorn++;
             watch.LastWornDate = DateTime.UtcNow;
@@ -229,33 +245,93 @@ public class WatchService(AppDbContext context) : IWatchService
 
     public async Task<WatchDto?> RetireAsync(int id, int userId, CancellationToken ct = default)
     {
+        return await SetDispositionAsync(id, userId, new UpdateWatchDispositionDto
+        {
+            Type = DispositionType.Retired,
+            DispositionDate = DateTime.UtcNow,
+        }, ct);
+    }
+
+    public async Task<WatchDto?> UnretireAsync(int id, int userId, CancellationToken ct = default)
+    {
+        return await ClearDispositionAsync(id, userId, ct);
+    }
+
+    public async Task<WatchDto?> SetDispositionAsync(
+        int id,
+        int userId,
+        UpdateWatchDispositionDto dto,
+        CancellationToken ct = default)
+    {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Disposition)
+                .ThenInclude(d => d!.ReceivedWatch)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return null;
+        if (watch.IsWishList)
+            throw new InvalidOperationException("A wish list watch cannot have a disposition.");
 
-        watch.IsRetired = true;
-        watch.RetiredAt = DateTime.UtcNow;
+        Watch? receivedWatch = null;
+        if (dto.Type == DispositionType.Traded && dto.ReceivedWatchId is int receivedWatchId)
+        {
+            if (receivedWatchId == id)
+                throw new InvalidOperationException("A watch cannot be traded for itself.");
+
+            receivedWatch = await context.Watches
+                .FirstOrDefaultAsync(
+                    w => w.Id == receivedWatchId && w.UserId == userId && !w.IsWishList,
+                    ct)
+                ?? throw new InvalidOperationException("The selected received watch was not found.");
+        }
+
+        var disposition = watch.Disposition ?? new WatchDisposition { WatchId = watch.Id };
+        disposition.Type = dto.Type;
+        disposition.DispositionDate = dto.DispositionDate;
+        disposition.Notes = NullIfWhiteSpace(dto.Notes);
+        disposition.SoldTo = dto.Type == DispositionType.Sold ? NullIfWhiteSpace(dto.SoldTo) : null;
+        disposition.SalePrice = dto.Type == DispositionType.Sold ? dto.SalePrice : null;
+        disposition.ReceivedWatchId = dto.Type == DispositionType.Traded ? dto.ReceivedWatchId : null;
+        disposition.ReceivedWatch = receivedWatch;
+        disposition.TradeDetails = dto.Type == DispositionType.Traded
+            ? NullIfWhiteSpace(dto.TradeDetails)
+                ?? (receivedWatch is null ? null : $"{receivedWatch.Brand} {receivedWatch.Model}")
+            : null;
+        disposition.OtherLabel = dto.Type == DispositionType.Other ? NullIfWhiteSpace(dto.OtherLabel) : null;
+        disposition.ReturnReason = dto.Type == DispositionType.Returned ? NullIfWhiteSpace(dto.ReturnReason) : null;
+        disposition.ReturnedTo = dto.Type == DispositionType.Returned ? NullIfWhiteSpace(dto.ReturnedTo) : null;
+        disposition.RefundAmount = dto.Type == DispositionType.Returned ? dto.RefundAmount : null;
+
+        if (watch.Disposition is null)
+        {
+            context.WatchDispositions.Add(disposition);
+            watch.Disposition = disposition;
+        }
+
         watch.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(ct);
 
         return MapToDto(watch);
     }
 
-    public async Task<WatchDto?> UnretireAsync(int id, int userId, CancellationToken ct = default)
+    public async Task<WatchDto?> ClearDispositionAsync(int id, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Disposition)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
 
         if (watch is null) return null;
 
-        watch.IsRetired = false;
-        watch.RetiredAt = null;
+        if (watch.Disposition is not null)
+        {
+            context.WatchDispositions.Remove(watch.Disposition);
+            watch.Disposition = null;
+        }
+
         watch.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(ct);
-
         return MapToDto(watch);
     }
 
@@ -344,6 +420,9 @@ public class WatchService(AppDbContext context) : IWatchService
         BandColor = watch.BandColor,
         PurchaseDate = watch.PurchaseDate,
         PurchasePrice = watch.PurchasePrice,
+        AcquisitionType = watch.AcquisitionType,
+        AcquiredFrom = watch.AcquiredFrom,
+        AcquisitionSourceUrl = watch.AcquisitionSourceUrl,
         Notes = watch.Notes,
         AiAnalysis = watch.AiAnalysis,
         LastWornDate = watch.LastWornDate,
@@ -369,8 +448,23 @@ public class WatchService(AppDbContext context) : IWatchService
         LinkText = watch.LinkText,
         StorageLocation = watch.StorageLocation,
         IsWishList = watch.IsWishList,
-        IsRetired = watch.IsRetired,
-        RetiredAt = watch.RetiredAt,
+        Disposition = watch.Disposition is null ? null : new WatchDispositionDto
+        {
+            Type = watch.Disposition.Type,
+            DispositionDate = watch.Disposition.DispositionDate,
+            Notes = watch.Disposition.Notes,
+            SoldTo = watch.Disposition.SoldTo,
+            SalePrice = watch.Disposition.SalePrice,
+            ReceivedWatchId = watch.Disposition.ReceivedWatchId,
+            ReceivedWatchName = watch.Disposition.ReceivedWatch is null
+                ? null
+                : $"{watch.Disposition.ReceivedWatch.Brand} {watch.Disposition.ReceivedWatch.Model}",
+            TradeDetails = watch.Disposition.TradeDetails,
+            OtherLabel = watch.Disposition.OtherLabel,
+            ReturnReason = watch.Disposition.ReturnReason,
+            ReturnedTo = watch.Disposition.ReturnedTo,
+            RefundAmount = watch.Disposition.RefundAmount,
+        },
         ImageUrls = watch.Images.OrderBy(i => i.SortOrder).Select(i => new WatchImageDto
         {
             Id = i.Id,
@@ -379,6 +473,9 @@ public class WatchService(AppDbContext context) : IWatchService
         CreatedAt = watch.CreatedAt,
         UpdatedAt = watch.UpdatedAt
     };
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static WearLogDto MapWearLogDto(WearLog log)
     {

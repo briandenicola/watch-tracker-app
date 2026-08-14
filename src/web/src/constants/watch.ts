@@ -1,4 +1,4 @@
-import type { MovementType, UpdateWatch } from '@/types'
+import type { AcquisitionType, MovementType, UpdateWatch } from '@/types'
 
 // Option lists shared by the watch form and the detail page, so the two cannot
 // drift apart on what counts as a known band or crystal type.
@@ -10,6 +10,7 @@ export const bandTypes = [
 export const crystalTypes = ['Sapphire', 'Mineral', 'Hardlex', 'Acrylic', 'Hesalite']
 
 export const movementTypes: MovementType[] = ['Automatic', 'Manual', 'Quartz', 'Digital']
+export const acquisitionTypes: AcquisitionType[] = ['New', 'Used', 'Trade', 'Other']
 
 /**
  * Fields the detail page can edit in place. Notes renders as a markdown block
@@ -67,6 +68,9 @@ export const fieldMeta: Record<InlineField, FieldMeta> = {
 
   purchasePrice: { input: 'number', min: 0, max: 10_000_000, step: 0.01 },
   purchaseDate: { input: 'date' },
+  acquisitionType: { input: 'select', options: acquisitionTypes, strict: true, required: true },
+  acquiredFrom: { input: 'text', maxlength: 200 },
+  acquisitionSourceUrl: { input: 'text', maxlength: 2000 },
   linkUrl: { input: 'text', maxlength: 2000 },
   linkText: { input: 'text', maxlength: 200 },
 
