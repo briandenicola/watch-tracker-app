@@ -349,6 +349,7 @@
 import { reactive, ref, computed, watch as vueWatch } from 'vue'
 import type { CreateWatch, Watch } from '@/types'
 import { imageUrl as toImageUrl } from '@/services/watches'
+import { bandTypes, crystalTypes } from '@/constants/watch'
 
 const props = defineProps<{
   initial?: Partial<Watch>
@@ -362,9 +363,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   submit: [data: CreateWatch, photo?: File, imageUrl?: string]
 }>()
-
-const bandTypes = ['Bracelet', 'Leather', 'Rubber', 'NATO', 'Canvas', 'Mesh', 'Silicone', 'Ceramic', 'Titanium']
-const crystalTypes = ['Sapphire', 'Mineral', 'Hardlex', 'Acrylic', 'Hesalite']
 
 const showOptional = ref(false)
 const showBrandSuggestions = ref(false)
