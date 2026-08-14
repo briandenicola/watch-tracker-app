@@ -14,7 +14,7 @@
       <div class="relative mb-5 flex items-start justify-between gap-4">
         <div class="min-w-0">
           <p class="text-xs uppercase tracking-[0.24em] text-accent mb-2">{{ watch.isWishList ? 'Wish List' : watch.isRetired ? 'Retired' : 'Collection' }}</p>
-          <h1 class="font-display text-3xl font-semibold text-text leading-tight"><span class="watch-brand">{{ watch.brand }}</span> {{ watch.model }}</h1>
+          <h1 ref="titleEl" class="font-display text-3xl font-semibold text-text leading-tight" :class="{ 'title-stacked': titleStacked }"><span class="watch-brand">{{ watch.brand }}</span> {{ watch.model }}<span ref="titleProbeEl" class="title-probe" aria-hidden="true">{{ watch.brand }} {{ watch.model }}</span></h1>
         </div>
         <div class="relative flex-shrink-0">
           <button
@@ -220,7 +220,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, ref, onMounted } from 'vue'
+import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, watch as vueWatch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import type { Watch, ResaleValueEntry } from '@/types'
@@ -263,6 +263,40 @@ function formatFullDate(dateStr?: string): string | undefined {
 const watch = ref<Watch | null>(null)
 const retiredOn = computed(() => formatFullDate(watch.value?.retiredAt))
 const loading = ref(true)
+
+// Keep brand and model on one line while they fit, and only then split them.
+const titleEl = ref<HTMLElement | null>(null)
+const titleProbeEl = ref<HTMLElement | null>(null)
+const titleStacked = ref(false)
+let titleObserver: ResizeObserver | null = null
+
+function measureTitle() {
+  const el = titleEl.value
+  const probe = titleProbeEl.value
+  if (!el || !probe) return
+  // The probe is nowrap and out of flow, so its width is the natural one-line width.
+  titleStacked.value = probe.getBoundingClientRect().width > el.clientWidth + 0.5
+}
+
+// Stacking changes the title's height but never its width, so observing width is stable.
+vueWatch(titleEl, (el) => {
+  titleObserver?.disconnect()
+  titleObserver = null
+  if (!el) return
+  titleObserver = new ResizeObserver(() => measureTitle())
+  titleObserver.observe(el)
+})
+
+// The display font loads after first paint and changes the measurement.
+onMounted(() => { document.fonts?.ready.then(measureTitle) })
+
+// Re-measure when the title text itself changes.
+vueWatch(() => watch.value && `${watch.value.brand} ${watch.value.model}`, () => nextTick(measureTitle))
+
+onBeforeUnmount(() => {
+  titleObserver?.disconnect()
+  titleObserver = null
+})
 const imageIndex = ref(0)
 const wearLoading = ref(false)
 const uploading = ref(false)
@@ -485,12 +519,19 @@ async function handleDeleteResaleEntry(entryId: number) {
 </script>
 
 <style scoped>
-/* PWA standalone runs at phone width, where "Brand Model" wraps mid-name.
-   Give the brand its own line there; in a browser there is room to keep them inline. */
-@media (display-mode: standalone) {
-  .watch-brand {
-    display: block;
-  }
+/* "Brand Model" wraps wherever it runs out of room, which splits the model
+   itself across lines. Only once the pair no longer fits does .title-stacked
+   get set, giving the brand its own line so the break lands between the two. */
+.title-stacked .watch-brand {
+  display: block;
+}
+
+/* Off-flow copy of the full title on one line, used to measure whether it fits. */
+.title-probe {
+  position: absolute;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .detail-card {
