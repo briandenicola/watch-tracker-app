@@ -239,7 +239,7 @@ import { useRoute } from 'vue-router'
 import type { Watch } from '@/types'
 import { getWatches, imageUrl, reorderWishlist } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
-import { usePreferences } from '@/stores/preferences'
+import { usePreferences, type SortOption } from '@/stores/preferences'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 
 const route = useRoute()
@@ -256,11 +256,9 @@ const swipeEl = ref<HTMLElement | null>(null)
 // Filter & Sort state — default from preferences
 const filterBrand = ref('')
 const filterMovement = ref('')
-const sortBy = ref(
-  tab.value === 'collection' && prefs.value.defaultSort === 'priority'
-    ? 'dateAdded'
-    : prefs.value.defaultSort,
-)
+const defaultSortForTab = (value: 'collection' | 'wishlist') =>
+  value === 'wishlist' ? prefs.value.wishlistDefaultSort : prefs.value.collectionDefaultSort
+const sortBy = ref<SortOption>(defaultSortForTab(tab.value))
 
 const brands = computed(() => {
   const tabWatches = tab.value === 'wishlist'
@@ -310,7 +308,11 @@ const filteredWatches = computed(() => {
 
 // Filter panel
 const showFilters = ref(false)
-const hasActiveFilters = computed(() => filterBrand.value !== '' || filterMovement.value !== '' || sortBy.value !== 'dateAdded')
+const hasActiveFilters = computed(() =>
+  filterBrand.value !== ''
+  || filterMovement.value !== ''
+  || sortBy.value !== defaultSortForTab(tab.value),
+)
 const canDragPriority = computed(() =>
   isDesktop.value
   && tab.value === 'wishlist'
@@ -323,14 +325,13 @@ const canDragPriority = computed(() =>
 function clearFilters() {
   filterBrand.value = ''
   filterMovement.value = ''
-  sortBy.value = 'dateAdded'
+  sortBy.value = defaultSortForTab(tab.value)
 }
 
 // Reset carousel index when tab or filters change
 vueWatch([tab, filterBrand, filterMovement, sortBy], () => { currentIndex.value = 0 })
 vueWatch(tab, (nextTab) => {
-  if (nextTab === 'collection' && sortBy.value === 'priority') sortBy.value = 'dateAdded'
-  if (nextTab === 'wishlist' && prefs.value.defaultSort === 'priority') sortBy.value = 'priority'
+  sortBy.value = defaultSortForTab(nextTab)
 })
 
 const draggedWatchId = ref<number | null>(null)

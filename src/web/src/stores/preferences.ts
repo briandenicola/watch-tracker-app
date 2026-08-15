@@ -5,15 +5,30 @@ export type SortOption = 'dateAdded' | 'brand' | 'lastWorn' | 'timesWorn' | 'pri
 const STORAGE_KEY = 'watch-tracker-preferences'
 
 interface Preferences {
-  defaultSort: SortOption
+  collectionDefaultSort: Exclude<SortOption, 'priority'>
+  wishlistDefaultSort: SortOption
 }
 
-const defaults: Preferences = { defaultSort: 'dateAdded' }
+const defaults: Preferences = {
+  collectionDefaultSort: 'dateAdded',
+  wishlistDefaultSort: 'priority',
+}
 
 function load(): Preferences {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...defaults, ...JSON.parse(raw) }
+    if (raw) {
+      const stored = JSON.parse(raw) as Partial<Preferences> & { defaultSort?: SortOption }
+      const legacySort = stored.defaultSort
+      return {
+        collectionDefaultSort: stored.collectionDefaultSort
+          ?? (legacySort === 'priority' ? 'dateAdded' : legacySort)
+          ?? defaults.collectionDefaultSort,
+        wishlistDefaultSort: stored.wishlistDefaultSort
+          ?? legacySort
+          ?? defaults.wishlistDefaultSort,
+      }
+    }
   } catch { /* ignore */ }
   return { ...defaults }
 }
@@ -27,8 +42,11 @@ watch(prefs, (val) => {
 export function usePreferences() {
   return {
     prefs,
-    setDefaultSort(sort: SortOption) {
-      prefs.value.defaultSort = sort
+    setCollectionDefaultSort(sort: Exclude<SortOption, 'priority'>) {
+      prefs.value.collectionDefaultSort = sort
+    },
+    setWishlistDefaultSort(sort: SortOption) {
+      prefs.value.wishlistDefaultSort = sort
     },
   }
 }
