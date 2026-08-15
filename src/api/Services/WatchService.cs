@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
@@ -7,6 +8,8 @@ namespace WatchTracker.Api.Services;
 
 public class WatchService(AppDbContext context) : IWatchService
 {
+    private static readonly ConcurrentDictionary<int, SemaphoreSlim> WishlistPriorityLocks = new();
+
     public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeDisposed = false, CancellationToken ct = default)
     {
         var query = context.Watches
@@ -36,48 +39,70 @@ public class WatchService(AppDbContext context) : IWatchService
 
     public async Task<WatchDto> CreateAsync(CreateWatchDto dto, int userId, CancellationToken ct = default)
     {
-        var watch = new Watch
+        var priorityLock = dto.IsWishList
+            ? WishlistPriorityLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1))
+            : null;
+        if (priorityLock is not null)
+            await priorityLock.WaitAsync(ct);
+
+        try
         {
-            Brand = dto.Brand,
-            Model = dto.Model,
-            MovementType = dto.MovementType,
-            CaseSizeMm = dto.CaseSizeMm,
-            BandType = dto.BandType,
-            BandColor = dto.BandColor,
-            PurchaseDate = dto.PurchaseDate,
-            PurchasePrice = dto.PurchasePrice,
-            AcquisitionType = dto.AcquisitionType,
-            AcquiredFrom = dto.AcquiredFrom,
-            AcquisitionSourceUrl = dto.AcquisitionSourceUrl,
-            Notes = dto.Notes,
-            CrystalType = dto.CrystalType,
-            CaseShape = dto.CaseShape,
-            CrownType = dto.CrownType,
-            CalendarType = dto.CalendarType,
-            CountryOfOrigin = dto.CountryOfOrigin,
-            WaterResistance = dto.WaterResistance,
-            LugWidthMm = dto.LugWidthMm,
-            DialColor = dto.DialColor,
-            BezelType = dto.BezelType,
-            PowerReserveHours = dto.PowerReserveHours,
-            Sku = dto.Sku,
-            SerialNumber = dto.SerialNumber,
-            ProductionYear = dto.ProductionYear,
-            BatteryType = dto.BatteryType,
-            LastBatteryChangedDate = dto.LastBatteryChangedDate,
-            LinkUrl = dto.LinkUrl,
-            LinkText = dto.LinkText,
-            StorageLocation = dto.StorageLocation,
-            IsWishList = dto.IsWishList,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            int? wishlistPriority = null;
+            if (dto.IsWishList)
+            {
+                wishlistPriority = (await context.Watches
+                    .Where(w => w.UserId == userId && w.IsWishList)
+                    .MaxAsync(w => (int?)w.WishlistPriority, ct) ?? -1) + 1;
+            }
 
-        context.Watches.Add(watch);
-        await context.SaveChangesAsync(ct);
+            var watch = new Watch
+            {
+                Brand = dto.Brand,
+                Model = dto.Model,
+                MovementType = dto.MovementType,
+                CaseSizeMm = dto.CaseSizeMm,
+                BandType = dto.BandType,
+                BandColor = dto.BandColor,
+                PurchaseDate = dto.PurchaseDate,
+                PurchasePrice = dto.PurchasePrice,
+                AcquisitionType = dto.AcquisitionType,
+                AcquiredFrom = dto.AcquiredFrom,
+                AcquisitionSourceUrl = dto.AcquisitionSourceUrl,
+                Notes = dto.Notes,
+                CrystalType = dto.CrystalType,
+                CaseShape = dto.CaseShape,
+                CrownType = dto.CrownType,
+                CalendarType = dto.CalendarType,
+                CountryOfOrigin = dto.CountryOfOrigin,
+                WaterResistance = dto.WaterResistance,
+                LugWidthMm = dto.LugWidthMm,
+                DialColor = dto.DialColor,
+                BezelType = dto.BezelType,
+                PowerReserveHours = dto.PowerReserveHours,
+                Sku = dto.Sku,
+                SerialNumber = dto.SerialNumber,
+                ProductionYear = dto.ProductionYear,
+                BatteryType = dto.BatteryType,
+                LastBatteryChangedDate = dto.LastBatteryChangedDate,
+                LinkUrl = dto.LinkUrl,
+                LinkText = dto.LinkText,
+                StorageLocation = dto.StorageLocation,
+                IsWishList = dto.IsWishList,
+                WishlistPriority = wishlistPriority,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-        return MapToDto(watch);
+            context.Watches.Add(watch);
+            await context.SaveChangesAsync(ct);
+
+            return MapToDto(watch);
+        }
+        finally
+        {
+            priorityLock?.Release();
+        }
     }
 
     public async Task<WatchDto?> UpdateAsync(int id, UpdateWatchDto dto, int userId, CancellationToken ct = default)
@@ -120,12 +145,36 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.LinkUrl = dto.LinkUrl;
         watch.LinkText = dto.LinkText;
         watch.StorageLocation = dto.StorageLocation;
-        watch.IsWishList = dto.IsWishList;
-        watch.UpdatedAt = DateTime.UtcNow;
+        var needsWishlistPriority = dto.IsWishList && !watch.IsWishList;
+        var priorityLock = needsWishlistPriority
+            ? WishlistPriorityLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1))
+            : null;
+        if (priorityLock is not null)
+            await priorityLock.WaitAsync(ct);
 
-        await context.SaveChangesAsync(ct);
+        try
+        {
+            if (needsWishlistPriority)
+            {
+                watch.WishlistPriority = (await context.Watches
+                    .Where(w => w.UserId == userId && w.IsWishList)
+                    .MaxAsync(w => (int?)w.WishlistPriority, ct) ?? -1) + 1;
+            }
+            else if (!dto.IsWishList)
+            {
+                watch.WishlistPriority = null;
+            }
+            watch.IsWishList = dto.IsWishList;
+            watch.UpdatedAt = DateTime.UtcNow;
 
-        return MapToDto(watch);
+            await context.SaveChangesAsync(ct);
+
+            return MapToDto(watch);
+        }
+        finally
+        {
+            priorityLock?.Release();
+        }
     }
 
     public async Task<bool> DeleteAsync(int id, int userId, CancellationToken ct = default)
@@ -335,6 +384,55 @@ public class WatchService(AppDbContext context) : IWatchService
         return MapToDto(watch);
     }
 
+    public async Task<bool> ReorderWishlistAsync(
+        int userId,
+        IReadOnlyList<int> watchIds,
+        CancellationToken ct = default)
+    {
+        if (watchIds.Count == 0 || watchIds.Distinct().Count() != watchIds.Count)
+            throw new InvalidOperationException("Wishlist order must contain unique watch IDs.");
+
+        var priorityLock = WishlistPriorityLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        await priorityLock.WaitAsync(ct);
+        try
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            var wishlist = await context.Watches
+                .Where(w => w.UserId == userId && w.IsWishList)
+                .ToListAsync(ct);
+
+            if (wishlist.Count != watchIds.Count
+                || wishlist.Select(w => w.Id).ToHashSet().SetEquals(watchIds) is false)
+            {
+                throw new InvalidOperationException("Wishlist order must include every current wishlist watch.");
+            }
+
+            var priorities = watchIds
+                .Select((watchId, priority) => (watchId, priority))
+                .ToDictionary(item => item.watchId, item => item.priority);
+
+            // Move every row out of the final priority range first so swaps do not
+            // collide with the unique (user, priority) index mid-update.
+            foreach (var watch in wishlist)
+                watch.WishlistPriority = -watch.Id;
+            await context.SaveChangesAsync(ct);
+
+            foreach (var watch in wishlist)
+            {
+                watch.WishlistPriority = priorities[watch.Id];
+                watch.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return true;
+        }
+        finally
+        {
+            priorityLock.Release();
+        }
+    }
+
     public async Task<WatchDto?> AddManualResaleValueAsync(int watchId, int userId, CreateResaleValueEntryDto dto, CancellationToken ct = default)
     {
         var watch = await context.Watches
@@ -448,6 +546,7 @@ public class WatchService(AppDbContext context) : IWatchService
         LinkText = watch.LinkText,
         StorageLocation = watch.StorageLocation,
         IsWishList = watch.IsWishList,
+        WishlistPriority = watch.WishlistPriority,
         Disposition = watch.Disposition is null ? null : new WatchDispositionDto
         {
             Type = watch.Disposition.Type,

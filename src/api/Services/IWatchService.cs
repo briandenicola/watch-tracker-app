@@ -17,6 +17,7 @@ public interface IWatchService
     Task<WatchDto?> UnretireAsync(int id, int userId, CancellationToken ct = default);
     Task<WatchDto?> SetDispositionAsync(int id, int userId, UpdateWatchDispositionDto dto, CancellationToken ct = default);
     Task<WatchDto?> ClearDispositionAsync(int id, int userId, CancellationToken ct = default);
+    Task<bool> ReorderWishlistAsync(int userId, IReadOnlyList<int> watchIds, CancellationToken ct = default);
     Task<WatchDto?> AddManualResaleValueAsync(int watchId, int userId, CreateResaleValueEntryDto dto, CancellationToken ct = default);
     Task<IEnumerable<ResaleValueEntryDto>> GetResaleHistoryAsync(int watchId, int userId, CancellationToken ct = default);
     Task<bool> DeleteResaleValueEntryAsync(int entryId, int userId, CancellationToken ct = default);

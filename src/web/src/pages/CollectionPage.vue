@@ -71,6 +71,7 @@
             class="px-3 py-2.5 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors appearance-none"
           >
             <option value="dateAdded">Date Added</option>
+            <option v-if="tab === 'wishlist'" value="priority">Priority</option>
             <option value="brand">Brand</option>
             <option value="lastWorn">Last Worn</option>
             <option value="timesWorn">Most Worn</option>
@@ -78,6 +79,20 @@
         </div>
       </div>
     </Transition>
+    <p v-if="prioritySaveError" class="text-sm text-danger mb-4">{{ prioritySaveError }}</p>
+    <p
+      v-else-if="tab === 'wishlist' && sortBy === 'priority' && isDesktop && !canDragPriority"
+      class="text-xs text-text-muted mb-4"
+    >
+      Clear brand and movement filters to drag watches into priority order.
+    </p>
+    <RouterLink
+      v-if="tab === 'wishlist' && sortBy === 'priority' && !isDesktop && allWatches.some(watch => watch.isWishList)"
+      to="/wishlist/order"
+      class="flex min-h-11 items-center justify-center mb-4 px-5 py-2.5 bg-bg-surface border border-border hover:border-accent text-text-secondary font-medium rounded-lg transition-colors"
+    >
+      Arrange Priority
+    </RouterLink>
 
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center py-20">
@@ -182,6 +197,13 @@
         :key="watch.id"
         :to="`/watches/${watch.id}`"
         class="group bg-bg-card border border-border rounded-xl overflow-hidden hover:border-accent/50 transition-colors"
+        :class="{ 'cursor-grab active:cursor-grabbing': canDragPriority, 'opacity-60': draggedWatchId === watch.id }"
+        :draggable="canDragPriority"
+        @dragstart="startPriorityDrag($event, watch.id)"
+        @dragover.prevent
+        @drop.prevent="dropPriorityWatch(watch.id)"
+        @dragend="endPriorityDrag"
+        @click="preventClickAfterDrag"
       >
         <div class="aspect-square bg-bg-surface overflow-hidden">
           <img
@@ -215,7 +237,7 @@
 import { ref, computed, onMounted, onUnmounted, watch as vueWatch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Watch } from '@/types'
-import { getWatches, imageUrl } from '@/services/watches'
+import { getWatches, imageUrl, reorderWishlist } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { usePreferences } from '@/stores/preferences'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
@@ -234,7 +256,11 @@ const swipeEl = ref<HTMLElement | null>(null)
 // Filter & Sort state — default from preferences
 const filterBrand = ref('')
 const filterMovement = ref('')
-const sortBy = ref(prefs.value.defaultSort)
+const sortBy = ref(
+  tab.value === 'collection' && prefs.value.defaultSort === 'priority'
+    ? 'dateAdded'
+    : prefs.value.defaultSort,
+)
 
 const brands = computed(() => {
   const tabWatches = tab.value === 'wishlist'
@@ -257,6 +283,11 @@ const filteredWatches = computed(() => {
 
   // Sort
   switch (sortBy.value) {
+    case 'priority':
+      watches = [...watches].sort((a, b) =>
+        (a.wishlistPriority ?? Number.MAX_SAFE_INTEGER) - (b.wishlistPriority ?? Number.MAX_SAFE_INTEGER)
+        || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      break
     case 'brand':
       watches = [...watches].sort((a, b) => a.brand.localeCompare(b.brand))
       break
@@ -280,6 +311,14 @@ const filteredWatches = computed(() => {
 // Filter panel
 const showFilters = ref(false)
 const hasActiveFilters = computed(() => filterBrand.value !== '' || filterMovement.value !== '' || sortBy.value !== 'dateAdded')
+const canDragPriority = computed(() =>
+  isDesktop.value
+  && tab.value === 'wishlist'
+  && sortBy.value === 'priority'
+  && filterBrand.value === ''
+  && filterMovement.value === ''
+  && !prioritySaving.value,
+)
 
 function clearFilters() {
   filterBrand.value = ''
@@ -289,6 +328,64 @@ function clearFilters() {
 
 // Reset carousel index when tab or filters change
 vueWatch([tab, filterBrand, filterMovement, sortBy], () => { currentIndex.value = 0 })
+vueWatch(tab, (nextTab) => {
+  if (nextTab === 'collection' && sortBy.value === 'priority') sortBy.value = 'dateAdded'
+  if (nextTab === 'wishlist' && prefs.value.defaultSort === 'priority') sortBy.value = 'priority'
+})
+
+const draggedWatchId = ref<number | null>(null)
+const prioritySaving = ref(false)
+const prioritySaveError = ref('')
+let suppressNextCardClick = false
+
+function startPriorityDrag(event: DragEvent, watchId: number) {
+  if (!canDragPriority.value) {
+    event.preventDefault()
+    return
+  }
+  draggedWatchId.value = watchId
+  suppressNextCardClick = true
+  event.dataTransfer?.setData('text/plain', String(watchId))
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+
+async function dropPriorityWatch(targetWatchId: number) {
+  const sourceWatchId = draggedWatchId.value
+  if (!sourceWatchId || sourceWatchId === targetWatchId || !canDragPriority.value) return
+
+  const ordered = filteredWatches.value
+  const sourceIndex = ordered.findIndex(watch => watch.id === sourceWatchId)
+  const targetIndex = ordered.findIndex(watch => watch.id === targetWatchId)
+  if (sourceIndex < 0 || targetIndex < 0) return
+
+  const reordered = [...ordered]
+  const [moved] = reordered.splice(sourceIndex, 1)
+  reordered.splice(targetIndex, 0, moved)
+  const priorities = new Map(reordered.map((watch, index) => [watch.id, index]))
+  allWatches.value = allWatches.value.map(watch => priorities.has(watch.id)
+    ? { ...watch, wishlistPriority: priorities.get(watch.id) }
+    : watch)
+
+  prioritySaveError.value = ''
+  prioritySaving.value = true
+  try {
+    await reorderWishlist(reordered.map(watch => watch.id))
+  } catch {
+    prioritySaveError.value = 'Could not save the new priority order.'
+    await reload()
+  } finally {
+    prioritySaving.value = false
+  }
+}
+
+function endPriorityDrag() {
+  draggedWatchId.value = null
+  window.setTimeout(() => { suppressNextCardClick = false }, 0)
+}
+
+function preventClickAfterDrag(event: MouseEvent) {
+  if (suppressNextCardClick) event.preventDefault()
+}
 
 // Touch handling for swipe — lock axis to prevent vertical shift
 let touchStartX = 0

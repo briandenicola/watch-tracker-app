@@ -79,6 +79,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                     Esc(w.LinkText),
                     Esc(w.StorageLocation),
                     w.IsWishList ? "true" : "false",
+                    Esc(w.WishlistPriority?.ToString(CultureInfo.InvariantCulture)),
                     Esc(w.Disposition?.Type.ToString()),
                     Esc(w.Disposition?.DispositionDate.ToString("yyyy-MM-dd")),
                     Esc(w.Disposition?.Notes),
@@ -203,10 +204,19 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         // Import watches
         var importedWatchIds = new Dictionary<int, int>();
         var pendingTradeLinks = new List<(WatchDisposition Disposition, int ExportWatchId)>();
+        var wishlistPriorityBase = (await context.Watches
+            .Where(w => w.UserId == UserId && w.IsWishList)
+            .MaxAsync(w => (int?)w.WishlistPriority) ?? -1) + 1;
+        var nextLegacyWishlistPriority = wishlistPriorityBase + rows.Count;
         for (int r = 1; r < rows.Count; r++)
         {
             var row = rows[r];
             string Val(string col) => colMap.TryGetValue(col, out var idx) && idx < row.Length ? row[idx] : "";
+
+            var isWishList = Val("IsWishList").Equals("true", StringComparison.OrdinalIgnoreCase);
+            var importedWishlistPriority = int.TryParse(Val("WishlistPriority"), out var wishlistPriority)
+                ? wishlistPriorityBase + wishlistPriority
+                : nextLegacyWishlistPriority++;
 
             var watch = new Watch
             {
@@ -243,7 +253,8 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
                 LinkUrl = NullIfEmpty(Val("LinkUrl")),
                 LinkText = NullIfEmpty(Val("LinkText")),
                 StorageLocation = NullIfEmpty(Val("StorageLocation")),
-                IsWishList = Val("IsWishList").Equals("true", StringComparison.OrdinalIgnoreCase),
+                IsWishList = isWishList,
+                WishlistPriority = isWishList ? importedWishlistPriority : null,
                 TimesWorn = int.TryParse(Val("TimesWorn"), out var tw) ? tw : 0,
                 LastWornDate = DateTime.TryParse(Val("LastWornDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var lwd) ? lwd : null,
                 CreatedAt = DateTime.TryParse(Val("CreatedAt"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var ca) ? ca : DateTime.UtcNow,
@@ -432,7 +443,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env) : Con
         "CrownType", "CalendarType", "CountryOfOrigin", "WaterResistance",
         "LugWidthMm", "DialColor", "BezelType", "PowerReserveHours", "Sku", "SerialNumber",
         "ProductionYear", "BatteryType", "LastBatteryChangedDate", "LinkUrl", "LinkText",
-        "StorageLocation", "IsWishList", "DispositionType", "DispositionDate", "DispositionNotes",
+        "StorageLocation", "IsWishList", "WishlistPriority", "DispositionType", "DispositionDate", "DispositionNotes",
         "SoldTo", "SalePrice", "TradeReceivedWatchExportId", "TradeReceivedWatch", "TradeDetails", "OtherLabel", "ReturnReason",
         "ReturnedTo", "RefundAmount", "TimesWorn", "LastWornDate", "CreatedAt", "Images",
         "WearDates", "WearLogs"

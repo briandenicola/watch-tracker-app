@@ -112,6 +112,10 @@ export async function clearWatchDisposition(id: number): Promise<Watch> {
   return data
 }
 
+export async function reorderWishlist(watchIds: number[]): Promise<void> {
+  await api.put('/api/watches/wishlist/order', { watchIds })
+}
+
 export async function uploadImage(watchId: number, file: File): Promise<void> {
   const form = new FormData()
   form.append('files', file)

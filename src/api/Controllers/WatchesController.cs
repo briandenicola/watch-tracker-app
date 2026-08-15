@@ -237,4 +237,20 @@ public class WatchesController(
             logger.LogInformation("Watch {WatchId} disposition cleared by user {UserId}", id, UserId);
         return watch is null ? NotFound() : Ok(watch);
     }
+
+    [HttpPut("wishlist/order")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ReorderWishlist(ReorderWishlistDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await watchService.ReorderWishlistAsync(UserId, dto.WatchIds, ct);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
 }

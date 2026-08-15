@@ -42,6 +42,7 @@ public class WatchDto
     public string? LinkText { get; set; }
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
+    public int? WishlistPriority { get; set; }
     public WatchDispositionDto? Disposition { get; set; }
     public bool IsRetired => Disposition?.Type == DispositionType.Retired;
     public DateTime? RetiredAt => IsRetired ? Disposition?.DispositionDate : null;

@@ -39,6 +39,7 @@ public class Watch
     public string? LinkText { get; set; }
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
+    public int? WishlistPriority { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; } = null!;

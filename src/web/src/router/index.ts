@@ -38,6 +38,7 @@ const router = createRouter({
         { path: 'watches/new', name: 'add-watch', component: () => import('@/pages/AddWatchPage.vue') },
         { path: 'watches/:id/edit', name: 'edit-watch', component: () => import('@/pages/EditWatchPage.vue') },
         { path: 'wishlist/new', name: 'add-wishlist', component: () => import('@/pages/AddWishListPage.vue') },
+        { path: 'wishlist/order', name: 'order-wishlist', component: () => import('@/pages/WishlistOrderPage.vue') },
         { path: 'wishlist/:id/edit', name: 'edit-wishlist', component: () => import('@/pages/EditWishListPage.vue') },
         { path: 'stats', name: 'stats', component: () => import('@/pages/StatsPage.vue') },
         { path: 'wear-log', name: 'wear-log', component: () => import('@/pages/WearLogPage.vue') },

@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 
-export type SortOption = 'dateAdded' | 'brand' | 'lastWorn' | 'timesWorn'
+export type SortOption = 'dateAdded' | 'brand' | 'lastWorn' | 'timesWorn' | 'priority'
 
 const STORAGE_KEY = 'watch-tracker-preferences'
 

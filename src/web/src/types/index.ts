@@ -63,6 +63,7 @@ export interface Watch {
   linkText?: string
   storageLocation?: string
   isWishList: boolean
+  wishlistPriority?: number
   disposition?: WatchDisposition
   isRetired: boolean
   retiredAt?: string

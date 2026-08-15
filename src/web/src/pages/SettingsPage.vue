@@ -281,6 +281,7 @@ const themeOptions: { value: ThemeMode; label: string }[] = [
 ]
 
 const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'priority', label: 'Wish List Priority' },
   { value: 'dateAdded', label: 'Date Added' },
   { value: 'brand', label: 'Brand' },
   { value: 'lastWorn', label: 'Last Worn' },

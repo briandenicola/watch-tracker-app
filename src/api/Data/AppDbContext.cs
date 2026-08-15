@@ -118,6 +118,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(w => w.CurrentResaleValue)
                 .HasColumnType("decimal(18,2)");
 
+            entity.HasIndex(w => new { w.UserId, w.WishlistPriority })
+                .IsUnique();
+
             entity.HasMany(w => w.Images)
                 .WithOne(i => i.Watch)
                 .HasForeignKey(i => i.WatchId)
