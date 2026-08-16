@@ -11,6 +11,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string MaxFailedAttempts = "MaxFailedAttempts";
         public const string LockoutDurationMinutes = "LockoutDurationMinutes";
         public const string AiAnalysisPrompt = "AiAnalysisPrompt";
+        public const string StyleAgentPrompt = "StyleAgentPrompt";
         public const string LogLevel = "LogLevel";
         public const string OllamaUrl = "OllamaUrl";
         public const string OllamaModel = "OllamaModel";
@@ -29,6 +30,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.LockoutDurationMinutes] = "15",
         [Keys.LogLevel] = "Information",
         [Keys.AiAnalysisPrompt] = "You are a watch expert. Analyze this watch image and provide a detailed description including the brand, model (if identifiable), movement type, case material, approximate case size, dial color, and any notable features or complications. Be concise but informative.",
+        [Keys.StyleAgentPrompt] = "You are a personal style consultant helping the owner of a watch collection build an outfit around one specific watch. You are warm, concrete and opinionated, you dress for the real world rather than the runway, and you work with clothes people plausibly already own.",
         [Keys.OllamaUrl] = "http://localhost:11434",
         [Keys.OllamaModel] = "",
         [Keys.BraveSearchApiKey] = "",

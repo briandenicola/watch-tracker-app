@@ -18,6 +18,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
     public DbSet<OidcLoginTicket> OidcLoginTickets => Set<OidcLoginTicket>();
     public DbSet<OidcState> OidcStates => Set<OidcState>();
+    public DbSet<StyleSession> StyleSessions => Set<StyleSession>();
+    public DbSet<StyleMessage> StyleMessages => Set<StyleMessage>();
+    public DbSet<StyleRecommendation> StyleRecommendations => Set<StyleRecommendation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -164,6 +167,62 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(d => d.ReceivedWatchId);
+        });
+
+        modelBuilder.Entity<StyleSession>(entity =>
+        {
+            entity.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(s => s.Watch)
+                .WithMany()
+                .HasForeignKey(s => s.WatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(s => s.Messages)
+                .WithOne(m => m.Session)
+                .HasForeignKey(m => m.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => new { s.UserId, s.WatchId, s.UpdatedAt });
+        });
+
+        modelBuilder.Entity<StyleMessage>(entity =>
+        {
+            entity.Property(m => m.Role)
+                .HasConversion<string>();
+
+            // The message keeps pointing at a recommendation the user later
+            // forgets, so clearing a memory entry must not delete the transcript.
+            entity.HasOne(m => m.Recommendation)
+                .WithMany()
+                .HasForeignKey(m => m.RecommendationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(m => new { m.SessionId, m.CreatedAt });
+        });
+
+        modelBuilder.Entity<StyleRecommendation>(entity =>
+        {
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Watch)
+                .WithMany()
+                .HasForeignKey(r => r.WatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Memory survives the conversation that produced it.
+            entity.HasOne(r => r.Session)
+                .WithMany()
+                .HasForeignKey(r => r.SessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(r => new { r.UserId, r.WatchId, r.CreatedAt });
         });
 
         modelBuilder.Entity<ResaleValueEntry>(entity =>

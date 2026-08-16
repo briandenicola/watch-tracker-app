@@ -4,7 +4,7 @@
 
 WatchTracker is a full-stack web application for cataloging and managing your personal watch collection. Track details like brand, model, movement type, band type, purchase info, and images — with optional AI-powered watch analysis via Ollama. Every watch is scoped to your authenticated account using JWT-based authentication.
 
-It also includes a **wish list** for tracking watches you want to buy, a **stats dashboard** with a GitHub-style wear heatmap, and **wear logging** to track each time you wear a watch.
+It also includes a **wish list** for tracking watches you want to buy, a **stats dashboard** with a GitHub-style wear heatmap, **wear logging** to track each time you wear a watch, and a **style agent** that chats through an outfit to wear with any watch in the collection.
 
 On first launch, a setup wizard walks you through creating an admin account and configuring application settings.
 
@@ -195,6 +195,27 @@ Each watch can store:
 
 Upload photos of a watch and click **🤖 Analyze with AI** to get an AI-powered analysis via Ollama. The analysis is returned in a modal popup rendered as Markdown. If accepted, the analysis is appended to the watch's notes.
 
+### Style Agent
+
+Every watch detail page has a **Style Agent** — a chat that recommends an outfit to wear with that watch, backed by the
+same Ollama model as the AI analysis.
+
+- **It asks before it advises** — the agent will not commit to an outfit until it knows the **occasion** and the
+  **weather**. Both have a text field and a row of one-tap presets above the transcript, and the agent asks for whatever
+  is still missing.
+- **It remembers** — every outfit it recommends is stored against the watch. Later conversations are primed with those
+  recommendations, so it stops repeating itself and builds on what came before. Rated outfits from the rest of the
+  collection are included too, as a read on the owner's taste.
+- **It asks how things went** — each recommendation can be marked **Worked** or **Missed**, with an optional note. The
+  agent is told which are still unrated and asks about them, and future advice leans towards what worked and away from
+  what missed. Individual memories can be forgotten.
+- **New chat** clears the transcript without clearing the memory; **Forget** on a remembered outfit drops it for good.
+
+The agent's persona is editable under **Admin → Settings → Style Agent** (`StyleAgentPrompt`). The rules it must follow —
+ask first, don't repeat a miss, answer in JSON — are fixed in code, so editing the persona cannot break the chat.
+
+Endpoints live under `/api/watches/{watchId}/style`.
+
 ### Cover Image Selection
 
 When editing a watch with multiple images, a **Gallery Image** picker lets you choose which image appears as the cover in the gallery view.
@@ -217,6 +238,7 @@ Admins can manage application-wide settings under **Admin → Settings**, organi
 
 - **My Account** — Change your display username. Your email address is shown but not editable.
 - **AI Configuration** — Configure the Ollama URL, model, and AI analysis prompt.
+- **Style Agent** — The persona the style agent uses when recommending outfits.
 - **Security** — Max failed login attempts and lockout duration.
 - **Logging** — Runtime log level (Trace through None). Changes take effect immediately without a restart.
 

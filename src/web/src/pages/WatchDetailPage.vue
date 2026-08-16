@@ -61,6 +61,7 @@
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
               </label>
               <button @click="handleAnalyzeFromMenu" :disabled="analyzing || !watch.imageUrls.length" class="menu-action">{{ analyzing ? 'Analyzing…' : 'AI Analyze' }}</button>
+              <button @click="openStyleAgent" class="menu-action">Style Agent</button>
               <button @click="handleRefreshResaleFromMenu" :disabled="refreshingResale" class="menu-action">{{ refreshingResale ? 'Queuing…' : 'Refresh Resale' }}</button>
               <button @click="openDisposition" class="menu-action">{{ watch.disposition ? 'Edit disposition' : 'Remove from collection' }}</button>
               <button v-if="watch.disposition" @click="handleRestore" class="menu-action text-accent">Restore to collection</button>
@@ -68,6 +69,7 @@
             </template>
             <template v-else>
               <button @click="handlePurchaseFromMenu" :disabled="purchasing" class="menu-action text-accent">{{ purchasing ? 'Moving…' : 'Mark Purchased' }}</button>
+              <button @click="openStyleAgent" class="menu-action">Style Agent</button>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
@@ -146,6 +148,25 @@
         <div class="prose-markdown text-sm text-text" v-html="renderMarkdown(watch.aiAnalysis)" />
       </section>
 
+      <!-- Style Agent -->
+      <section class="detail-card mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="detail-heading !mb-1">Style Agent</h2>
+            <p class="text-sm text-text-muted">
+              Talk through an outfit for this watch. It asks about the occasion and the weather, and remembers what it
+              suggested before.
+            </p>
+          </div>
+          <button
+            @click="openStyleAgent"
+            class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors flex-shrink-0"
+          >
+            Style this watch
+          </button>
+        </div>
+      </section>
+
       <!-- Resale Value History -->
       <section v-if="!watch.isWishList" class="detail-card mb-6">
         <div class="flex items-center justify-between mb-2">
@@ -204,6 +225,12 @@
       </section>
     </div>
     <div v-else class="text-center py-20 text-text-muted">Watch not found.</div>
+    <StyleAgentModal
+      v-if="showStyleAgent && watch"
+      :watch-id="watch.id"
+      :watch-name="`${watch.brand} ${watch.model}`"
+      @close="showStyleAgent = false"
+    />
     <DispositionModal
       v-if="showDispositionModal && watch"
       :current-watch-id="watch.id"
@@ -226,6 +253,7 @@ import { fieldMeta, type InlineField } from '@/constants/watch'
 import { api } from '@/services/api'
 import DetailRow from '@/components/common/DetailRow.vue'
 import DispositionModal from '@/components/common/DispositionModal.vue'
+import StyleAgentModal from '@/components/common/StyleAgentModal.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import {
   getWatch, getWatches, imageUrl, recordWear, deleteWatch, uploadImage, deleteImage, removeBackground,
@@ -597,6 +625,7 @@ const manualResaleDate = ref('')
 const manualResaleNotes = ref('')
 const savingManualResale = ref(false)
 const allWatches = ref<Watch[]>([])
+const showStyleAgent = ref(false)
 const showDispositionModal = ref(false)
 const savingDisposition = ref(false)
 const dispositionError = ref('')
@@ -631,6 +660,11 @@ async function handleWear() {
 async function handleWearFromMenu() {
   actionsOpen.value = false
   await handleWear()
+}
+
+function openStyleAgent() {
+  actionsOpen.value = false
+  showStyleAgent.value = true
 }
 
 function openDisposition() {
