@@ -1,6 +1,10 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
@@ -17,6 +21,7 @@ public class StyleAgentService(
     AppDbContext context,
     IAppSettingsService appSettings,
     HttpClient httpClient,
+    IWebHostEnvironment env,
     ILogger<StyleAgentService> logger) : IStyleAgentService
 {
     /// Turns of the running conversation replayed to the model.
@@ -28,6 +33,9 @@ public class StyleAgentService(
     /// Remembered recommendations returned to the chat's memory panel.
     private const int MaxMemoriesReturned = 25;
     private const int MaxFollowUps = 3;
+    /// Longest edge of the watch photo sent to the model, in pixels.
+    private const int MaxPhotoEdge = 768;
+    private const int PhotoQuality = 80;
 
     private const string NotConfiguredHint =
         "The style agent needs Ollama. Set the Ollama URL and model under Admin → Settings.";
@@ -88,11 +96,12 @@ public class StyleAgentService(
 
         var watchMemory = await LoadWatchMemoryAsync(watchId, userId, MaxWatchMemoriesInPrompt, ct);
         var collectionMemory = await LoadCollectionMemoryAsync(watchId, userId, ct);
+        var photo = await TryLoadCoverPhotoAsync(watchId, ct);
         var systemPrompt = await BuildSystemPromptAsync(watch, session, watchMemory, collectionMemory);
 
         // Nothing is written until the model has answered, so a failed call
         // leaves the transcript unchanged and the user can simply send again.
-        var reply = await AskOllamaAsync(config.Url, config.Model, systemPrompt, history, turn, ct);
+        var reply = await AskOllamaAsync(config.Url, config.Model, systemPrompt, history, turn, photo, ct);
 
         var now = DateTime.UtcNow;
         StyleRecommendation? recommendation = null;
@@ -256,6 +265,65 @@ public class StyleAgentService(
         CreatedAt = recommendation.CreatedAt
     };
 
+    // --- The watch's photo -------------------------------------------------
+
+    /// <summary>
+    /// The watch's cover image, downscaled and re-encoded as base64 JPEG for the
+    /// model to look at. Colour and finish are what a stylist needs most and are
+    /// exactly what the text fields tend to be missing, so the picture does more
+    /// work here than any field. Null when there is no usable image — the chat
+    /// still works, it just has less to go on.
+    /// </summary>
+    private async Task<string?> TryLoadCoverPhotoAsync(int watchId, CancellationToken ct)
+    {
+        var image = await context.WatchImages
+            .Where(i => i.WatchId == watchId)
+            .OrderBy(i => i.SortOrder)
+            .FirstOrDefaultAsync(ct);
+        if (image is null) return null;
+
+        var path = Path.Combine(env.ContentRootPath, "uploads", image.FileName);
+        if (!File.Exists(path)) return null;
+
+        try
+        {
+            using var photo = await Image.LoadAsync<Rgba32>(path, ct);
+            var oversized = photo.Width > MaxPhotoEdge || photo.Height > MaxPhotoEdge;
+
+            photo.Mutate(ctx =>
+            {
+                // Background removal leaves transparent PNGs, and JPEG has no
+                // alpha — without this the cut-out watch lands on black.
+                ctx.BackgroundColor(Color.White);
+
+                // Only ever down. Blowing a small image up would cost payload
+                // and add nothing for the model to see.
+                if (oversized)
+                {
+                    ctx.Resize(new ResizeOptions
+                    {
+                        Size = new Size(MaxPhotoEdge, MaxPhotoEdge),
+                        Mode = ResizeMode.Max
+                    });
+                }
+            });
+
+            using var buffer = new MemoryStream();
+            await photo.SaveAsJpegAsync(buffer, new JpegEncoder { Quality = PhotoQuality }, ct);
+
+            return Convert.ToBase64String(buffer.ToArray());
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not prepare the photo of watch {WatchId} for the style agent.", watchId);
+            return null;
+        }
+    }
+
     // --- Prompt ------------------------------------------------------------
 
     private async Task<string> BuildSystemPromptAsync(
@@ -312,6 +380,11 @@ public class StyleAgentService(
         - Reply with a single JSON object and nothing else, in exactly this shape:
           {"reply": "<your markdown answer>", "followUps": ["<a short question or quick reply the user can tap>"], "recommendation": {"summary": "<one line naming the outfit>", "occasion": "<occasion>", "weather": "<weather>", "outfit": "<the full outfit as markdown>"}}
         - Set "recommendation" to null on any turn where you are only asking questions, and keep "followUps" to at most three short items.
+        """;
+
+    private const string PhotoNote = """
+        ## The photo
+        A photo of this watch is attached to the user's latest message. Look at it, and trust what you see — dial, bezel, strap, metal colour and finish — over the recorded fields above, which are often blank or out of date. Name the colours you are working with in your reply, so the user can correct you if the photo misleads you.
         """;
 
     private static string DescribeWatch(Watch watch)
@@ -378,9 +451,43 @@ public class StyleAgentService(
         string systemPrompt,
         IReadOnlyList<StyleMessage> history,
         string newTurn,
+        string? photo,
         CancellationToken ct)
     {
-        var messages = new List<object> { new { role = "system", content = systemPrompt } };
+        string content;
+        try
+        {
+            content = await SendChatAsync(ollamaUrl, model, systemPrompt, history, newTurn, photo, ct);
+        }
+        catch (OllamaRequestException ex) when (photo is not null)
+        {
+            // A text-only model refuses the picture. Advice from the fields
+            // alone still beats no answer at all.
+            logger.LogWarning(
+                "Ollama rejected a style request carrying the watch photo, retrying without it: {Reason}", ex.Message);
+            content = await SendChatAsync(ollamaUrl, model, systemPrompt, history, newTurn, null, ct);
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+            throw new InvalidOperationException("The style agent got an empty reply from Ollama.");
+
+        return ParseReply(content);
+    }
+
+    private async Task<string> SendChatAsync(
+        string ollamaUrl,
+        string model,
+        string systemPrompt,
+        IReadOnlyList<StyleMessage> history,
+        string newTurn,
+        string? photo,
+        CancellationToken ct)
+    {
+        // The note goes on only when the picture actually does, so the retry
+        // without it doesn't leave the model hunting for an image that is gone.
+        var prompt = photo is null ? systemPrompt : $"{systemPrompt}\n\n{PhotoNote}";
+
+        var messages = new List<object> { new { role = "system", content = prompt } };
         foreach (var message in history)
         {
             messages.Add(new
@@ -389,7 +496,13 @@ public class StyleAgentService(
                 content = message.Content
             });
         }
-        messages.Add(new { role = "user", content = newTurn });
+
+        // The photo rides on the newest turn rather than the first one: history
+        // is replayed from the database, which stores no images, so this is what
+        // keeps the watch in view on every turn of a long conversation.
+        messages.Add(photo is null
+            ? (object)new { role = "user", content = newTurn }
+            : new { role = "user", content = newTurn, images = new[] { photo } });
 
         var requestBody = new
         {
@@ -425,25 +538,26 @@ public class StyleAgentService(
         if (!response.IsSuccessStatusCode)
         {
             logger.LogWarning("Ollama returned {StatusCode} for a style agent request: {Body}", (int)response.StatusCode, responseBody);
-            throw new InvalidOperationException($"Ollama API error: {responseBody}");
+            throw new OllamaRequestException($"Ollama API error: {responseBody}");
         }
 
-        string content;
         try
         {
             using var doc = JsonDocument.Parse(responseBody);
-            content = doc.RootElement.GetProperty("message").GetProperty("content").GetString() ?? "";
+            return doc.RootElement.GetProperty("message").GetProperty("content").GetString() ?? "";
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
         {
             throw new InvalidOperationException("Ollama returned a response the style agent could not read.");
         }
-
-        if (string.IsNullOrWhiteSpace(content))
-            throw new InvalidOperationException("The style agent got an empty reply from Ollama.");
-
-        return ParseReply(content);
     }
+
+    /// <summary>
+    /// Ollama answered but refused the request — a bad model name, say, or a
+    /// text-only model handed a picture. Derives from InvalidOperationException
+    /// so the controller keeps turning it into a 400 with the reason attached.
+    /// </summary>
+    private sealed class OllamaRequestException(string message) : InvalidOperationException(message);
 
     private sealed record ParsedRecommendation(string Summary, string Outfit, string? Occasion, string? Weather);
 

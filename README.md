@@ -200,6 +200,11 @@ Upload photos of a watch and click **🤖 Analyze with AI** to get an AI-powered
 Every watch detail page has a **Style Agent** — a chat that recommends an outfit to wear with that watch, backed by the
 same Ollama model as the AI analysis.
 
+- **It looks at the watch** — the watch's cover photo is sent with every turn (downscaled to 768px, re-encoded as JPEG),
+  and the agent is told to trust what it sees over the recorded fields, which are often blank. An orange dial gets
+  styled as an orange dial even when nothing in the database says so. Watches with no photo still work; the agent falls
+  back to the fields. If the configured model can't accept images, the request is automatically retried without the
+  photo.
 - **It asks before it advises** — the agent will not commit to an outfit until it knows the **occasion** and the
   **weather**. Both have a text field and a row of one-tap presets above the transcript, and the agent asks for whatever
   is still missing.

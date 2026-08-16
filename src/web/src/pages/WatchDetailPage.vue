@@ -229,6 +229,7 @@
       v-if="showStyleAgent && watch"
       :watch-id="watch.id"
       :watch-name="`${watch.brand} ${watch.model}`"
+      :has-photo="watch.imageUrls.length > 0"
       @close="showStyleAgent = false"
     />
     <DispositionModal
