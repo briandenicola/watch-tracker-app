@@ -174,9 +174,14 @@
               <p>
                 I'll build an outfit around your <strong>{{ watchName }}</strong>.
               </p>
-              <p>
+              <p v-if="hasPhoto">
                 Tell me the <strong>occasion</strong> and the <strong>weather</strong> — the chips above are the quick
-                way — and I'll work from the case, dial and strap.
+                way — and I'll work from your photo of it, dial and strap colours included.
+              </p>
+              <p v-else>
+                Tell me the <strong>occasion</strong> and the <strong>weather</strong> — the chips above are the quick
+                way — and I'll work from its recorded details. Add a photo of this watch and I can style to its actual
+                colours instead.
               </p>
               <p v-if="pendingFeedback">
                 I also still owe you a question: {{ pendingFeedback }}
@@ -285,7 +290,7 @@ import {
   forgetStyleRecommendation, getStyleChat, rateStyleRecommendation, sendStyleMessage, startStyleSession,
 } from '@/services/style'
 
-const props = defineProps<{ watchId: number, watchName: string }>()
+const props = defineProps<{ watchId: number, watchName: string, hasPhoto: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const OCCASION_PRESETS = ['Work', 'Casual weekend', 'Dinner out', 'Wedding', 'Travel day', 'Outdoors']
