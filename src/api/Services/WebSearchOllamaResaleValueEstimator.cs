@@ -106,7 +106,7 @@ public class WebSearchOllamaResaleValueEstimator(
 
     private static (decimal Value, string? Reasoning)? ParseEstimate(string content)
     {
-        var jsonSubstring = ExtractJsonObject(content);
+        var jsonSubstring = OllamaJson.ExtractObject(content);
         if (jsonSubstring is null) return null;
 
         try
@@ -136,33 +136,5 @@ public class WebSearchOllamaResaleValueEstimator(
         {
             return null;
         }
-    }
-
-    private static string? ExtractJsonObject(string content)
-    {
-        var text = content.Trim();
-        if (text.StartsWith("```"))
-        {
-            var firstNewline = text.IndexOf('\n');
-            if (firstNewline >= 0) text = text[(firstNewline + 1)..];
-            var fenceEnd = text.LastIndexOf("```", StringComparison.Ordinal);
-            if (fenceEnd >= 0) text = text[..fenceEnd];
-        }
-
-        var start = text.IndexOf('{');
-        if (start < 0) return null;
-
-        var depth = 0;
-        for (var i = start; i < text.Length; i++)
-        {
-            if (text[i] == '{') depth++;
-            else if (text[i] == '}')
-            {
-                depth--;
-                if (depth == 0) return text[start..(i + 1)];
-            }
-        }
-
-        return null;
     }
 }

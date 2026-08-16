@@ -205,6 +205,53 @@ export interface ResaleRefreshSummary {
   failed: number
 }
 
+export type StyleMessageRole = 'User' | 'Assistant'
+
+export interface StyleRecommendation {
+  id: number
+  watchId: number
+  occasion?: string | null
+  weather?: string | null
+  summary: string
+  outfit: string
+  /** Null until the user says whether the outfit worked out. */
+  wasHelpful?: boolean | null
+  feedbackNotes?: string | null
+  feedbackAt?: string | null
+  createdAt: string
+}
+
+export interface StyleMessage {
+  id: number
+  role: StyleMessageRole
+  content: string
+  recommendation?: StyleRecommendation | null
+  createdAt: string
+}
+
+export interface StyleSession {
+  id: number
+  occasion?: string | null
+  weather?: string | null
+  messages: StyleMessage[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface StyleChatState {
+  configured: boolean
+  configurationHint?: string | null
+  session: StyleSession
+  memory: StyleRecommendation[]
+  followUps: string[]
+}
+
+export interface SendStyleMessage {
+  message?: string
+  occasion?: string
+  weather?: string
+}
+
 export interface AppSettingDto {
   key: string
   value: string

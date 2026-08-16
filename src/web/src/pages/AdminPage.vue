@@ -256,6 +256,7 @@ const SETTING_GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Security', keys: ['MaxFailedAttempts', 'LockoutDurationMinutes'] },
   { label: 'Logging', keys: ['LogLevel'] },
   { label: 'AI Analysis (Ollama)', keys: ['AiAnalysisPrompt', 'OllamaUrl', 'OllamaModel'] },
+  { label: 'Style Agent', keys: ['StyleAgentPrompt'] },
   { label: 'Web Search', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
   { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },
   { label: 'Resale Value', keys: ['ResaleValueRefreshIntervalDays', 'ResaleValuePrompt'] },
