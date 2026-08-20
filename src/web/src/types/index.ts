@@ -71,6 +71,28 @@ export interface Watch {
   updatedAt: string
 }
 
+export interface WatchRecommendationRequest {
+  occasion: string
+  outfitDescription: string
+  colorPalette?: string
+  weather?: string
+  preferences?: string
+}
+
+export interface WatchRecommendation {
+  primary: WatchRecommendationOption
+  secondary: WatchRecommendationOption
+}
+
+export interface WatchRecommendationOption {
+  watchId: number
+  brand: string
+  model: string
+  imageUrl?: string
+  reason: string
+  stylingTips: string[]
+}
+
 export interface CreateWatch {
   brand: string
   model: string

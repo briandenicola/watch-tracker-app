@@ -18,6 +18,15 @@
       <circle cx="17" cy="9" r="1" :fill="color" stroke="none" />
     </template>
 
+    <!-- Recommendation: sparkle over a watch dial -->
+    <template v-else-if="name === 'recommend'">
+      <circle cx="11" cy="13" r="6" />
+      <polyline points="11 10 11 13 13 14" />
+      <path d="M18 2l.7 2.3L21 5l-2.3.7L18 8l-.7-2.3L15 5l2.3-.7z" />
+      <line x1="9" y1="7" x2="9" y2="4" />
+      <line x1="13" y1="19" x2="13" y2="22" />
+    </template>
+
     <!-- Storage: shelf / case display -->
     <template v-else-if="name === 'storage'">
       <rect x="3" y="5" width="18" height="14" rx="2" />

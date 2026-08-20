@@ -134,6 +134,16 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+    options.AddPolicy("watch-recommendation", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 
 builder.Services.AddHttpClient();
@@ -146,9 +156,10 @@ builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
-// Like the analysis client, this one talks to Ollama and is left on the default
-// timeout — a styling turn can legitimately take longer than a typical API call.
+// These clients talk to Ollama and retain its default timeout because AI
+// generation can legitimately take longer than a typical API call.
 builder.Services.AddHttpClient<IStyleAgentService, StyleAgentService>();
+builder.Services.AddHttpClient<IWatchRecommendationService, WatchRecommendationService>();
 builder.Services.AddHttpClient<IWebSearchClient, BraveSearchClient>()
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddHttpClient<IWebSearchClient, SearXngSearchClient>()

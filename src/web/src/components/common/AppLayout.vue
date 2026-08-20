@@ -205,6 +205,7 @@ function cycleTheme() {
 const navItems = computed(() => [
   { to: '/', icon: 'collection', label: 'Collection' },
   { to: '/storage', icon: 'storage', label: 'Storage' },
+  { to: '/recommend', icon: 'recommend', label: 'What to Wear' },
   { to: '/stats', icon: 'stats', label: 'Statistics' },
   { to: '/wear-log', icon: 'wear-log', label: 'Wear Log' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
@@ -217,8 +218,8 @@ const bottomTabs = [
 ]
 
 const bottomTabsRight = [
+  { to: '/recommend', icon: 'recommend', label: 'Pick' },
   { to: '/wear-log', icon: 'wear-log', label: 'Wear Log' },
-  { to: '/settings', icon: 'settings', label: 'Settings' },
 ]
 
 function isActiveTab(path: string): boolean {
