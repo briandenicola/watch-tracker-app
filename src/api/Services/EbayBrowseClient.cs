@@ -1,6 +1,8 @@
 using System.Net.Http.Headers;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
@@ -36,7 +38,9 @@ public class EbayBrowseClient(
 
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("eBay Browse API error {Status}: {Body}", response.StatusCode, body);
+                logger.LogWarning(
+                    "eBay Browse API request failed with HTTP {StatusCode}.",
+                    (int)response.StatusCode);
                 return new MarketplaceSearchResult(
                     MarketplaceSearchStatus.ProviderError,
                     [],
@@ -98,7 +102,11 @@ public class EbayBrowseClient(
                     observedAt,
                     ReadAspect(item, "Brand"),
                     ReadAspect(item, "Model"),
-                    ReadAspect(item, "Reference Number") ?? ReadAspect(item, "MPN")));
+                    ReadAspect(item, "Reference Number") ?? ReadAspect(item, "MPN"),
+                    ParseMovement(ReadAspect(item, "Movement")),
+                    ParseMillimeters(ReadAspect(item, "Case Size")),
+                    ReadAspect(item, "Dial Color"),
+                    ReadAspect(item, "Band Type") ?? ReadAspect(item, "Band Material")));
             }
 
             return new MarketplaceSearchResult(MarketplaceSearchStatus.Success, listings);
@@ -107,17 +115,17 @@ public class EbayBrowseClient(
         {
             throw;
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
-            logger.LogWarning(ex, "eBay Browse API returned malformed JSON.");
+            logger.LogWarning("eBay Browse API returned malformed JSON.");
             return new MarketplaceSearchResult(
                 MarketplaceSearchStatus.ProviderError,
                 [],
                 "eBay returned an unreadable response.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            logger.LogWarning(ex, "eBay Browse API call failed; skipping eBay leg.");
+            logger.LogWarning("eBay Browse API call failed; skipping eBay leg.");
             return new MarketplaceSearchResult(
                 MarketplaceSearchStatus.ProviderError,
                 [],
@@ -156,6 +164,32 @@ public class EbayBrowseClient(
         }
 
         return null;
+    }
+
+    private static MovementType? ParseMovement(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (value.Contains("automatic", StringComparison.OrdinalIgnoreCase))
+            return MovementType.Automatic;
+        if (value.Contains("manual", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("hand", StringComparison.OrdinalIgnoreCase))
+            return MovementType.Manual;
+        if (value.Contains("quartz", StringComparison.OrdinalIgnoreCase))
+            return MovementType.Quartz;
+        if (value.Contains("digital", StringComparison.OrdinalIgnoreCase))
+            return MovementType.Digital;
+        return null;
+    }
+
+    private static double? ParseMillimeters(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var match = Regex.Match(value, @"\d+(?:\.\d+)?", RegexOptions.CultureInvariant);
+        return match.Success
+            && double.TryParse(match.Value, CultureInfo.InvariantCulture, out var size)
+            && size is >= 1 and <= 200
+                ? size
+                : null;
     }
 
     private static decimal? TryReadShipping(JsonElement item, string currency)

@@ -87,6 +87,7 @@ public class AdvisorToolActivityDto
     public required string Tool { get; set; }
     public required string Status { get; set; }
     public string? Message { get; set; }
+    public long DurationMs { get; set; }
 }
 
 public class AdvisorMessageDto

@@ -13,9 +13,9 @@ On first launch, a setup wizard walks you through creating an admin account and 
 | Layer    | Tech                             | Path       |
 | -------- | -------------------------------- | ---------- |
 | Backend  | .NET 10 Web API, EF Core, SQLite | `src/api/` |
-| Frontend | React 19, TypeScript, Vite (PWA) | `src/web/` |
+| Frontend | Vue 3, TypeScript, Vite (PWA) | `src/web/` |
 
-The React SPA communicates with the .NET API exclusively via REST (`/api/*`). In production the API serves the SPA as static files from a single container, so no separate web server is needed.
+The Vue SPA communicates with the .NET API exclusively via REST (`/api/*`). In production the API serves the SPA as static files from a single container, so no separate web server is needed.
 
 The frontend is a Progressive Web App (PWA) and can be installed on iOS (Safari → Share → Add to Home Screen), Android, and desktop browsers for a native app-like experience with offline caching. When running as a standalone PWA on iOS, the navigation bar collapses into a hamburger menu to avoid the notch and status bar area.
 
@@ -54,7 +54,10 @@ When the app launches for the first time, the setup wizard at `/setup` will guid
 | `task run-web`     | Run the Vite dev server                  |
 | `task build`       | Build both API and frontend              |
 | `task build-api`   | Build the .NET API project               |
-| `task build-web`   | Build the React frontend                 |
+| `task build-web`   | Build the Vue frontend                   |
+| `task test-api`    | Run the API test suite                    |
+| `task test-web`    | Run the frontend test suite               |
+| `task lint-web`    | Run frontend lint                         |
 | `task docker-build`| Build the Docker container image         |
 | `task docker-run`  | Run the Docker container locally         |
 | `task db`          | Create and apply EF Core migrations      |
@@ -76,7 +79,7 @@ A GitHub Actions workflow (`.github/workflows/docker-publish.yml`) builds and pu
 
 ## Deployment
 
-The application ships as a single Docker container that serves both the API and the React SPA. The pre-built image is hosted on GitHub Container Registry.
+The application ships as a single Docker container that serves both the API and the Vue SPA. The publish workflow pushes the pre-built image to Docker Hub.
 
 ### Configuration
 
@@ -117,7 +120,7 @@ docker run -p 8080:8080 -d \
   -e AllowedOrigins=* \
   -v watch-tracker-data:/app/data \
   -v watch-tracker-uploads:/app/uploads \
-  ghcr.io/briandenicola/watch-tracker-app:latest
+  <dockerhub-user>/watch-tracker-app:latest
 ```
 
 The application will be available on `http://localhost:8080`. On first launch, the setup wizard will guide you through creating an admin account.
@@ -221,6 +224,14 @@ ask first, don't repeat a miss, answer in JSON — are fixed in code, so editing
 
 Endpoints live under `/api/watches/{watchId}/style`.
 
+### Collection Advisor
+
+The **Collection Advisor** at `/advisor` answers collection-gap, overlap, brand, budget, and current-listing questions using a bounded tool loop. Collection and wishlist access is always scoped to the signed-in user. External claims use claim-level citations, while listing cards and observed prices are reconstructed from server tool results rather than model-supplied fields.
+
+Recommendations can be added to the wishlist and marked helpful, irrelevant, already owned, or not interested. Only the ten most recent structured feedback records are included in future advisor context.
+
+Configuration, provider behavior, operational limits, privacy-safe diagnostics, evaluation thresholds, and troubleshooting are documented in [`docs/collection-advisor.md`](docs/collection-advisor.md).
+
 ### Cover Image Selection
 
 When editing a watch with multiple images, a **Gallery Image** picker lets you choose which image appears as the cover in the gallery view.
@@ -244,6 +255,7 @@ Admins can manage application-wide settings under **Admin → Settings**, organi
 - **My Account** — Change your display username. Your email address is shown but not editable.
 - **AI Configuration** — Configure the Ollama URL, model, and AI analysis prompt.
 - **Style Agent** — The persona the style agent uses when recommending outfits.
+- **Collection Advisor** — The advisor persona. Tool, grounding, privacy, and safety rules remain fixed in code.
 - **Security** — Max failed login attempts and lockout duration.
 - **Logging** — Runtime log level (Trace through None). Changes take effect immediately without a restart.
 
@@ -263,7 +275,8 @@ watch-tracker-app/
 ├── .github/
 │   └── workflows/
 │       ├── codeql-analysis.yml   # CodeQL security scanning
-│       └── docker-publish.yml    # Build & push to Docker Hub
+│       ├── docker-publish.yml    # Validate, build, and push to Docker Hub
+│       └── quality.yml           # API and frontend quality gates
 ├── src/
 │   ├── api/                      # .NET 10 Web API
 │   │   ├── Controllers/          # API endpoints
@@ -273,11 +286,11 @@ watch-tracker-app/
 │   │   ├── Data/                 # DbContext & configuration
 │   │   ├── Migrations/           # EF Core migrations
 │   │   └── Program.cs            # App entry point
-│   └── web/                      # React SPA
+│   └── web/                      # Vue SPA
 │       ├── src/
-│       │   ├── api/              # API client & resource functions
-│       │   ├── components/       # Reusable components (WatchCard, WatchForm, etc.)
-│       │   ├── context/          # React context (auth, preferences)
+│       │   ├── components/       # Reusable Vue components
+│       │   ├── services/         # API client and resource functions
+│       │   ├── stores/           # Pinia application state
 │       │   ├── pages/            # Page components
 │       │   ├── types/            # TypeScript type definitions
 │       │   └── utils/            # Utility functions (gravatar, etc.)

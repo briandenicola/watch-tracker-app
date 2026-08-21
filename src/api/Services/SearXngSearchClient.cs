@@ -71,7 +71,9 @@ public class SearXngSearchClient(
 
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("SearXNG API error {Status}: {Body}", response.StatusCode, body);
+                logger.LogWarning(
+                    "SearXNG request failed with HTTP {StatusCode}.",
+                    (int)response.StatusCode);
                 return new WebSearchResult(
                     WebSearchStatus.ProviderError,
                     [],
@@ -95,9 +97,9 @@ public class SearXngSearchClient(
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            logger.LogWarning(ex, "SearXNG call failed; skipping SearXNG search.");
+            logger.LogWarning("SearXNG call failed; skipping SearXNG search.");
             return new WebSearchResult(
                 WebSearchStatus.ProviderError,
                 [],

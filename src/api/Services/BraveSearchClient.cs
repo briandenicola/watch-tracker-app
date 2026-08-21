@@ -34,7 +34,9 @@ public class BraveSearchClient(
 
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("Brave Search API error {Status}: {Body}", response.StatusCode, body);
+                logger.LogWarning(
+                    "Brave Search request failed with HTTP {StatusCode}.",
+                    (int)response.StatusCode);
                 return new WebSearchResult(
                     WebSearchStatus.ProviderError,
                     [],
@@ -59,9 +61,9 @@ public class BraveSearchClient(
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            logger.LogWarning(ex, "Brave Search call failed; skipping web search leg.");
+            logger.LogWarning("Brave Search call failed; skipping web search leg.");
             return new WebSearchResult(
                 WebSearchStatus.ProviderError,
                 [],

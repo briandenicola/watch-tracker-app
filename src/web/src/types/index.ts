@@ -61,6 +61,8 @@ export interface Watch {
   lastBatteryChangedDate?: string
   linkUrl?: string
   linkText?: string
+  marketplaceCurrency?: string
+  marketplaceObservedAt?: string
   storageLocation?: string
   isWishList: boolean
   wishlistPriority?: number
@@ -324,6 +326,7 @@ export interface AdvisorToolActivity {
   tool: string
   status: 'completed' | 'completed_with_warnings' | 'unavailable' | 'failed'
   message?: string | null
+  durationMs: number
 }
 
 export interface AdvisorMessage {

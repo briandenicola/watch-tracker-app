@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
@@ -17,6 +18,7 @@ public class CollectionAdvisorService(
     private const string NotConfiguredHint =
         "The collection advisor needs Ollama. Set the Ollama URL and model under Admin -> Settings.";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly ConcurrentDictionary<int, SemaphoreSlim> WishlistLocks = new();
 
     public async Task<AdvisorChatStateDto> GetCurrentStateAsync(
         int userId,
@@ -173,6 +175,10 @@ public class CollectionAdvisorService(
         var card = await FindOwnedCardAsync(messageId, userId, dto.Provider, dto.ProviderItemId, ct);
         if (card is null || string.IsNullOrWhiteSpace(card.ItemUrl)) return null;
 
+        var wishlistLock = WishlistLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        await wishlistLock.WaitAsync(ct);
+        try
+        {
         var normalizedBrand = Normalize(card.Brand);
         var normalizedModel = Normalize(card.Model);
         var normalizedReference = Normalize(card.ReferenceNumber);
@@ -214,6 +220,8 @@ public class CollectionAdvisorService(
             AcquiredFrom = TrimNullableTo(card.Provider, 200),
             MarketplaceProvider = card.Provider,
             MarketplaceItemId = card.ProviderItemId,
+            MarketplaceCurrency = card.Currency,
+            MarketplaceObservedAt = card.ObservedAt,
             Notes = "Added from a Collection Advisor recommendation.",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -226,6 +234,11 @@ public class CollectionAdvisorService(
             WatchId = watch.Id,
             Message = "Added to your wishlist."
         };
+        }
+        finally
+        {
+            wishlistLock.Release();
+        }
     }
 
     private Task<AdvisorSession?> FindOwnedSessionAsync(

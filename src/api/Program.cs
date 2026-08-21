@@ -106,6 +106,17 @@ builder.Services.AddCors(options =>
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (context, _) =>
+    {
+        var logger = context.HttpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("RateLimiting");
+        logger.LogWarning(
+            "Request rejected by rate limiting for endpoint {Endpoint}.",
+            context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown");
+        return ValueTask.CompletedTask;
+    };
+
     options.AddPolicy("auth", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",

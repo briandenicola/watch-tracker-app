@@ -149,6 +149,8 @@ public class CollectionAdvisorServiceTests
         Assert.Equal(MovementType.Unknown, watch.MovementType);
         Assert.Equal("item-1", watch.MarketplaceItemId);
         Assert.Equal(995m, watch.PurchasePrice);
+        Assert.Equal("USD", watch.MarketplaceCurrency);
+        Assert.NotNull(watch.MarketplaceObservedAt);
     }
 
     private static async Task<AdvisorMessage> AddRecommendationAsync(
@@ -167,7 +169,8 @@ public class CollectionAdvisorServiceTests
             ReferenceNumber = "H70455533",
             ItemUrl = "https://example.test/item-1",
             Price = 995m,
-            Currency = "USD"
+            Currency = "USD",
+            ObservedAt = DateTime.UtcNow
         };
         var message = new AdvisorMessage
         {

@@ -134,7 +134,7 @@ export async function removeBackground(watchId: number, imageId: number): Promis
   await api.post(`/api/watches/${watchId}/images/${imageId}/remove-background`)
 }
 
-export async function analyzeWatch(watchId: number, imageId: number): Promise<string> {
+export async function analyzeWatch(watchId: number, _imageId: number): Promise<string> {
   const { data } = await api.post<{ analysis: string }>(`/api/watches/${watchId}/analyze`)
   return data.analysis
 }

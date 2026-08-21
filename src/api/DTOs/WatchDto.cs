@@ -40,6 +40,8 @@ public class WatchDto
     public DateTime? LastBatteryChangedDate { get; set; }
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
+    public string? MarketplaceCurrency { get; set; }
+    public DateTime? MarketplaceObservedAt { get; set; }
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
     public int? WishlistPriority { get; set; }

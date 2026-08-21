@@ -1,3 +1,5 @@
+using WatchTracker.Api.Models;
+
 namespace WatchTracker.Api.Services;
 
 public enum MarketplaceSearchStatus
@@ -31,7 +33,11 @@ public record MarketplaceListingItem(
     DateTime ObservedAt,
     string? Brand = null,
     string? Model = null,
-    string? ReferenceNumber = null);
+    string? ReferenceNumber = null,
+    MovementType? MovementType = null,
+    double? CaseSizeMm = null,
+    string? DialColor = null,
+    string? BandType = null);
 
 public record MarketplaceSearchResult(
     MarketplaceSearchStatus Status,

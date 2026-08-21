@@ -544,6 +544,8 @@ public class WatchService(AppDbContext context) : IWatchService
         LastBatteryChangedDate = watch.LastBatteryChangedDate,
         LinkUrl = watch.LinkUrl,
         LinkText = watch.LinkText,
+        MarketplaceCurrency = watch.MarketplaceCurrency,
+        MarketplaceObservedAt = watch.MarketplaceObservedAt,
         StorageLocation = watch.StorageLocation,
         IsWishList = watch.IsWishList,
         WishlistPriority = watch.WishlistPriority,

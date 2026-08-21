@@ -24,6 +24,13 @@ public class EbayBrowseClientTests
                     { "shippingCost": { "value": "25.00", "currency": "USD" } }
                   ],
                   "condition": "Pre-Owned",
+                  "localizedAspects": [
+                    { "name": "Brand", "value": "Hamilton" },
+                    { "name": "Model", "value": "Khaki Field" },
+                    { "name": "Movement", "value": "Mechanical (Automatic)" },
+                    { "name": "Case Size", "value": "40 mm" },
+                    { "name": "Dial Color", "value": "Black" }
+                  ],
                   "seller": { "username": "seller", "feedbackPercentage": "99.8" }
                 },
                 {
@@ -47,6 +54,11 @@ public class EbayBrowseClientTests
         Assert.Equal(MarketplaceListingType.FixedPrice, listing.ListingType);
         Assert.Equal("https://www.ebay.com/itm/123", listing.ItemUrl);
         Assert.Equal(99.8m, listing.SellerFeedbackPercent);
+        Assert.Equal("Hamilton", listing.Brand);
+        Assert.Equal("Khaki Field", listing.Model);
+        Assert.Equal(WatchTracker.Api.Models.MovementType.Automatic, listing.MovementType);
+        Assert.Equal(40, listing.CaseSizeMm);
+        Assert.Equal("Black", listing.DialColor);
     }
 
     [Fact]

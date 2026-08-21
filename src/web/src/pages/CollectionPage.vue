@@ -151,7 +151,12 @@
                 <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 pt-16">
                   <p class="font-display text-xl font-semibold text-white">{{ watch.brand }}</p>
                   <p class="text-sm text-white/80">{{ watch.model }}</p>
-                  <p v-if="tab === 'wishlist' && watch.purchasePrice" class="text-sm text-accent mt-1 font-medium">${{ watch.purchasePrice.toFixed(2) }}</p>
+                  <p v-if="tab === 'wishlist' && watch.purchasePrice" class="text-sm text-accent mt-1 font-medium">
+                    {{ money(watch.purchasePrice, watch.marketplaceCurrency) }}
+                  </p>
+                  <p v-if="tab === 'wishlist' && watch.marketplaceObservedAt" class="text-[0.68rem] text-white/70">
+                    Observed {{ observedDate(watch.marketplaceObservedAt) }}
+                  </p>
                 </div>
               </div>
             </RouterLink>
@@ -219,7 +224,12 @@
         <div class="p-4">
           <p class="font-display text-lg font-medium text-text">{{ watch.brand }}</p>
           <p class="text-sm text-text-secondary">{{ watch.model }}</p>
-          <p v-if="tab === 'wishlist' && watch.purchasePrice" class="text-sm text-accent font-medium mt-1">${{ watch.purchasePrice.toFixed(2) }}</p>
+          <p v-if="tab === 'wishlist' && watch.purchasePrice" class="text-sm text-accent font-medium mt-1">
+            {{ money(watch.purchasePrice, watch.marketplaceCurrency) }}
+          </p>
+          <p v-if="tab === 'wishlist' && watch.marketplaceObservedAt" class="text-[0.68rem] text-text-muted">
+            Observed {{ observedDate(watch.marketplaceObservedAt) }}
+          </p>
           <p v-else-if="tab === 'collection'" class="text-xs text-text-muted mt-1">{{ watch.movementType }} · Worn {{ watch.timesWorn }}×</p>
         </div>
       </RouterLink>
@@ -253,6 +263,22 @@ const currentIndex = ref(0)
 const windowWidth = ref(window.innerWidth)
 const isDesktop = computed(() => windowWidth.value >= 1024)
 const swipeEl = ref<HTMLElement | null>(null)
+
+function money(value: number, currency?: string): string {
+  if (!currency) return `$${value.toFixed(2)}`
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value)
+  } catch {
+    return `${value.toFixed(2)} ${currency}`
+  }
+}
+
+function observedDate(value: string): string {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? 'at an unknown time'
+    : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date)
+}
 
 // Filter & Sort state — default from preferences
 const filterBrand = ref('')

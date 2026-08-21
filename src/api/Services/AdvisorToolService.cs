@@ -184,7 +184,7 @@ public class AdvisorToolService(
             .Where(l => l.ListingType == MarketplaceListingType.FixedPrice)
             .Where(l => currency is null
                 || l.Currency.Equals(currency, StringComparison.OrdinalIgnoreCase))
-            .Where(l => maxPrice is null || (l.TotalPrice ?? l.Price) <= maxPrice)
+            .Where(l => maxPrice is null || l.TotalPrice is decimal total && total <= maxPrice)
             .OrderBy(l => l.TotalPrice ?? l.Price)
             .Take(MaxMarketplaceItems)
             .ToList();
@@ -352,13 +352,22 @@ public class AdvisorToolService(
 
         var candidate = new CollectionCandidateProfile
         {
-            Price = listing.TotalPrice ?? listing.Price
+            Brand = listing.Brand,
+            Model = listing.Model,
+            MovementType = listing.MovementType,
+            CaseSizeMm = listing.CaseSizeMm,
+            DialColor = listing.DialColor,
+            BandType = listing.BandType,
+            Price = listing.TotalPrice
         };
         var budget = OptionalPositiveDecimal(arguments, "budget");
         var currency = OptionalCurrency(arguments, "currency");
         if (budget is not null && currency is null)
             throw new InvalidOperationException(
                 "Tool argument \"currency\" is required when budget is provided.");
+        if (budget is not null && listing.TotalPrice is null)
+            throw new InvalidOperationException(
+                "The listing cannot be budget-scored because its delivered total is unavailable.");
         if (currency is not null
             && !listing.Currency.Equals(currency, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(

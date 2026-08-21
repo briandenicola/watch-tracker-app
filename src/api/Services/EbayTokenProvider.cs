@@ -51,7 +51,9 @@ public class EbayTokenProvider(
             var body = await response.Content.ReadAsStringAsync(ct);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("eBay OAuth token request failed {Status}: {Body}", response.StatusCode, body);
+                logger.LogWarning(
+                    "eBay OAuth token request failed with HTTP {StatusCode}.",
+                    (int)response.StatusCode);
                 return null;
             }
 
@@ -68,9 +70,9 @@ public class EbayTokenProvider(
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            logger.LogWarning(ex, "eBay OAuth token request threw; skipping eBay leg.");
+            logger.LogWarning("eBay OAuth token request threw; skipping eBay leg.");
             return null;
         }
         finally

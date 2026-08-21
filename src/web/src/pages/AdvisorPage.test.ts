@@ -62,6 +62,7 @@ describe('Advisor recommendation actions', () => {
     })
     const wrapper = mount(AdvisorPage)
     await flushPromises()
+    expect(wrapper.text()).toContain('This saved result is stale')
 
     await findButton(wrapper, 'Add to wishlist').trigger('click')
     await flushPromises()

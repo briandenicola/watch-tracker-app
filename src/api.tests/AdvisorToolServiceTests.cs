@@ -47,7 +47,9 @@ public class AdvisorToolServiceTests
         Assert.DoesNotContain("over-budget", search.OutputJson);
         Assert.DoesNotContain("auction", search.OutputJson);
         Assert.DoesNotContain("other-currency", search.OutputJson);
+        Assert.DoesNotContain("unknown-shipping", search.OutputJson);
         Assert.Contains("\"budgetFitScore\":100", score.OutputJson);
+        Assert.Contains("\"evidenceConfidencePercent\":75", score.OutputJson);
         Assert.Single(context.Listings);
         Assert.Single(context.ListingScores);
     }
@@ -154,6 +156,35 @@ public class AdvisorToolServiceTests
         Assert.DoesNotContain("within-budget", result.OutputJson);
     }
 
+    [Fact]
+    public async Task Wishlist_tool_is_scoped_to_the_current_user()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = TestDatabase.User("owner");
+        var other = TestDatabase.User("other");
+        database.Context.Users.AddRange(owner, other);
+        await database.Context.SaveChangesAsync();
+        database.Context.Watches.AddRange(
+            new() { UserId = owner.Id, Brand = "Visible", Model = "Wish", IsWishList = true },
+            new() { UserId = other.Id, Brand = "Hidden", Model = "Wish", IsWishList = true });
+        await database.Context.SaveChangesAsync();
+        var profileService = new CollectionProfileService(database.Context);
+        var service = new AdvisorToolService(
+            database.Context,
+            profileService,
+            [],
+            [],
+            new StubSettings());
+
+        var result = await service.ExecuteAsync(
+            "wishlist_context",
+            JsonSerializer.SerializeToElement(new { }),
+            new AdvisorToolContext(owner.Id, await profileService.GetProfileAsync(owner.Id)));
+
+        Assert.Contains("Visible", result.OutputJson);
+        Assert.DoesNotContain("Hidden", result.OutputJson);
+    }
+
     private sealed class StubMarketplaceClient : IMarketplaceSearchClient
     {
         public string ProviderName => "TestMarket";
@@ -180,7 +211,10 @@ public class AdvisorToolServiceTests
                         "Used",
                         "seller",
                         99,
-                        observedAt),
+                        observedAt,
+                        MovementType: WatchTracker.Api.Models.MovementType.Automatic,
+                        CaseSizeMm: 40,
+                        DialColor: "Black"),
                     new MarketplaceListingItem(
                         ProviderName,
                         "over-budget",
@@ -190,6 +224,21 @@ public class AdvisorToolServiceTests
                         2000,
                         25,
                         2025,
+                        "USD",
+                        MarketplaceListingType.FixedPrice,
+                        "Used",
+                        "seller",
+                        99,
+                        observedAt),
+                    new MarketplaceListingItem(
+                        ProviderName,
+                        "unknown-shipping",
+                        "Unknown Shipping Watch",
+                        "https://market.test/unknown-shipping",
+                        null,
+                        900,
+                        null,
+                        null,
                         "USD",
                         MarketplaceListingType.FixedPrice,
                         "Used",

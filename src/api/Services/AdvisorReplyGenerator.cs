@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
 
@@ -19,6 +21,22 @@ public class AdvisorReplyGenerator(
     private const int MaxCitations = 10;
     private const int MaxRecommendationCards = 5;
     private const int MaxFollowUps = 3;
+    private static readonly HashSet<string> ApprovedTools =
+    [
+        "collection_profile",
+        "collection_watches",
+        "wishlist_context",
+        "marketplace_search",
+        "resale_comparables",
+        "web_research",
+        "score_listing"
+    ];
+    private static readonly HashSet<string> LocalEvidenceTools =
+    [
+        "collection_profile",
+        "collection_watches",
+        "wishlist_context"
+    ];
     private static readonly TimeSpan MaxExecutionTime = TimeSpan.FromSeconds(90);
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
@@ -36,6 +54,8 @@ public class AdvisorReplyGenerator(
         string userMessage,
         CancellationToken ct = default)
     {
+        var requestTimer = Stopwatch.StartNew();
+        var toolCalls = 0;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(MaxExecutionTime);
         try
@@ -59,8 +79,6 @@ public class AdvisorReplyGenerator(
             var toolContext = new AdvisorToolContext(userId, profile);
             var activities = new List<AdvisorToolActivityDto>();
             var messages = BuildInitialMessages(persona, feedbackMemory, history, userMessage);
-            var toolCalls = 0;
-
             while (true)
             {
                 EnsurePromptBound(messages);
@@ -71,18 +89,30 @@ public class AdvisorReplyGenerator(
                     timeout.Token);
                 var action = ParseAction(rawAction);
                 if (action.Type.Equals("clarify", StringComparison.OrdinalIgnoreCase))
-                    return BuildClarification(action);
+                {
+                    var reply = BuildClarification(action);
+                    LogCompletion(requestTimer, toolCalls, "clarification");
+                    return reply;
+                }
                 if (action.Type.Equals("answer", StringComparison.OrdinalIgnoreCase))
-                    return BuildReply(action, toolContext, activities);
+                {
+                    var reply = BuildReply(action, toolContext, activities);
+                    LogCompletion(requestTimer, toolCalls, "answer");
+                    return reply;
+                }
 
                 if (!action.Type.Equals("tool", StringComparison.OrdinalIgnoreCase)
                     || string.IsNullOrWhiteSpace(action.Tool))
                     throw new InvalidOperationException("The collection advisor returned an unsupported action.");
+                if (!ApprovedTools.Contains(action.Tool))
+                    throw new InvalidOperationException(
+                        "The collection advisor requested an unsupported tool.");
                 if (toolCalls >= MaxToolCalls)
                     throw new InvalidOperationException(
                         $"The collection advisor exceeded the {MaxToolCalls}-tool-call limit.");
 
                 AdvisorToolResult result;
+                var toolTimer = Stopwatch.StartNew();
                 try
                 {
                     result = await tools.ExecuteAsync(
@@ -97,11 +127,22 @@ public class AdvisorReplyGenerator(
                     {
                         Tool = action.Tool,
                         Status = "failed",
-                        Message = ex.Message
+                        Message = ex.Message,
+                        DurationMs = toolTimer.ElapsedMilliseconds
                     });
+                    logger.LogWarning(
+                        "Collection advisor tool {Tool} failed after {DurationMs} ms.",
+                        action.Tool,
+                        toolTimer.ElapsedMilliseconds);
                     throw;
                 }
 
+                result.Activity.DurationMs = toolTimer.ElapsedMilliseconds;
+                logger.LogInformation(
+                    "Collection advisor tool {Tool} completed with status {Status} in {DurationMs} ms.",
+                    action.Tool,
+                    result.Activity.Status,
+                    result.Activity.DurationMs);
                 activities.Add(result.Activity);
                 toolCalls++;
                 messages.Add(new ChatMessage("assistant", rawAction));
@@ -116,12 +157,29 @@ public class AdvisorReplyGenerator(
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
+            logger.LogInformation(
+                "Collection advisor request was cancelled after {DurationMs} ms and {ToolCallCount} tool calls.",
+                requestTimer.ElapsedMilliseconds,
+                toolCalls);
             throw;
         }
         catch (OperationCanceledException)
         {
+            logger.LogWarning(
+                "Collection advisor request timed out after {DurationMs} ms and {ToolCallCount} tool calls.",
+                requestTimer.ElapsedMilliseconds,
+                toolCalls);
             throw new InvalidOperationException(
                 $"The collection advisor exceeded its {MaxExecutionTime.TotalSeconds:0}-second execution limit.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(
+                "Collection advisor request failed after {DurationMs} ms and {ToolCallCount} tool calls with category {FailureCategory}.",
+                requestTimer.ElapsedMilliseconds,
+                toolCalls,
+                FailureCategory(ex));
+            throw;
         }
     }
 
@@ -169,8 +227,11 @@ public class AdvisorReplyGenerator(
             {"type":"tool","tool":"collection_profile","arguments":{}}
             To ask for one missing constraint:
             {"type":"clarify","constraint":"budget"}
-            To answer:
-            {"type":"answer","content":"markdown answer","citations":[{"url":"an exact observed URL","confidence":"high"}],"recommendedListings":[{"provider":"exact provider","providerItemId":"exact observed ID"}],"followUps":["short question"]}
+            To answer using collection-only evidence, tie every claim to the exact completed local tools:
+            {"type":"answer","claims":[{"text":"one collection claim","evidenceTools":["collection_profile"]}],"recommendedListings":[],"followUps":["short question"]}
+            To answer using any external evidence, omit content and provide claim-level citations.
+            Never put a price value in claim text; identify its observed listing under listingPrices:
+            {"type":"answer","claims":[{"text":"one external factual claim","citations":[{"url":"an exact observed URL","confidence":"high"}],"listingPrices":[{"provider":"exact provider","providerItemId":"exact observed ID"}]}],"recommendedListings":[{"provider":"exact provider","providerItemId":"exact observed ID"}],"followUps":["short question"]}
             """;
         var messages = new List<ChatMessage> { new("system", systemPrompt) };
         messages.AddRange(history
@@ -211,9 +272,8 @@ public class AdvisorReplyGenerator(
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning(
-                    "Ollama returned {StatusCode} for a collection advisor request: {Body}",
-                    (int)response.StatusCode,
-                    body);
+                    "Ollama returned HTTP {StatusCode} for a collection advisor request.",
+                    (int)response.StatusCode);
                 throw new InvalidOperationException("The collection advisor model could not complete the request.");
             }
 
@@ -235,9 +295,10 @@ public class AdvisorReplyGenerator(
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            logger.LogWarning(ex, "The collection advisor could not reach or read Ollama at {OllamaUrl}.", ollamaUrl);
+            logger.LogWarning(
+                "The collection advisor could not reach or parse the configured model provider.");
             throw new InvalidOperationException(
                 "The collection advisor could not reach or read Ollama. Check the Ollama settings.");
         }
@@ -267,35 +328,145 @@ public class AdvisorReplyGenerator(
         AdvisorToolContext context,
         IReadOnlyList<AdvisorToolActivityDto> activities)
     {
-        var content = action.Content?.Trim();
-        if (string.IsNullOrEmpty(content))
-            throw new InvalidOperationException("The collection advisor answer omitted its content.");
-        if (content.Length > MaxReplyLength)
-            throw new InvalidOperationException("The collection advisor response exceeded the allowed length.");
+        if (activities.Count == 0)
+            throw new InvalidOperationException(
+                "The collection advisor answered without approved tool evidence.");
 
         var citations = new List<AdvisorCitationDto>();
-        if (action.Citations?.Count > MaxCitations)
-            throw new InvalidOperationException(
-                $"The collection advisor exceeded the {MaxCitations}-citation limit.");
-        foreach (var reference in action.Citations ?? [])
+        string content;
+        if (context.Sources.Count > 0)
         {
-            if (!context.Sources.TryGetValue(reference.Url, out var source))
+            if (!string.IsNullOrWhiteSpace(action.Content))
                 throw new InvalidOperationException(
-                    "The collection advisor cited a URL that was not returned by an approved tool.");
-            var confidence = reference.Confidence?.Trim().ToLowerInvariant();
-            if (confidence is not ("high" or "medium" or "low"))
+                    "The collection advisor used external evidence outside structured claims.");
+            if (action.Claims is not { Count: > 0 })
                 throw new InvalidOperationException(
-                    "The collection advisor citation used an unsupported confidence value.");
-            if (citations.Any(c => c.Url == source.Url)) continue;
-            citations.Add(new AdvisorCitationDto
+                    "The collection advisor used external evidence without claim-level citations.");
+            if (action.Claims.Count > MaxCitations)
+                throw new InvalidOperationException(
+                    $"The collection advisor exceeded the {MaxCitations}-claim limit.");
+
+            var renderedClaims = new List<string>();
+            foreach (var claim in action.Claims)
             {
-                Title = source.Title,
-                Url = source.Url,
-                Provider = source.Provider,
-                Confidence = confidence,
-                ObservedAt = source.ObservedAt
-            });
+                var text = claim.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(text) || text.Length > 1000)
+                    throw new InvalidOperationException(
+                        "The collection advisor returned an invalid external claim.");
+                if (ContainsPriceValue(text))
+                    throw new InvalidOperationException(
+                        "The collection advisor placed an unqualified price in external claim text.");
+                if (text.Contains("http://", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("https://", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(
+                        "The collection advisor placed a URL in claim text instead of a citation.");
+                if (claim.Citations is not { Count: > 0 })
+                    throw new InvalidOperationException(
+                        "The collection advisor returned an external claim without a citation.");
+
+                var claimCitationIndexes = new List<int>();
+                foreach (var reference in claim.Citations)
+                {
+                    if (!context.Sources.TryGetValue(reference.Url, out var source))
+                        throw new InvalidOperationException(
+                            "The collection advisor cited a URL that was not returned by an approved tool.");
+                    var confidence = reference.Confidence?.Trim().ToLowerInvariant();
+                    if (confidence is not ("high" or "medium" or "low"))
+                        throw new InvalidOperationException(
+                            "The collection advisor citation used an unsupported confidence value.");
+                    var citationIndex = citations.FindIndex(c => c.Url == source.Url);
+                    if (citationIndex < 0)
+                    {
+                        if (citations.Count >= MaxCitations)
+                            throw new InvalidOperationException(
+                                $"The collection advisor exceeded the {MaxCitations}-citation limit.");
+                        citations.Add(new AdvisorCitationDto
+                        {
+                            Title = source.Title,
+                            Url = source.Url,
+                            Provider = source.Provider,
+                            Confidence = confidence,
+                            ObservedAt = source.ObservedAt
+                        });
+                        citationIndex = citations.Count - 1;
+                    }
+                    claimCitationIndexes.Add(citationIndex);
+                }
+
+                var citationMarkers = string.Join(
+                    " ",
+                    claimCitationIndexes.Distinct().Select(index => $"[{index + 1}]"));
+                var rendered = $"{text} {citationMarkers}";
+                foreach (var priceReference in claim.ListingPrices ?? [])
+                {
+                    var key = AdvisorToolContext.ListingKey(
+                        priceReference.Provider,
+                        priceReference.ProviderItemId);
+                    if (!context.Listings.TryGetValue(key, out var listing)
+                        || !claim.Citations.Any(reference => reference.Url == listing.ItemUrl))
+                        throw new InvalidOperationException(
+                            "The collection advisor used a price that was not tied to a cited observed listing.");
+                    rendered +=
+                        $"\n\nObserved asking price: {listing.Currency} {(listing.TotalPrice ?? listing.Price):0.00} " +
+                        $"(observed {listing.ObservedAt:yyyy-MM-dd HH:mm} UTC" +
+                        (listing.TotalPrice is null ? "; shipping total unavailable" : "") +
+                        ").";
+                }
+                renderedClaims.Add(rendered);
+            }
+            content = string.Join("\n\n", renderedClaims);
         }
+        else
+        {
+            var externalAttempts = activities
+                .Where(activity => !LocalEvidenceTools.Contains(activity.Tool))
+                .ToList();
+            if (externalAttempts.Count > 0)
+            {
+                content = externalAttempts.Any(activity =>
+                        activity.Status is "failed" or "unavailable")
+                    ? "I couldn't retrieve current external evidence from the configured providers. Check the provider status below and try again."
+                    : "The configured providers returned no matching current external evidence. Try a more specific query or different constraints.";
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(action.Content))
+                    throw new InvalidOperationException(
+                        "The collection advisor returned collection evidence outside structured claims.");
+                if (action.Claims is not { Count: > 0 })
+                    throw new InvalidOperationException(
+                        "The collection advisor answer omitted its evidence-backed claims.");
+                if (action.Claims.Count > MaxCitations)
+                    throw new InvalidOperationException(
+                        $"The collection advisor exceeded the {MaxCitations}-claim limit.");
+
+                var renderedClaims = new List<string>();
+                foreach (var claim in action.Claims)
+                {
+                    var text = claim.Text?.Trim();
+                    if (string.IsNullOrWhiteSpace(text) || text.Length > 1000)
+                        throw new InvalidOperationException(
+                            "The collection advisor returned an invalid collection claim.");
+                    if (ContainsPriceValue(text)
+                        || text.Contains("http://", StringComparison.OrdinalIgnoreCase)
+                        || text.Contains("https://", StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException(
+                            "The collection advisor returned unsupported external data in a collection claim.");
+                    if (claim.Citations is { Count: > 0 }
+                        || claim.EvidenceTools is not { Count: > 0 }
+                        || claim.EvidenceTools.Any(tool =>
+                            !LocalEvidenceTools.Contains(tool)
+                            || !activities.Any(activity =>
+                                activity.Tool == tool && activity.Status == "completed")))
+                        throw new InvalidOperationException(
+                            "The collection advisor returned a collection claim without completed local evidence.");
+                    renderedClaims.Add(text);
+                }
+                content = string.Join("\n\n", renderedClaims);
+            }
+        }
+        if (content.Length > MaxReplyLength)
+            throw new InvalidOperationException("The collection advisor response exceeded the allowed length.");
 
         var cards = new List<AdvisorRecommendationCardDto>();
         if (action.RecommendedListings?.Count > MaxRecommendationCards)
@@ -330,7 +501,7 @@ public class AdvisorReplyGenerator(
                 Model = listing.Model,
                 ReferenceNumber = listing.ReferenceNumber,
                 ObservedAt = listing.ObservedAt,
-                FitScore = score?.TotalScore,
+                FitScore = score?.EvidenceConfidencePercent > 0 ? score.TotalScore : null,
                 Reasons = score?.Reasons ?? []
             });
         }
@@ -339,16 +510,9 @@ public class AdvisorReplyGenerator(
         if (followUps.Count > MaxFollowUps
             || followUps.Any(f => string.IsNullOrWhiteSpace(f) || f.Trim().Length > 200))
             throw new InvalidOperationException("The collection advisor returned invalid follow-up questions.");
-        if (context.Sources.Count > 0 && citations.Count == 0)
-            throw new InvalidOperationException(
-                "The collection advisor used external evidence but omitted its citations.");
         if (cards.Any(card => !citations.Any(citation => citation.Url == card.ItemUrl)))
             throw new InvalidOperationException(
                 "The collection advisor recommended a listing without citing that listing.");
-        if (activities.Count == 0)
-            throw new InvalidOperationException(
-                "The collection advisor answered without approved tool evidence.");
-
         return new AdvisorGeneratedReply(
             content,
             citations,
@@ -382,6 +546,38 @@ public class AdvisorReplyGenerator(
         return new AdvisorGeneratedReply(content, [], [], [followUp], []);
     }
 
+    private void LogCompletion(Stopwatch timer, int toolCalls, string outcome) =>
+        logger.LogInformation(
+            "Collection advisor request completed as {Outcome} in {DurationMs} ms with {ToolCallCount} tool calls.",
+            outcome,
+            timer.ElapsedMilliseconds,
+            toolCalls);
+
+    private static string FailureCategory(InvalidOperationException exception)
+    {
+        var message = exception.Message;
+        if (message.Contains("citat", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("external claim", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("observed listing", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("unqualified price", StringComparison.OrdinalIgnoreCase))
+            return "grounding_validation";
+        if (message.Contains("tool", StringComparison.OrdinalIgnoreCase))
+            return "tool_execution";
+        if (message.Contains("Ollama", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("model", StringComparison.OrdinalIgnoreCase))
+            return "model_provider";
+        if (message.Contains("limit", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("exceeded", StringComparison.OrdinalIgnoreCase))
+            return "safety_limit";
+        return "invalid_model_output";
+    }
+
+    private static bool ContainsPriceValue(string value) =>
+        Regex.IsMatch(
+            value,
+            @"[$€£¥]\s*\d|\b[A-Z]{3}\s*\d|\b\d[\d,.]*\s*(?:USD|EUR|GBP|CAD|AUD|JPY|dollars?|euros?|pounds?)\b|\b(?:price|cost|asking|listed|available|selling|offered)\D{0,20}\d",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     private static void EnsurePromptBound(IReadOnlyCollection<ChatMessage> messages)
     {
         var characters = messages.Sum(message => message.Content.Length);
@@ -409,9 +605,17 @@ public class AdvisorReplyGenerator(
         public JsonElement Arguments { get; set; }
         public string? Content { get; set; }
         public string? Constraint { get; set; }
-        public List<AgentCitationReference>? Citations { get; set; }
+        public List<AgentClaim>? Claims { get; set; }
         public List<AgentListingReference>? RecommendedListings { get; set; }
         public List<string>? FollowUps { get; set; }
+    }
+
+    private sealed class AgentClaim
+    {
+        public string? Text { get; set; }
+        public List<AgentCitationReference>? Citations { get; set; }
+        public List<AgentListingReference>? ListingPrices { get; set; }
+        public List<string>? EvidenceTools { get; set; }
     }
 
     private sealed class AgentCitationReference

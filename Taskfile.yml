@@ -28,11 +28,23 @@ tasks:
       - dotnet test
 
   build-web:
-    desc: Build the React frontend
+    desc: Build the Vue frontend
     dir: src/web
     cmds:
       - npm install
       - npm run build
+
+  test-web:
+    desc: Run the Vue frontend tests
+    dir: src/web
+    cmds:
+      - npm run test
+
+  lint-web:
+    desc: Lint the Vue frontend
+    dir: src/web
+    cmds:
+      - npm run lint
 
   run-api:
     desc: Run the .NET API server

@@ -82,6 +82,7 @@
                   <span>
                     <strong class="font-medium">{{ toolLabel(activity.tool) }}</strong>
                     <span> · {{ toolStatusLabel(activity.status) }}</span>
+                    <span v-if="activity.durationMs > 0"> · {{ activity.durationMs }} ms</span>
                     <span v-if="activity.message" class="block text-text-muted">{{ activity.message }}</span>
                   </span>
                 </div>
@@ -153,7 +154,7 @@
                       <div class="flex flex-wrap gap-1.5">
                         <button
                           type="button"
-                          class="rounded-full border px-2.5 py-1 text-[0.68rem] transition-colors disabled:opacity-50"
+                          class="min-h-11 rounded-full border px-3 py-2 text-[0.68rem] transition-colors disabled:opacity-50"
                           :class="card.feedback?.kind === option.kind
                             ? 'border-accent bg-accent/10 text-accent'
                             : 'border-border text-text-muted hover:border-accent/60'"
@@ -167,7 +168,7 @@
                         <button
                           v-if="card.feedback"
                           type="button"
-                          class="px-2 py-1 text-[0.68rem] text-text-muted hover:text-danger disabled:opacity-50"
+                          class="min-h-11 px-3 py-2 text-[0.68rem] text-text-muted hover:text-danger disabled:opacity-50"
                           :disabled="actionPending(actionKey(message.id, card))"
                           @click="clearFeedback(message.id, card)"
                         >
@@ -179,6 +180,7 @@
                           :value="feedbackNote(message.id, card)"
                           type="text"
                           maxlength="500"
+                          :aria-label="`Optional feedback note for ${card.title}`"
                           placeholder="Optional feedback note"
                           class="min-w-48 flex-1 rounded-lg border border-border bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-accent"
                           @input="setFeedbackNote(message.id, card, ($event.target as HTMLInputElement).value)"
@@ -186,7 +188,7 @@
                         <button
                           v-if="card.feedback"
                           type="button"
-                          class="text-xs font-medium text-accent hover:underline disabled:opacity-50"
+                          class="min-h-11 px-2 text-xs font-medium text-accent hover:underline disabled:opacity-50"
                           :disabled="actionPending(actionKey(message.id, card))"
                           @click="setFeedback(message.id, card, card.feedback.kind)"
                         >
@@ -194,7 +196,7 @@
                         </button>
                         <button
                           type="button"
-                          class="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-bg disabled:opacity-50"
+                          class="min-h-11 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-bg disabled:opacity-50"
                           :disabled="actionPending(actionKey(message.id, card))"
                           @click="addToWishlist(message.id, card)"
                         >
