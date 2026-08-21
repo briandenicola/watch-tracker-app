@@ -1,6 +1,8 @@
 # .NET
 src/api/bin/
 src/api/obj/
+src/api.tests/bin/
+src/api.tests/obj/
 *.db
 
 # Node
