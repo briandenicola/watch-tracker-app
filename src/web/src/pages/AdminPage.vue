@@ -253,15 +253,22 @@ import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcPr
 import { api } from '@/services/api'
 
 const SETTING_GROUPS: { label: string; keys: string[] }[] = [
+  { label: 'Ollama Configuration', keys: ['OllamaUrl', 'OllamaModel'] },
+  { label: 'Web Search Configuration', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
+  { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },
+  { label: 'Resale Configuration', keys: ['ResaleValueRefreshIntervalDays'] },
+  {
+    label: 'Prompts',
+    keys: [
+      'AiAnalysisPrompt',
+      'StyleAgentPrompt',
+      'WatchRecommendationPrompt',
+      'CollectionAdvisorPrompt',
+      'ResaleValuePrompt',
+    ],
+  },
   { label: 'Security', keys: ['MaxFailedAttempts', 'LockoutDurationMinutes'] },
   { label: 'Logging', keys: ['LogLevel'] },
-  { label: 'AI Analysis (Ollama)', keys: ['AiAnalysisPrompt', 'OllamaUrl', 'OllamaModel'] },
-  { label: 'Style Agent', keys: ['StyleAgentPrompt'] },
-  { label: 'Watch Recommendations', keys: ['WatchRecommendationPrompt'] },
-  { label: 'Collection Advisor', keys: ['CollectionAdvisorPrompt'] },
-  { label: 'Web Search', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
-  { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },
-  { label: 'Resale Value', keys: ['ResaleValueRefreshIntervalDays', 'ResaleValuePrompt'] },
 ]
 
 const loading = ref(true)
