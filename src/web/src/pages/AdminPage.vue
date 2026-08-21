@@ -96,6 +96,20 @@
                       {{ testingSearXng ? 'Testing...' : 'Test Connection' }}
                     </button>
                   </template>
+                  <template v-else-if="setting.key === 'OllamaUrl'">
+                    <input
+                      v-model="setting.value"
+                      class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                    />
+                    <button
+                      type="button"
+                      @click="handleTestOllama(setting.value)"
+                      :disabled="testingOllama || !setting.value.trim()"
+                      class="px-4 py-2 bg-bg-surface border border-border text-text text-sm rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50 flex-shrink-0"
+                    >
+                      {{ testingOllama ? 'Testing...' : 'Test Connection' }}
+                    </button>
+                  </template>
                   <input
                     v-else
                     v-model="setting.value"
@@ -109,6 +123,18 @@
                   :class="searXngTestSuccess ? 'text-success' : 'text-danger'"
                 >
                   {{ searXngTestMsg }}
+                </p>
+                <div v-if="setting.key === 'OllamaUrl' && ollamaModels.length" class="mt-2 sm:ml-[13rem]">
+                  <p class="text-sm text-success mb-2">Connected — {{ ollamaModels.length }} model(s) available:</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span v-for="m in ollamaModels" :key="m" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">{{ m }}</span>
+                  </div>
+                </div>
+                <p
+                  v-if="setting.key === 'OllamaUrl' && ollamaError"
+                  class="text-xs text-danger mt-1 sm:ml-[13rem]"
+                >
+                  {{ ollamaError }}
                 </p>
               </div>
             </div>
@@ -201,33 +227,6 @@
         </div>
       </section>
 
-      <!-- Ollama Test -->
-      <section class="bg-bg-card border border-border rounded-xl p-4">
-        <h3 class="text-lg font-medium text-text mb-4">Ollama Connection</h3>
-        <p class="text-xs text-text-muted mb-3">
-          Tests the OllamaUrl configured under AI Analysis above. Save settings first if you changed it.
-        </p>
-        <div class="flex flex-wrap items-center gap-3">
-          <code class="flex-1 min-w-[250px] px-4 py-3 bg-bg-surface border border-border rounded-lg text-text break-all">
-            {{ configuredOllamaUrl || 'OllamaUrl is not configured' }}
-          </code>
-          <button
-            @click="handleTestOllama"
-            :disabled="testingOllama || !configuredOllamaUrl"
-            class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-          >
-            {{ testingOllama ? 'Testing...' : 'Test Connection' }}
-          </button>
-        </div>
-        <div v-if="ollamaModels.length" class="mt-3">
-          <p class="text-sm text-success mb-2">Connected — {{ ollamaModels.length }} model(s) available:</p>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="m in ollamaModels" :key="m" class="px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">{{ m }}</span>
-          </div>
-        </div>
-        <p v-if="ollamaError" class="text-sm text-danger mt-2">{{ ollamaError }}</p>
-      </section>
-
       <!-- Resale Values -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Resale Values</h3>
@@ -301,8 +300,6 @@ const groupedSettings = computed(() => {
 const testingOllama = ref(false)
 const ollamaModels = ref<string[]>([])
 const ollamaError = ref('')
-const configuredOllamaUrl = computed(() =>
-  settings.value.find(setting => setting.key === 'OllamaUrl')?.value.trim() ?? '')
 
 // SearXNG
 const testingSearXng = ref(false)
@@ -416,12 +413,12 @@ async function handleTestOidcProvider(provider: OidcProvider) {
   }
 }
 
-async function handleTestOllama() {
+async function handleTestOllama(url: string) {
   testingOllama.value = true
   ollamaModels.value = []
   ollamaError.value = ''
   try {
-    const { data } = await api.post<string[]>('/api/admin/ollama/models', { url: configuredOllamaUrl.value })
+    const { data } = await api.post<string[]>('/api/admin/ollama/models', { url: url.trim() })
     ollamaModels.value = data
   } catch {
     ollamaError.value = 'Failed to connect to Ollama'
