@@ -21,6 +21,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StyleSession> StyleSessions => Set<StyleSession>();
     public DbSet<StyleMessage> StyleMessages => Set<StyleMessage>();
     public DbSet<StyleRecommendation> StyleRecommendations => Set<StyleRecommendation>();
+    public DbSet<AdvisorSession> AdvisorSessions => Set<AdvisorSession>();
+    public DbSet<AdvisorMessage> AdvisorMessages => Set<AdvisorMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -223,6 +225,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(r => new { r.UserId, r.WatchId, r.CreatedAt });
+        });
+
+        modelBuilder.Entity<AdvisorSession>(entity =>
+        {
+            entity.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(s => s.Messages)
+                .WithOne(m => m.Session)
+                .HasForeignKey(m => m.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => new { s.UserId, s.UpdatedAt });
+        });
+
+        modelBuilder.Entity<AdvisorMessage>(entity =>
+        {
+            entity.Property(m => m.Role)
+                .HasConversion<string>();
+
+            entity.HasIndex(m => new { m.SessionId, m.CreatedAt });
         });
 
         modelBuilder.Entity<ResaleValueEntry>(entity =>

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -144,11 +145,25 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+    options.AddPolicy("collection-advisor", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.User.Identity?.Name
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IWatchService, WatchService>();
 builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>();
+builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
 builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -161,6 +176,7 @@ builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
 // generation can legitimately take longer than a typical API call.
 builder.Services.AddHttpClient<IStyleAgentService, StyleAgentService>();
 builder.Services.AddHttpClient<IWatchRecommendationService, WatchRecommendationService>();
+builder.Services.AddHttpClient<IAdvisorReplyGenerator, AdvisorReplyGenerator>();
 builder.Services.AddHttpClient<IWebSearchClient, BraveSearchClient>()
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddHttpClient<IWebSearchClient, SearXngSearchClient>()
@@ -194,6 +210,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseAuthentication();
 app.UseRateLimiter();
 
 var uploadsDir = Path.Combine(app.Environment.ContentRootPath, "uploads");
@@ -208,7 +225,6 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
