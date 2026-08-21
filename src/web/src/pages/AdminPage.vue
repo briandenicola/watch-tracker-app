@@ -204,15 +204,16 @@
       <!-- Ollama Test -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Ollama Connection</h3>
+        <p class="text-xs text-text-muted mb-3">
+          Tests the OllamaUrl configured under AI Analysis above. Save settings first if you changed it.
+        </p>
         <div class="flex flex-wrap items-center gap-3">
-          <input
-            v-model="ollamaUrl"
-            placeholder="Ollama URL (e.g., http://localhost:11434)"
-            class="flex-1 min-w-[250px] px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-          />
+          <code class="flex-1 min-w-[250px] px-4 py-3 bg-bg-surface border border-border rounded-lg text-text break-all">
+            {{ configuredOllamaUrl || 'OllamaUrl is not configured' }}
+          </code>
           <button
             @click="handleTestOllama"
-            :disabled="testingOllama"
+            :disabled="testingOllama || !configuredOllamaUrl"
             class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
             {{ testingOllama ? 'Testing...' : 'Test Connection' }}
@@ -297,10 +298,11 @@ const groupedSettings = computed(() => {
 })
 
 // Ollama
-const ollamaUrl = ref('')
 const testingOllama = ref(false)
 const ollamaModels = ref<string[]>([])
 const ollamaError = ref('')
+const configuredOllamaUrl = computed(() =>
+  settings.value.find(setting => setting.key === 'OllamaUrl')?.value.trim() ?? '')
 
 // SearXNG
 const testingSearXng = ref(false)
@@ -329,8 +331,6 @@ async function load() {
       ? settingsResp.data
       : Object.entries(settingsResp.data).map(([key, value]) => ({ key, value: String(value) }))
     oidcProviders.value = oidcResp.data
-    const ollamaSetting = settings.value.find(s => s.key.toLowerCase().includes('ollama') && s.key.toLowerCase().includes('url'))
-    if (ollamaSetting) ollamaUrl.value = ollamaSetting.value
   } catch {
     error.value = true
   } finally {
@@ -421,7 +421,7 @@ async function handleTestOllama() {
   ollamaModels.value = []
   ollamaError.value = ''
   try {
-    const { data } = await api.post<string[]>('/api/admin/ollama/models', { url: ollamaUrl.value })
+    const { data } = await api.post<string[]>('/api/admin/ollama/models', { url: configuredOllamaUrl.value })
     ollamaModels.value = data
   } catch {
     ollamaError.value = 'Failed to connect to Ollama'
