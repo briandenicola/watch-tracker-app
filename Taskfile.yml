@@ -21,6 +21,12 @@ tasks:
     cmds:
       - dotnet build
 
+  test-api:
+    desc: Run the .NET API tests
+    dir: src/api.tests
+    cmds:
+      - dotnet test
+
   build-web:
     desc: Build the React frontend
     dir: src/web
