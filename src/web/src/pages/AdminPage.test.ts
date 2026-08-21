@@ -37,7 +37,7 @@ describe('Admin Ollama settings', () => {
     expect(wrapper.text()).not.toContain('Ollama Connection')
 
     const testButtons = wrapper.findAll('button').filter(button =>
-      button.text() === 'Test Connection')
+      button.text() === 'Test')
     expect(testButtons).toHaveLength(1)
     await testButtons[0].trigger('click')
     await flushPromises()

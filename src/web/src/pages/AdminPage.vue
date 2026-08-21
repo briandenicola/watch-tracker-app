@@ -107,7 +107,7 @@
                       :disabled="testingOllama || !setting.value.trim()"
                       class="px-4 py-2 bg-bg-surface border border-border text-text text-sm rounded-lg hover:border-accent/50 transition-colors disabled:opacity-50 flex-shrink-0"
                     >
-                      {{ testingOllama ? 'Testing...' : 'Test Connection' }}
+                      {{ testingOllama ? 'Testing...' : 'Test' }}
                     </button>
                   </template>
                   <input
