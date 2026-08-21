@@ -260,11 +260,11 @@ const SETTING_GROUPS: { label: string; keys: string[] }[] = [
   {
     label: 'Prompts',
     keys: [
-      'AiAnalysisPrompt',
-      'StyleAgentPrompt',
-      'WatchRecommendationPrompt',
-      'CollectionAdvisorPrompt',
       'ResaleValuePrompt',
+      'CollectionAdvisorPrompt',
+      'WatchRecommendationPrompt',
+      'StyleAgentPrompt',
+      'AiAnalysisPrompt',
     ],
   },
   { label: 'Security', keys: ['MaxFailedAttempts', 'LockoutDurationMinutes'] },
