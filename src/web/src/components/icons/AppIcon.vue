@@ -27,6 +27,13 @@
       <line x1="13" y1="19" x2="13" y2="22" />
     </template>
 
+    <!-- Advisor: conversational sparkle -->
+    <template v-else-if="name === 'advisor'">
+      <path d="M4 5.5h12a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-4.5 3v-3.5A3 3 0 0 1 2 12V8.5a3 3 0 0 1 2-3z" />
+      <path d="M14.5 1.5l.6 1.9L17 4l-1.9.6-.6 1.9-.6-1.9L12 4l1.9-.6z" />
+      <line x1="7" y1="10.5" x2="14" y2="10.5" />
+    </template>
+
     <!-- Storage: shelf / case display -->
     <template v-else-if="name === 'storage'">
       <rect x="3" y="5" width="18" height="14" rx="2" />

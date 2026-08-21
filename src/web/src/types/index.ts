@@ -274,6 +274,63 @@ export interface SendStyleMessage {
   weather?: string
 }
 
+export type AdvisorMessageRole = 'User' | 'Assistant'
+
+export interface AdvisorCitation {
+  title: string
+  url: string
+  provider: string
+  confidence: 'high' | 'medium' | 'low'
+  observedAt: string
+}
+
+export interface AdvisorRecommendationCard {
+  watchId?: number | null
+  provider?: string | null
+  providerItemId?: string | null
+  title: string
+  itemUrl?: string | null
+  imageUrl?: string | null
+  price?: number | null
+  shippingPrice?: number | null
+  totalPrice?: number | null
+  currency?: string | null
+  condition?: string | null
+  observedAt?: string | null
+  fitScore?: number | null
+  reasons: string[]
+}
+
+export interface AdvisorToolActivity {
+  tool: string
+  status: 'completed' | 'completed_with_warnings' | 'unavailable' | 'failed'
+  message?: string | null
+}
+
+export interface AdvisorMessage {
+  id: number
+  role: AdvisorMessageRole
+  content: string
+  citations: AdvisorCitation[]
+  recommendationCards: AdvisorRecommendationCard[]
+  followUps: string[]
+  toolActivity: AdvisorToolActivity[]
+  createdAt: string
+}
+
+export interface AdvisorSession {
+  id: number
+  messages: AdvisorMessage[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdvisorChatState {
+  configured: boolean
+  configurationHint?: string | null
+  session: AdvisorSession
+}
+
 export interface AppSettingDto {
   key: string
   value: string

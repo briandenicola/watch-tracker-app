@@ -68,6 +68,10 @@ public class EbayBrowseClient(
                     && image.ValueKind == JsonValueKind.Object
                     ? ReadString(image, "imageUrl")
                     : null;
+                if (imageUrl is not null
+                    && (!Uri.TryCreate(imageUrl, UriKind.Absolute, out var parsedImageUrl)
+                        || parsedImageUrl.Scheme != Uri.UriSchemeHttps))
+                    imageUrl = null;
                 string? sellerName = null;
                 decimal? sellerFeedback = null;
                 if (item.TryGetProperty("seller", out var seller)

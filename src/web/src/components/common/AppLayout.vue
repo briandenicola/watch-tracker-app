@@ -206,6 +206,7 @@ const navItems = computed(() => [
   { to: '/', icon: 'collection', label: 'Collection' },
   { to: '/storage', icon: 'storage', label: 'Storage' },
   { to: '/recommend', icon: 'recommend', label: 'What to Wear' },
+  { to: '/advisor', icon: 'advisor', label: 'Collection Advisor' },
   { to: '/stats', icon: 'stats', label: 'Statistics' },
   { to: '/wear-log', icon: 'wear-log', label: 'Wear Log' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
