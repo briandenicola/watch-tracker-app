@@ -64,7 +64,12 @@
               class="max-w-[92%] sm:max-w-[82%]"
               :class="message.role === 'User' ? 'user-message' : 'assistant-message'"
             >
-              <p class="whitespace-pre-wrap text-sm leading-6">{{ message.content }}</p>
+              <div
+                v-if="message.role === 'Assistant'"
+                class="prose-markdown text-sm leading-6"
+                v-html="renderMarkdown(message.content)"
+              />
+              <p v-else class="whitespace-pre-wrap text-sm leading-6">{{ message.content }}</p>
 
               <div v-if="message.toolActivity.length" class="mt-3 space-y-1.5 border-t border-border/70 pt-3">
                 <div
@@ -248,6 +253,7 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, nextTick, onMounted, ref } from 'vue'
+import { marked } from 'marked'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import { getAdvisorChat, sendAdvisorMessage, startAdvisorSession } from '@/services/advisor'
 import { useAuthStore } from '@/stores/auth'
@@ -350,6 +356,34 @@ function requestError(error: unknown, fallback: string): string {
   if (error.response?.status === 429) return 'Too many advisor requests. Wait a minute, then try again.'
   if (!error.response) return 'The advisor API is unreachable. Check your connection and try again.'
   return fallback
+}
+
+function renderMarkdown(text: string): string {
+  const raw = marked.parse(text, { async: false }) as string
+  const document = new DOMParser().parseFromString(raw, 'text/html')
+  const allowedTags = new Set([
+    'A', 'BLOCKQUOTE', 'BR', 'CODE', 'EM', 'H1', 'H2', 'H3', 'H4',
+    'HR', 'LI', 'OL', 'P', 'PRE', 'STRONG', 'UL',
+  ])
+
+  for (const element of Array.from(document.body.querySelectorAll('*'))) {
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(document.createTextNode(element.textContent ?? ''))
+      continue
+    }
+
+    const href = element.tagName === 'A' ? element.getAttribute('href') : null
+    for (const attribute of Array.from(element.attributes)) {
+      element.removeAttribute(attribute.name)
+    }
+    if (element.tagName === 'A' && safeExternalUrl(href)) {
+      element.setAttribute('href', href!)
+      element.setAttribute('target', '_blank')
+      element.setAttribute('rel', 'noopener noreferrer')
+    }
+  }
+
+  return document.body.innerHTML
 }
 
 function money(value?: number | null, currency?: string | null): string {
