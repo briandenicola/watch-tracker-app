@@ -1,8 +1,5 @@
 namespace WatchTracker.Api.Services;
 
-public record EbayListingItem(decimal Price, string Currency, string Title);
-
-public interface IEbayBrowseClient
+public interface IEbayBrowseClient : IMarketplaceSearchClient
 {
-    Task<List<EbayListingItem>> SearchAsync(string query, CancellationToken ct = default);
 }

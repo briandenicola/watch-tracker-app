@@ -175,6 +175,8 @@ builder.Services.AddHttpClient("EbayToken")
 builder.Services.AddSingleton<IEbayTokenProvider, EbayTokenProvider>();
 builder.Services.AddHttpClient<IEbayBrowseClient, EbayBrowseClient>()
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddScoped<IMarketplaceSearchClient>(
+    services => services.GetRequiredService<IEbayBrowseClient>());
 builder.Services.AddScoped<IResaleValueEstimator, EbayResaleValueEstimator>();
 builder.Services.AddScoped<IResaleValueRefreshService, ResaleValueRefreshService>();
 builder.Services.AddHostedService<ResaleValueRefreshBackgroundService>();
