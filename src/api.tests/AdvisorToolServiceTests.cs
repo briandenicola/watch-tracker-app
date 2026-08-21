@@ -229,18 +229,19 @@ public class AdvisorToolServiceTests
                 ]));
         }
 
-        private sealed class FailingMarketplaceClient : IMarketplaceSearchClient
-        {
-            public string ProviderName => "FailedMarket";
+    }
 
-            public Task<MarketplaceSearchResult> SearchAsync(
-                string query,
-                CancellationToken ct = default) =>
-                Task.FromResult(new MarketplaceSearchResult(
-                    MarketplaceSearchStatus.ProviderError,
-                    [],
-                    "provider unavailable"));
-        }
+    private sealed class FailingMarketplaceClient : IMarketplaceSearchClient
+    {
+        public string ProviderName => "FailedMarket";
+
+        public Task<MarketplaceSearchResult> SearchAsync(
+            string query,
+            CancellationToken ct = default) =>
+            Task.FromResult(new MarketplaceSearchResult(
+                MarketplaceSearchStatus.ProviderError,
+                [],
+                "provider unavailable"));
     }
 
     private sealed class StubSettings : IAppSettingsService

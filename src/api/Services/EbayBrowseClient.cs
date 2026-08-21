@@ -98,23 +98,6 @@ public class EbayBrowseClient(
                     observedAt));
             }
 
-            private static MarketplaceListingType ReadListingType(JsonElement item)
-            {
-                if (!item.TryGetProperty("buyingOptions", out var options)
-                    || options.ValueKind != JsonValueKind.Array)
-                    return MarketplaceListingType.Unknown;
-
-                var values = options.EnumerateArray()
-                    .Where(option => option.ValueKind == JsonValueKind.String)
-                    .Select(option => option.GetString())
-                    .ToList();
-                if (values.Any(value => value == "AUCTION"))
-                    return MarketplaceListingType.Auction;
-                if (values.Any(value => value == "FIXED_PRICE"))
-                    return MarketplaceListingType.FixedPrice;
-                return MarketplaceListingType.Unknown;
-            }
-
             return new MarketplaceSearchResult(MarketplaceSearchStatus.Success, listings);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -137,6 +120,23 @@ public class EbayBrowseClient(
                 [],
                 "eBay marketplace search failed.");
         }
+    }
+
+    private static MarketplaceListingType ReadListingType(JsonElement item)
+    {
+        if (!item.TryGetProperty("buyingOptions", out var options)
+            || options.ValueKind != JsonValueKind.Array)
+            return MarketplaceListingType.Unknown;
+
+        var values = options.EnumerateArray()
+            .Where(option => option.ValueKind == JsonValueKind.String)
+            .Select(option => option.GetString())
+            .ToList();
+        if (values.Any(value => value == "AUCTION"))
+            return MarketplaceListingType.Auction;
+        if (values.Any(value => value == "FIXED_PRICE"))
+            return MarketplaceListingType.FixedPrice;
+        return MarketplaceListingType.Unknown;
     }
 
     private static decimal? TryReadShipping(JsonElement item, string currency)

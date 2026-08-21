@@ -45,9 +45,11 @@ public class AdvisorReplyGeneratorTests
     [Fact]
     public async Task Agent_cannot_exceed_the_tool_call_limit()
     {
-        var toolAction = Ollama("""{"type":"tool","tool":"collection_profile","arguments":{}}""");
         var generator = CreateGenerator(
-            new SequenceHandler(toolAction, toolAction, toolAction, toolAction, toolAction, toolAction),
+            new SequenceHandler(Enumerable.Range(0, 6)
+                .Select(_ => Ollama(
+                    """{"type":"tool","tool":"collection_profile","arguments":{}}"""))
+                .ToArray()),
             new StubTools());
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
