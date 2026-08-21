@@ -79,7 +79,7 @@ public class CollectionAdvisorService(
         history.Reverse();
 
         var profile = await collectionProfile.GetProfileAsync(userId, ct);
-        var reply = await replyGenerator.GenerateAsync(profile, history, userMessage, ct);
+        var reply = await replyGenerator.GenerateAsync(userId, profile, history, userMessage, ct);
         if (string.IsNullOrWhiteSpace(reply.Content))
             throw new InvalidOperationException("The collection advisor returned an empty response.");
 

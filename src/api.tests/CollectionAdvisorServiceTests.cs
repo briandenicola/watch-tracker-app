@@ -98,6 +98,7 @@ public class CollectionAdvisorServiceTests
         public Task<bool> IsConfiguredAsync() => Task.FromResult(true);
 
         public Task<AdvisorGeneratedReply> GenerateAsync(
+            int userId,
             CollectionProfileDto profile,
             IReadOnlyList<AdvisorMessage> history,
             string userMessage,

@@ -19,6 +19,7 @@ public class EbayBrowseClientTests
                   "itemWebUrl": "https://www.ebay.com/itm/123",
                   "image": { "imageUrl": "https://i.ebayimg.com/123.jpg" },
                   "price": { "value": "1000.00", "currency": "USD" },
+                  "buyingOptions": ["FIXED_PRICE"],
                   "shippingOptions": [
                     { "shippingCost": { "value": "25.00", "currency": "USD" } }
                   ],
@@ -43,6 +44,7 @@ public class EbayBrowseClientTests
         Assert.Equal(1000m, listing.Price);
         Assert.Equal(25m, listing.ShippingPrice);
         Assert.Equal(1025m, listing.TotalPrice);
+        Assert.Equal(MarketplaceListingType.FixedPrice, listing.ListingType);
         Assert.Equal("https://www.ebay.com/itm/123", listing.ItemUrl);
         Assert.Equal(99.8m, listing.SellerFeedbackPercent);
     }
@@ -57,6 +59,27 @@ public class EbayBrowseClientTests
         Assert.Equal(MarketplaceSearchStatus.ProviderError, result.Status);
         Assert.Empty(result.Listings);
         Assert.Contains("429", result.Error);
+    }
+
+    [Fact]
+    public async Task Auction_with_best_offer_is_not_classified_as_fixed_price()
+    {
+        const string payload = """
+            {
+              "itemSummaries": [{
+                "itemId": "auction",
+                "title": "Auction Watch",
+                "itemWebUrl": "https://www.ebay.com/itm/auction",
+                "price": { "value": "500.00", "currency": "USD" },
+                "buyingOptions": ["AUCTION", "BEST_OFFER"]
+              }]
+            }
+            """;
+        var client = CreateClient(HttpStatusCode.OK, payload);
+
+        var listing = Assert.Single((await client.SearchAsync("example")).Listings);
+
+        Assert.Equal(MarketplaceListingType.Auction, listing.ListingType);
     }
 
     private static EbayBrowseClient CreateClient(HttpStatusCode status, string body)

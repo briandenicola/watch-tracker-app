@@ -8,6 +8,7 @@ public class AdvisorCitationDto
     public required string Title { get; set; }
     public required string Url { get; set; }
     public required string Provider { get; set; }
+    public string Confidence { get; set; } = "medium";
     public DateTime ObservedAt { get; set; }
 }
 
@@ -20,6 +21,8 @@ public class AdvisorRecommendationCardDto
     public string? ItemUrl { get; set; }
     public string? ImageUrl { get; set; }
     public decimal? Price { get; set; }
+    public decimal? ShippingPrice { get; set; }
+    public decimal? TotalPrice { get; set; }
     public string? Currency { get; set; }
     public string? Condition { get; set; }
     public DateTime? ObservedAt { get; set; }

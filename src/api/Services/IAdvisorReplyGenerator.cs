@@ -15,6 +15,7 @@ public interface IAdvisorReplyGenerator
     Task<bool> IsConfiguredAsync();
 
     Task<AdvisorGeneratedReply> GenerateAsync(
+        int userId,
         CollectionProfileDto profile,
         IReadOnlyList<AdvisorMessage> history,
         string userMessage,

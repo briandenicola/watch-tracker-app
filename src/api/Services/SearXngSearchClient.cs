@@ -47,42 +47,49 @@ public class SearXngSearchClient(
         }
     }
 
-    public async Task<List<WebSearchResultItem>> SearchAsync(string query, CancellationToken ct = default)
+    public async Task<WebSearchResult> SearchAsync(string query, CancellationToken ct = default)
     {
         var baseUrl = await appSettings.GetAsync(AppSettingsService.Keys.SearXngUrl);
         if (string.IsNullOrWhiteSpace(baseUrl))
         {
             logger.LogInformation("SearXNG URL is not configured; skipping SearXNG search.");
-            return [];
+            return new WebSearchResult(
+                WebSearchStatus.NotConfigured,
+                [],
+                "SearXNG is not configured.");
         }
 
-        var request = new HttpRequestMessage(
+        using var request = new HttpRequestMessage(
             HttpMethod.Get,
             $"{baseUrl.TrimEnd('/')}/search?q={Uri.EscapeDataString(query)}&format=json");
         request.Headers.Add("Accept", "application/json");
 
         try
         {
-            var response = await httpClient.SendAsync(request, ct);
+            using var response = await httpClient.SendAsync(request, ct);
             var body = await response.Content.ReadAsStringAsync(ct);
 
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("SearXNG API error {Status}: {Body}", response.StatusCode, body);
-                return [];
+                return new WebSearchResult(
+                    WebSearchStatus.ProviderError,
+                    [],
+                    $"SearXNG returned HTTP {(int)response.StatusCode}.");
             }
 
             using var doc = JsonDocument.Parse(body);
             if (!doc.RootElement.TryGetProperty("results", out var results))
-                return [];
+                return new WebSearchResult(WebSearchStatus.Success, []);
 
-            return results.EnumerateArray()
+            var observedAt = DateTime.UtcNow;
+            var items = results.EnumerateArray()
                 .Take(10)
-                .Select(r => new WebSearchResultItem(
-                    r.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
-                    r.TryGetProperty("content", out var c) ? c.GetString() ?? "" : "",
-                    r.TryGetProperty("url", out var u) ? u.GetString() ?? "" : ""))
+                .Select(r => CreateResultItem(r, observedAt))
+                .Where(r => r is not null)
+                .Select(r => r!)
                 .ToList();
+            return new WebSearchResult(WebSearchStatus.Success, items);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -91,7 +98,30 @@ public class SearXngSearchClient(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "SearXNG call failed; skipping SearXNG search.");
-            return [];
+            return new WebSearchResult(
+                WebSearchStatus.ProviderError,
+                [],
+                "SearXNG search failed.");
         }
+    }
+
+    private static WebSearchResultItem? CreateResultItem(JsonElement result, DateTime observedAt)
+    {
+        var title = result.TryGetProperty("title", out var titleElement)
+            ? titleElement.GetString()?.Trim()
+            : null;
+        var description = result.TryGetProperty("content", out var descriptionElement)
+            ? descriptionElement.GetString()?.Trim()
+            : null;
+        var url = result.TryGetProperty("url", out var urlElement)
+            ? urlElement.GetString()?.Trim()
+            : null;
+        if (string.IsNullOrWhiteSpace(title)
+            || string.IsNullOrWhiteSpace(url)
+            || !Uri.TryCreate(url, UriKind.Absolute, out var parsedUrl)
+            || parsedUrl.Scheme is not ("http" or "https"))
+            return null;
+
+        return new WebSearchResultItem(title, description ?? "", url, observedAt);
     }
 }

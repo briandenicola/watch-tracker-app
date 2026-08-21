@@ -7,6 +7,13 @@ public enum MarketplaceSearchStatus
     ProviderError
 }
 
+public enum MarketplaceListingType
+{
+    FixedPrice,
+    Auction,
+    Unknown
+}
+
 public record MarketplaceListingItem(
     string Provider,
     string ProviderItemId,
@@ -17,6 +24,7 @@ public record MarketplaceListingItem(
     decimal? ShippingPrice,
     decimal? TotalPrice,
     string Currency,
+    MarketplaceListingType ListingType,
     string? Condition,
     string? SellerName,
     decimal? SellerFeedbackPercent,

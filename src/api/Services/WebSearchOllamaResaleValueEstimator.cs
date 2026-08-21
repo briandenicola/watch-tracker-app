@@ -24,8 +24,8 @@ public class WebSearchOllamaResaleValueEstimator(
         }
 
         var query = $"{watch.Brand} {watch.Model} watch resale price used";
-        var results = await client.SearchAsync(query, ct);
-        if (results.Count == 0)
+        var search = await client.SearchAsync(query, ct);
+        if (search.Status != WebSearchStatus.Success || search.Items.Count == 0)
         {
             logger.LogInformation("No {Provider} search results for {Brand} {Model}; skipping estimate.", client.ProviderName, watch.Brand, watch.Model);
             return null;
@@ -40,7 +40,7 @@ public class WebSearchOllamaResaleValueEstimator(
         }
 
         var promptTemplate = await appSettings.GetAsync(AppSettingsService.Keys.ResaleValuePrompt);
-        var snippets = string.Join("\n", results.Select(r => $"- {r.Title}: {r.Description} ({r.Url})"));
+        var snippets = string.Join("\n", search.Items.Select(r => $"- {r.Title}: {r.Description} ({r.Url})"));
         var purchaseContext = watch.PurchasePrice is decimal price
             ? $" It was purchased new/used for approximately {price:C}."
             : "";

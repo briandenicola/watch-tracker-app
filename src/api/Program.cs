@@ -164,6 +164,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IWatchService, WatchService>();
 builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>();
 builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>();
+builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
 builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

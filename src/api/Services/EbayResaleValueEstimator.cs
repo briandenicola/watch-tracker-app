@@ -18,7 +18,19 @@ public class EbayResaleValueEstimator(
             return null;
         }
 
-        var prices = search.Listings.Select(l => l.Price).OrderBy(p => p).ToList();
+        var prices = search.Listings
+            .Where(l => l.ListingType == MarketplaceListingType.FixedPrice && l.Currency == "USD")
+            .Select(l => l.TotalPrice ?? l.Price)
+            .OrderBy(p => p)
+            .ToList();
+        if (prices.Count == 0)
+        {
+            logger.LogInformation(
+                "No fixed-price USD eBay listings found for {Brand} {Model}; skipping eBay estimate.",
+                watch.Brand,
+                watch.Model);
+            return null;
+        }
         var average = prices.Average();
         var min = prices.First();
         var max = prices.Last();
