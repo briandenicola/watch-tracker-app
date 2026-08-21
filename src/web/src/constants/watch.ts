@@ -9,7 +9,7 @@ export const bandTypes = [
 
 export const crystalTypes = ['Sapphire', 'Mineral', 'Hardlex', 'Acrylic', 'Hesalite']
 
-export const movementTypes: MovementType[] = ['Automatic', 'Manual', 'Quartz', 'Digital']
+export const movementTypes: MovementType[] = ['Automatic', 'Manual', 'Quartz', 'Digital', 'Unknown']
 export const acquisitionTypes: AcquisitionType[] = ['New', 'Used', 'Trade', 'Other']
 
 /**

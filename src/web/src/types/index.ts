@@ -1,4 +1,4 @@
-export type MovementType = 'Automatic' | 'Manual' | 'Quartz' | 'Digital'
+export type MovementType = 'Automatic' | 'Manual' | 'Quartz' | 'Digital' | 'Unknown'
 export type AcquisitionType = 'New' | 'Used' | 'Trade' | 'Other'
 export type DispositionType = 'Retired' | 'Returned' | 'Sold' | 'Traded' | 'Other'
 
@@ -296,9 +296,28 @@ export interface AdvisorRecommendationCard {
   totalPrice?: number | null
   currency?: string | null
   condition?: string | null
+  brand?: string | null
+  model?: string | null
+  referenceNumber?: string | null
   observedAt?: string | null
   fitScore?: number | null
   reasons: string[]
+  feedback?: AdvisorRecommendationFeedback | null
+}
+
+export type AdvisorFeedbackKind = 'Helpful' | 'Irrelevant' | 'AlreadyOwned' | 'NotInterested'
+
+export interface AdvisorRecommendationFeedback {
+  id: number
+  kind: AdvisorFeedbackKind
+  notes?: string | null
+  updatedAt: string
+}
+
+export interface AdvisorWishlistActionResult {
+  added: boolean
+  watchId: number
+  message: string
 }
 
 export interface AdvisorToolActivity {

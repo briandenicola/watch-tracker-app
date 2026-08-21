@@ -95,7 +95,10 @@ public class EbayBrowseClient(
                     ReadString(item, "condition"),
                     sellerName,
                     sellerFeedback,
-                    observedAt));
+                    observedAt,
+                    ReadAspect(item, "Brand"),
+                    ReadAspect(item, "Model"),
+                    ReadAspect(item, "Reference Number") ?? ReadAspect(item, "MPN")));
             }
 
             return new MarketplaceSearchResult(MarketplaceSearchStatus.Success, listings);
@@ -137,6 +140,22 @@ public class EbayBrowseClient(
         if (values.Any(value => value == "FIXED_PRICE"))
             return MarketplaceListingType.FixedPrice;
         return MarketplaceListingType.Unknown;
+    }
+
+    private static string? ReadAspect(JsonElement item, string name)
+    {
+        if (!item.TryGetProperty("localizedAspects", out var aspects)
+            || aspects.ValueKind != JsonValueKind.Array)
+            return null;
+
+        foreach (var aspect in aspects.EnumerateArray())
+        {
+            if (!string.Equals(ReadString(aspect, "name"), name, StringComparison.OrdinalIgnoreCase))
+                continue;
+            return ReadString(aspect, "value");
+        }
+
+        return null;
     }
 
     private static decimal? TryReadShipping(JsonElement item, string currency)

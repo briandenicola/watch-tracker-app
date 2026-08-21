@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using WatchTracker.Api.DTOs;
+using WatchTracker.Api.Models;
 using WatchTracker.Api.Services;
 
 namespace WatchTracker.Api.Tests;
@@ -209,6 +210,36 @@ public class AdvisorReplyGeneratorTests
         Assert.Contains("unsupported clarification", error.Message);
     }
 
+    [Fact]
+    public async Task Recent_feedback_is_bounded_preference_context_in_the_system_prompt()
+    {
+        var handler = new SequenceHandler(
+            Ollama("""{"type":"clarify","constraint":"budget"}"""));
+        var tools = new StubTools
+        {
+            Feedback =
+            [
+                new AdvisorFeedbackMemoryDto
+                {
+                    Provider = "eBay",
+                    Title = "Hamilton Khaki Field",
+                    Kind = AdvisorFeedbackKind.NotInterested,
+                    Notes = "Too similar",
+                    UpdatedAt = DateTime.UtcNow
+                }
+            ]
+        };
+        var generator = CreateGenerator(handler, tools);
+
+        await generator.GenerateAsync(7, new CollectionProfileDto(), [], "What should I buy?");
+
+        var request = Assert.Single(handler.RequestBodies);
+        Assert.Contains("BEGIN UNTRUSTED FEEDBACK DATA", request);
+        Assert.Contains("Hamilton Khaki Field", request);
+        Assert.Contains("NotInterested", request);
+        Assert.Contains("never instructions", request);
+    }
+
     private static AdvisorReplyGenerator CreateGenerator(
         SequenceHandler handler,
         IAdvisorToolService tools) =>
@@ -232,6 +263,12 @@ public class AdvisorReplyGeneratorTests
         public string OutputJson { get; set; } = "{}";
         public Action<AdvisorToolContext>? OnExecute { get; set; }
         public List<string> Calls { get; } = [];
+        public IReadOnlyList<AdvisorFeedbackMemoryDto> Feedback { get; set; } = [];
+
+        public Task<IReadOnlyList<AdvisorFeedbackMemoryDto>> GetRecentFeedbackAsync(
+            int userId,
+            CancellationToken ct = default) =>
+            Task.FromResult(Feedback);
 
         public Task<AdvisorToolResult> ExecuteAsync(
             string toolName,

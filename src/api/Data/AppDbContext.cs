@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StyleRecommendation> StyleRecommendations => Set<StyleRecommendation>();
     public DbSet<AdvisorSession> AdvisorSessions => Set<AdvisorSession>();
     public DbSet<AdvisorMessage> AdvisorMessages => Set<AdvisorMessage>();
+    public DbSet<AdvisorRecommendationFeedback> AdvisorRecommendationFeedback => Set<AdvisorRecommendationFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -125,6 +126,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(w => new { w.UserId, w.WishlistPriority })
                 .IsUnique();
+
+            entity.HasIndex(w => new { w.UserId, w.MarketplaceProvider, w.MarketplaceItemId })
+                .IsUnique()
+                .HasFilter("\"MarketplaceProvider\" IS NOT NULL AND \"MarketplaceItemId\" IS NOT NULL");
 
             entity.HasMany(w => w.Images)
                 .WithOne(i => i.Watch)
@@ -248,6 +253,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasConversion<string>();
 
             entity.HasIndex(m => new { m.SessionId, m.CreatedAt });
+        });
+
+        modelBuilder.Entity<AdvisorRecommendationFeedback>(entity =>
+        {
+            entity.Property(f => f.Provider).HasMaxLength(50);
+            entity.Property(f => f.ProviderItemId).HasMaxLength(200);
+            entity.Property(f => f.Title).HasMaxLength(500);
+            entity.Property(f => f.Notes).HasMaxLength(500);
+            entity.Property(f => f.Kind)
+                .HasConversion<string>();
+
+            entity.HasOne(f => f.User)
+                .WithMany()
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(f => f.Message)
+                .WithMany(m => m.Feedback)
+                .HasForeignKey(f => f.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(f => new { f.UserId, f.MessageId, f.Provider, f.ProviderItemId })
+                .IsUnique();
+            entity.HasIndex(f => new { f.UserId, f.UpdatedAt });
         });
 
         modelBuilder.Entity<ResaleValueEntry>(entity =>

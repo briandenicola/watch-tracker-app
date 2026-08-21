@@ -11,5 +11,6 @@ public class AdvisorMessage
     public string RecommendationCardsJson { get; set; } = "[]";
     public string FollowUpsJson { get; set; } = "[]";
     public string ToolActivityJson { get; set; } = "[]";
+    public ICollection<AdvisorRecommendationFeedback> Feedback { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

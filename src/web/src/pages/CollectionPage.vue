@@ -62,6 +62,7 @@
           >
             <option value="">All Movements</option>
             <option value="Automatic">Automatic</option>
+            <option value="Unknown">Unknown</option>
             <option value="Manual">Manual</option>
             <option value="Quartz">Quartz</option>
             <option value="Digital">Digital</option>

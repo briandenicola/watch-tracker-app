@@ -26,6 +26,11 @@ public interface IAdvisorToolService
 {
     string Instructions { get; }
 
+    Task<IReadOnlyList<AdvisorFeedbackMemoryDto>> GetRecentFeedbackAsync(
+        int userId,
+        CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<AdvisorFeedbackMemoryDto>>([]);
+
     Task<AdvisorToolResult> ExecuteAsync(
         string toolName,
         JsonElement arguments,

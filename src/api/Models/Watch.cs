@@ -37,6 +37,8 @@ public class Watch
     public DateTime? LastBatteryChangedDate { get; set; }
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
+    public string? MarketplaceProvider { get; set; }
+    public string? MarketplaceItemId { get; set; }
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
     public int? WishlistPriority { get; set; }

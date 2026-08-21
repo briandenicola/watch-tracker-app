@@ -111,6 +111,123 @@ public class CollectionAdvisorService(
         return await BuildStateAsync(session, ct);
     }
 
+    public async Task<AdvisorRecommendationFeedbackDto?> SaveFeedbackAsync(
+        int messageId,
+        int userId,
+        SaveAdvisorFeedbackDto dto,
+        CancellationToken ct = default)
+    {
+        var card = await FindOwnedCardAsync(messageId, userId, dto.Provider, dto.ProviderItemId, ct);
+        if (card is null) return null;
+
+        var feedback = await context.AdvisorRecommendationFeedback.FirstOrDefaultAsync(
+            f => f.UserId == userId
+                && f.MessageId == messageId
+                && f.Provider == card.Provider
+                && f.ProviderItemId == card.ProviderItemId,
+            ct);
+        var now = DateTime.UtcNow;
+        if (feedback is null)
+        {
+            feedback = new AdvisorRecommendationFeedback
+            {
+                UserId = userId,
+                MessageId = messageId,
+                Provider = card.Provider!,
+                ProviderItemId = card.ProviderItemId!,
+                Title = card.Title,
+                Kind = dto.Kind,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+            context.AdvisorRecommendationFeedback.Add(feedback);
+        }
+
+        feedback.Kind = dto.Kind;
+        feedback.Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+        feedback.UpdatedAt = now;
+        await context.SaveChangesAsync(ct);
+        return ToDto(feedback);
+    }
+
+    public async Task<bool> RemoveFeedbackAsync(
+        int feedbackId,
+        int userId,
+        CancellationToken ct = default)
+    {
+        var feedback = await context.AdvisorRecommendationFeedback
+            .FirstOrDefaultAsync(f => f.Id == feedbackId && f.UserId == userId, ct);
+        if (feedback is null) return false;
+
+        context.AdvisorRecommendationFeedback.Remove(feedback);
+        await context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<AdvisorWishlistActionResultDto?> AddToWishlistAsync(
+        int messageId,
+        int userId,
+        AdvisorRecommendationActionDto dto,
+        CancellationToken ct = default)
+    {
+        var card = await FindOwnedCardAsync(messageId, userId, dto.Provider, dto.ProviderItemId, ct);
+        if (card is null || string.IsNullOrWhiteSpace(card.ItemUrl)) return null;
+
+        var normalizedBrand = Normalize(card.Brand);
+        var normalizedModel = Normalize(card.Model);
+        var normalizedReference = Normalize(card.ReferenceNumber);
+        var existing = await context.Watches
+            .Where(w => w.UserId == userId && w.IsWishList && w.Disposition == null)
+            .ToListAsync(ct);
+        var duplicate = existing.FirstOrDefault(w =>
+            (string.Equals(w.MarketplaceProvider, card.Provider, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(w.MarketplaceItemId, card.ProviderItemId, StringComparison.OrdinalIgnoreCase))
+            || string.Equals(NormalizeUrl(w.LinkUrl), NormalizeUrl(card.ItemUrl), StringComparison.OrdinalIgnoreCase)
+            || (normalizedBrand.Length > 0
+                && normalizedModel.Length > 0
+                && Normalize(w.Brand) == normalizedBrand
+                && Normalize(w.Model) == normalizedModel
+                && (normalizedReference.Length == 0 || Normalize(w.Sku) == normalizedReference)));
+        if (duplicate is not null)
+        {
+            return new AdvisorWishlistActionResultDto
+            {
+                Added = false,
+                WatchId = duplicate.Id,
+                Message = "This recommendation is already on your wishlist."
+            };
+        }
+
+        var priority = (existing.Max(w => w.WishlistPriority) ?? -1) + 1;
+        var watch = new Watch
+        {
+            UserId = userId,
+            Brand = TrimTo(card.Brand ?? card.Provider!, 200),
+            Model = TrimTo(card.Model ?? card.Title, 200),
+            MovementType = MovementType.Unknown,
+            IsWishList = true,
+            WishlistPriority = priority,
+            PurchasePrice = card.TotalPrice ?? card.Price,
+            Sku = TrimNullableTo(card.ReferenceNumber, 100),
+            LinkUrl = card.ItemUrl,
+            LinkText = TrimTo(card.Title, 200),
+            AcquiredFrom = TrimNullableTo(card.Provider, 200),
+            MarketplaceProvider = card.Provider,
+            MarketplaceItemId = card.ProviderItemId,
+            Notes = "Added from a Collection Advisor recommendation.",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Watches.Add(watch);
+        await context.SaveChangesAsync(ct);
+        return new AdvisorWishlistActionResultDto
+        {
+            Added = true,
+            WatchId = watch.Id,
+            Message = "Added to your wishlist."
+        };
+    }
+
     private Task<AdvisorSession?> FindOwnedSessionAsync(
         int sessionId,
         int userId,
@@ -130,6 +247,15 @@ public class CollectionAdvisorService(
             .Take(MaxStateMessages)
             .ToListAsync(ct);
         messages.Reverse();
+        var messageIds = messages.Select(m => m.Id).ToList();
+        var feedback = await context.AdvisorRecommendationFeedback
+            .AsNoTracking()
+            .Where(f => f.UserId == session.UserId && messageIds.Contains(f.MessageId))
+            .ToListAsync(ct);
+        var feedbackByCard = feedback.ToDictionary(
+            f => CardKey(f.MessageId, f.Provider, f.ProviderItemId),
+            ToDto,
+            StringComparer.OrdinalIgnoreCase);
 
         var configured = await replyGenerator.IsConfiguredAsync();
         return new AdvisorChatStateDto
@@ -141,22 +267,86 @@ public class CollectionAdvisorService(
                 Id = session.Id,
                 CreatedAt = session.CreatedAt,
                 UpdatedAt = session.UpdatedAt,
-                Messages = messages.Select(ToDto).ToList()
+                Messages = messages.Select(message => ToDto(message, feedbackByCard)).ToList()
             }
         };
     }
 
-    private static AdvisorMessageDto ToDto(AdvisorMessage message) => new()
+    private static AdvisorMessageDto ToDto(
+        AdvisorMessage message,
+        IReadOnlyDictionary<string, AdvisorRecommendationFeedbackDto> feedback)
     {
-        Id = message.Id,
-        Role = message.Role,
-        Content = message.Content,
-        Citations = Deserialize<List<AdvisorCitationDto>>(message.CitationsJson),
-        RecommendationCards = Deserialize<List<AdvisorRecommendationCardDto>>(message.RecommendationCardsJson),
-        FollowUps = Deserialize<List<string>>(message.FollowUpsJson),
-        ToolActivity = Deserialize<List<AdvisorToolActivityDto>>(message.ToolActivityJson),
-        CreatedAt = message.CreatedAt
+        var cards = Deserialize<List<AdvisorRecommendationCardDto>>(message.RecommendationCardsJson);
+        foreach (var card in cards)
+        {
+            if (card.Provider is not null
+                && card.ProviderItemId is not null
+                && feedback.TryGetValue(
+                    CardKey(message.Id, card.Provider, card.ProviderItemId),
+                    out var cardFeedback))
+                card.Feedback = cardFeedback;
+        }
+
+        return new AdvisorMessageDto
+        {
+            Id = message.Id,
+            Role = message.Role,
+            Content = message.Content,
+            Citations = Deserialize<List<AdvisorCitationDto>>(message.CitationsJson),
+            RecommendationCards = cards,
+            FollowUps = Deserialize<List<string>>(message.FollowUpsJson),
+            ToolActivity = Deserialize<List<AdvisorToolActivityDto>>(message.ToolActivityJson),
+            CreatedAt = message.CreatedAt
+        };
+    }
+
+    private async Task<AdvisorRecommendationCardDto?> FindOwnedCardAsync(
+        int messageId,
+        int userId,
+        string provider,
+        string providerItemId,
+        CancellationToken ct)
+    {
+        var message = await context.AdvisorMessages
+            .AsNoTracking()
+            .Include(m => m.Session)
+            .FirstOrDefaultAsync(
+                m => m.Id == messageId
+                    && m.Role == AdvisorMessageRole.Assistant
+                    && m.Session.UserId == userId,
+                ct);
+        if (message is null) return null;
+
+        return Deserialize<List<AdvisorRecommendationCardDto>>(message.RecommendationCardsJson)
+            .FirstOrDefault(card =>
+                !string.IsNullOrWhiteSpace(card.Provider)
+                && !string.IsNullOrWhiteSpace(card.ProviderItemId)
+                && card.Provider.Equals(provider, StringComparison.OrdinalIgnoreCase)
+                && card.ProviderItemId.Equals(providerItemId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static AdvisorRecommendationFeedbackDto ToDto(AdvisorRecommendationFeedback feedback) => new()
+    {
+        Id = feedback.Id,
+        Kind = feedback.Kind,
+        Notes = feedback.Notes,
+        UpdatedAt = feedback.UpdatedAt
     };
+
+    private static string CardKey(int messageId, string provider, string providerItemId) =>
+        $"{messageId}|{provider}|{providerItemId}";
+
+    private static string Normalize(string? value) =>
+        new((value ?? "").Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+
+    private static string NormalizeUrl(string? value) =>
+        (value ?? "").Trim().TrimEnd('/');
+
+    private static string TrimTo(string value, int length) =>
+        value.Length <= length ? value : value[..length];
+
+    private static string? TrimNullableTo(string? value, int length) =>
+        string.IsNullOrWhiteSpace(value) ? null : TrimTo(value.Trim(), length);
 
     private static T Deserialize<T>(string json) where T : new()
     {

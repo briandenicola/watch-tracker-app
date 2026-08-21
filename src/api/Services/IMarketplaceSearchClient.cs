@@ -28,7 +28,10 @@ public record MarketplaceListingItem(
     string? Condition,
     string? SellerName,
     decimal? SellerFeedbackPercent,
-    DateTime ObservedAt);
+    DateTime ObservedAt,
+    string? Brand = null,
+    string? Model = null,
+    string? ReferenceNumber = null);
 
 public record MarketplaceSearchResult(
     MarketplaceSearchStatus Status,

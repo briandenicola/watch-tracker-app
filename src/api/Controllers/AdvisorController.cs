@@ -58,4 +58,38 @@ public class AdvisorController(ICollectionAdvisorService advisor) : ControllerBa
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    [HttpPut("messages/{messageId:int}/feedback")]
+    [ProducesResponseType(typeof(AdvisorRecommendationFeedbackDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AdvisorRecommendationFeedbackDto>> SaveFeedback(
+        int messageId,
+        SaveAdvisorFeedbackDto dto,
+        CancellationToken ct)
+    {
+        var feedback = await advisor.SaveFeedbackAsync(messageId, UserId, dto, ct);
+        return feedback is null ? NotFound() : Ok(feedback);
+    }
+
+    [HttpDelete("feedback/{feedbackId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveFeedback(int feedbackId, CancellationToken ct) =>
+        await advisor.RemoveFeedbackAsync(feedbackId, UserId, ct) ? NoContent() : NotFound();
+
+    [HttpPost("messages/{messageId:int}/wishlist")]
+    [ProducesResponseType(typeof(AdvisorWishlistActionResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AdvisorWishlistActionResultDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AdvisorWishlistActionResultDto>> AddToWishlist(
+        int messageId,
+        AdvisorRecommendationActionDto dto,
+        CancellationToken ct)
+    {
+        var result = await advisor.AddToWishlistAsync(messageId, UserId, dto, ct);
+        if (result is null) return NotFound();
+        return result.Added
+            ? Created($"/api/watches/{result.WatchId}", result)
+            : Ok(result);
+    }
 }

@@ -13,6 +13,24 @@ public class AdvisorToolService(
     IEnumerable<IWebSearchClient> webSearchClients,
     IAppSettingsService appSettings) : IAdvisorToolService
 {
+    public async Task<IReadOnlyList<AdvisorFeedbackMemoryDto>> GetRecentFeedbackAsync(
+        int userId,
+        CancellationToken ct = default) =>
+        await db.AdvisorRecommendationFeedback
+            .AsNoTracking()
+            .Where(f => f.UserId == userId)
+            .OrderByDescending(f => f.UpdatedAt)
+            .Take(10)
+            .Select(f => new AdvisorFeedbackMemoryDto
+            {
+                Provider = f.Provider,
+                Title = f.Title,
+                Kind = f.Kind,
+                Notes = f.Notes,
+                UpdatedAt = f.UpdatedAt
+            })
+            .ToListAsync(ct);
+
     private const int MaxCollectionItems = 100;
     private const int MaxMarketplaceItems = 10;
     private const int MaxWebResults = 5;

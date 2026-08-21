@@ -82,5 +82,25 @@ public class AdvisorControllerTests
                 return Task.FromException<AdvisorChatStateDto?>(SendFailure);
             return Task.FromResult<AdvisorChatStateDto?>(null);
         }
+
+        public Task<AdvisorRecommendationFeedbackDto?> SaveFeedbackAsync(
+            int messageId,
+            int userId,
+            SaveAdvisorFeedbackDto dto,
+            CancellationToken ct = default) =>
+            Task.FromResult<AdvisorRecommendationFeedbackDto?>(null);
+
+        public Task<bool> RemoveFeedbackAsync(
+            int feedbackId,
+            int userId,
+            CancellationToken ct = default) =>
+            Task.FromResult(false);
+
+        public Task<AdvisorWishlistActionResultDto?> AddToWishlistAsync(
+            int messageId,
+            int userId,
+            AdvisorRecommendationActionDto dto,
+            CancellationToken ct = default) =>
+            Task.FromResult<AdvisorWishlistActionResultDto?>(null);
     }
 }

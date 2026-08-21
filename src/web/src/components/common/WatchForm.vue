@@ -101,6 +101,7 @@
         <option value="Manual">Manual</option>
         <option value="Quartz">Quartz</option>
         <option value="Digital">Digital</option>
+        <option value="Unknown">Unknown</option>
       </select>
     </div>
 

@@ -25,9 +25,61 @@ public class AdvisorRecommendationCardDto
     public decimal? TotalPrice { get; set; }
     public string? Currency { get; set; }
     public string? Condition { get; set; }
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
+    public string? ReferenceNumber { get; set; }
     public DateTime? ObservedAt { get; set; }
     public int? FitScore { get; set; }
     public List<string> Reasons { get; set; } = [];
+    public AdvisorRecommendationFeedbackDto? Feedback { get; set; }
+}
+
+public class AdvisorRecommendationFeedbackDto
+{
+    public int Id { get; set; }
+    public AdvisorFeedbackKind Kind { get; set; }
+    public string? Notes { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class SaveAdvisorFeedbackDto
+{
+    [Required, StringLength(50)]
+    public required string Provider { get; set; }
+
+    [Required, StringLength(200)]
+    public required string ProviderItemId { get; set; }
+
+    [EnumDataType(typeof(AdvisorFeedbackKind))]
+    public AdvisorFeedbackKind Kind { get; set; }
+
+    [StringLength(500)]
+    public string? Notes { get; set; }
+}
+
+public class AdvisorRecommendationActionDto
+{
+    [Required, StringLength(50)]
+    public required string Provider { get; set; }
+
+    [Required, StringLength(200)]
+    public required string ProviderItemId { get; set; }
+}
+
+public class AdvisorWishlistActionResultDto
+{
+    public bool Added { get; set; }
+    public int WatchId { get; set; }
+    public required string Message { get; set; }
+}
+
+public class AdvisorFeedbackMemoryDto
+{
+    public required string Provider { get; set; }
+    public required string Title { get; set; }
+    public AdvisorFeedbackKind Kind { get; set; }
+    public string? Notes { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class AdvisorToolActivityDto

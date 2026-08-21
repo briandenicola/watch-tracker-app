@@ -146,6 +146,69 @@
                     >
                       View observed listing
                     </a>
+                    <div
+                      v-if="card.provider && card.providerItemId"
+                      class="mt-3 border-t border-border/70 pt-3"
+                    >
+                      <div class="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          class="rounded-full border px-2.5 py-1 text-[0.68rem] transition-colors disabled:opacity-50"
+                          :class="card.feedback?.kind === option.kind
+                            ? 'border-accent bg-accent/10 text-accent'
+                            : 'border-border text-text-muted hover:border-accent/60'"
+                          :disabled="actionPending(actionKey(message.id, card))"
+                          v-for="option in feedbackOptions"
+                          :key="option.kind"
+                          @click="setFeedback(message.id, card, option.kind)"
+                        >
+                          {{ option.label }}
+                        </button>
+                        <button
+                          v-if="card.feedback"
+                          type="button"
+                          class="px-2 py-1 text-[0.68rem] text-text-muted hover:text-danger disabled:opacity-50"
+                          :disabled="actionPending(actionKey(message.id, card))"
+                          @click="clearFeedback(message.id, card)"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <input
+                          :value="feedbackNote(message.id, card)"
+                          type="text"
+                          maxlength="500"
+                          placeholder="Optional feedback note"
+                          class="min-w-48 flex-1 rounded-lg border border-border bg-bg px-2.5 py-1.5 text-xs text-text outline-none focus:border-accent"
+                          @input="setFeedbackNote(message.id, card, ($event.target as HTMLInputElement).value)"
+                        />
+                        <button
+                          v-if="card.feedback"
+                          type="button"
+                          class="text-xs font-medium text-accent hover:underline disabled:opacity-50"
+                          :disabled="actionPending(actionKey(message.id, card))"
+                          @click="setFeedback(message.id, card, card.feedback.kind)"
+                        >
+                          Save note
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-bg disabled:opacity-50"
+                          :disabled="actionPending(actionKey(message.id, card))"
+                          @click="addToWishlist(message.id, card)"
+                        >
+                          Add to wishlist
+                        </button>
+                      </div>
+                      <p
+                        v-if="actionStatus[actionKey(message.id, card)]"
+                        class="mt-2 text-xs text-text-muted"
+                        role="status"
+                      >
+                        {{ actionStatus[actionKey(message.id, card)] }}
+                      </p>
+                    </div>
                   </div>
                 </article>
               </div>
@@ -255,9 +318,21 @@ import axios from 'axios'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { marked } from 'marked'
 import AppIcon from '@/components/icons/AppIcon.vue'
-import { getAdvisorChat, sendAdvisorMessage, startAdvisorSession } from '@/services/advisor'
+import {
+  addAdvisorRecommendationToWishlist,
+  getAdvisorChat,
+  removeAdvisorFeedback,
+  saveAdvisorFeedback,
+  sendAdvisorMessage,
+  startAdvisorSession,
+} from '@/services/advisor'
 import { useAuthStore } from '@/stores/auth'
-import type { AdvisorChatState, AdvisorToolActivity } from '@/types'
+import type {
+  AdvisorChatState,
+  AdvisorFeedbackKind,
+  AdvisorRecommendationCard,
+  AdvisorToolActivity,
+} from '@/types'
 
 const starterPrompts = [
   'What is missing from my collection?',
@@ -276,6 +351,15 @@ const retryMessage = ref('')
 const loadFailed = ref(false)
 const transcriptEl = ref<HTMLElement | null>(null)
 const composerEl = ref<HTMLTextAreaElement | null>(null)
+const feedbackDrafts = ref<Record<string, string>>({})
+const pendingActions = ref(new Set<string>())
+const actionStatus = ref<Record<string, string>>({})
+const feedbackOptions: Array<{ kind: AdvisorFeedbackKind; label: string }> = [
+  { kind: 'Helpful', label: 'Helpful' },
+  { kind: 'Irrelevant', label: 'Irrelevant' },
+  { kind: 'AlreadyOwned', label: 'Already owned' },
+  { kind: 'NotInterested', label: 'Not interested' },
+]
 
 const messages = computed(() => state.value?.session.messages ?? [])
 const configured = computed(() => state.value?.configured ?? false)
@@ -356,6 +440,85 @@ function requestError(error: unknown, fallback: string): string {
   if (error.response?.status === 429) return 'Too many advisor requests. Wait a minute, then try again.'
   if (!error.response) return 'The advisor API is unreachable. Check your connection and try again.'
   return fallback
+}
+
+function actionKey(messageId: number, card: AdvisorRecommendationCard): string {
+  return `${messageId}|${card.provider}|${card.providerItemId}`
+}
+
+function actionPending(key: string): boolean {
+  return pendingActions.value.has(key)
+}
+
+function feedbackNote(messageId: number, card: AdvisorRecommendationCard): string {
+  const key = actionKey(messageId, card)
+  return feedbackDrafts.value[key] ?? card.feedback?.notes ?? ''
+}
+
+function setFeedbackNote(messageId: number, card: AdvisorRecommendationCard, value: string) {
+  feedbackDrafts.value[actionKey(messageId, card)] = value
+}
+
+async function setFeedback(
+  messageId: number,
+  card: AdvisorRecommendationCard,
+  kind: AdvisorFeedbackKind,
+) {
+  if (!card.provider || !card.providerItemId) return
+  const key = actionKey(messageId, card)
+  pendingActions.value.add(key)
+  actionStatus.value[key] = ''
+  try {
+    card.feedback = await saveAdvisorFeedback(
+      messageId,
+      card.provider,
+      card.providerItemId,
+      kind,
+      feedbackNote(messageId, card),
+    )
+    feedbackDrafts.value[key] = card.feedback.notes ?? ''
+    actionStatus.value[key] = 'Feedback saved for future recommendations.'
+  } catch (error: unknown) {
+    actionStatus.value[key] = requestError(error, 'Unable to save feedback.')
+  } finally {
+    pendingActions.value.delete(key)
+  }
+}
+
+async function clearFeedback(messageId: number, card: AdvisorRecommendationCard) {
+  if (!card.feedback) return
+  const feedbackId = card.feedback.id
+  const key = actionKey(messageId, card)
+  pendingActions.value.add(key)
+  try {
+    await removeAdvisorFeedback(feedbackId)
+    card.feedback = null
+    feedbackDrafts.value[key] = ''
+    actionStatus.value[key] = 'Feedback cleared.'
+  } catch (error: unknown) {
+    actionStatus.value[key] = requestError(error, 'Unable to clear feedback.')
+  } finally {
+    pendingActions.value.delete(key)
+  }
+}
+
+async function addToWishlist(messageId: number, card: AdvisorRecommendationCard) {
+  if (!card.provider || !card.providerItemId) return
+  const key = actionKey(messageId, card)
+  pendingActions.value.add(key)
+  actionStatus.value[key] = ''
+  try {
+    const result = await addAdvisorRecommendationToWishlist(
+      messageId,
+      card.provider,
+      card.providerItemId,
+    )
+    actionStatus.value[key] = result.message
+  } catch (error: unknown) {
+    actionStatus.value[key] = requestError(error, 'Unable to add this recommendation to your wishlist.')
+  } finally {
+    pendingActions.value.delete(key)
+  }
 }
 
 function renderMarkdown(text: string): string {

@@ -5,5 +5,6 @@ public enum MovementType
     Automatic,
     Manual,
     Quartz,
-    Digital
+    Digital,
+    Unknown
 }
