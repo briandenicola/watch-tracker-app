@@ -112,6 +112,14 @@
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
 import type { WearLog } from '@/types'
 import { deleteWearLog, getWearLogs, imageUrl, updateWearLogDate } from '@/services/watches'
+import {
+  currentDateKey,
+  formatCalendarDate,
+  formatInstant,
+  instantDateKey,
+  instantTimeInput,
+  zonedDateTimeToUtc,
+} from '@/utils/dateTime'
 
 type ViewMode = 'calendar' | 'timeline'
 
@@ -125,9 +133,12 @@ const activeView = ref<ViewMode>('timeline')
 const wearLogs = ref<WearLog[]>([])
 const loading = ref(true)
 const error = ref(false)
-const visibleMonth = ref(startOfMonth(new Date()))
-const selectedDate = ref(toDateKey(new Date()))
+const todayKey = currentDateKey()
+const visibleMonth = ref(startOfMonth(fromDateKey(todayKey)))
+const selectedDate = ref(todayKey)
 const editingId = ref<number | null>(null)
+const editingLog = ref<WearLog | null>(null)
+const editError = ref('')
 const editForm = reactive({ date: '', startTime: '', endTime: '' })
 
 const WearLogItem = defineComponent({
@@ -158,6 +169,9 @@ const WearLogItem = defineComponent({
                 h('input', { class: 'wear-input', type: 'date', value: editForm.date, onInput: (e: Event) => { editForm.date = (e.target as HTMLInputElement).value } }),
                 h('input', { class: 'wear-input', type: 'time', value: editForm.startTime, onInput: (e: Event) => { editForm.startTime = (e.target as HTMLInputElement).value } }),
                 h('input', { class: 'wear-input', type: 'time', value: editForm.endTime, onInput: (e: Event) => { editForm.endTime = (e.target as HTMLInputElement).value } }),
+                editError.value
+                  ? h('p', { class: 'sm:col-span-3 text-xs text-danger' }, editError.value)
+                  : null,
                 h('div', { class: 'sm:col-span-3 flex gap-2 justify-end' }, [
                   h('button', { class: 'wear-action', onClick: () => emit('cancel') }, 'Cancel'),
                   h('button', { class: 'wear-action-primary', onClick: () => emit('save', props.log.id) }, 'Save'),
@@ -174,13 +188,13 @@ const WearLogItem = defineComponent({
 })
 
 const monthTitle = computed(() =>
-  visibleMonth.value.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  formatCalendarDate(toDateKey(visibleMonth.value), { month: 'long', year: 'numeric' })
 )
 
 const logsByDate = computed(() => {
   const map: Record<string, WearLog[]> = {}
   for (const log of wearLogs.value) {
-    const key = toDateKey(new Date(log.wornDate))
+    const key = instantDateKey(log.wornDate)
     map[key] ??= []
     map[key].push(log)
   }
@@ -214,7 +228,7 @@ const selectedDateLabel = computed(() =>
 const groupedLogs = computed(() => {
   const groups: Record<string, WearLog[]> = {}
   for (const log of [...wearLogs.value].sort(compareLogsDesc)) {
-    const key = toDateKey(new Date(log.wornDate))
+    const key = instantDateKey(log.wornDate)
     groups[key] ??= []
     groups[key].push(log)
   }
@@ -223,22 +237,42 @@ const groupedLogs = computed(() => {
 
 function startEdit(log: WearLog) {
   editingId.value = log.id
-  editForm.date = toDateKey(new Date(log.wornDate))
-  editForm.startTime = toTimeInput(log.startedAt || log.wornDate)
-  editForm.endTime = toTimeInput(log.endedAt)
+  editingLog.value = log
+  editError.value = ''
+  editForm.date = instantDateKey(log.wornDate)
+  editForm.startTime = instantTimeInput(log.startedAt || log.wornDate)
+  editForm.endTime = instantTimeInput(log.endedAt)
 }
 
 function cancelEdit() {
   editingId.value = null
+  editingLog.value = null
+  editError.value = ''
 }
 
 async function saveEdit(logId: number) {
-  const wornDate = fromDateTime(editForm.date, editForm.startTime || '12:00')
-  const startedAt = editForm.startTime ? fromDateTime(editForm.date, editForm.startTime) : undefined
-  const endedAt = editForm.endTime ? fromDateTime(editForm.date, editForm.endTime) : undefined
-  await updateWearLogDate(logId, wornDate, startedAt, endedAt)
-  editingId.value = null
-  await load()
+  editError.value = ''
+  try {
+    const wornDate = zonedDateTimeToUtc(
+      editForm.date,
+      editForm.startTime || '12:00',
+      editingLog.value?.wornDate,
+    )
+    const startedAt = editForm.startTime
+      ? zonedDateTimeToUtc(editForm.date, editForm.startTime, editingLog.value?.startedAt)
+      : undefined
+    const endedAt = editForm.endTime
+      ? zonedDateTimeToUtc(editForm.date, editForm.endTime, editingLog.value?.endedAt)
+      : undefined
+    await updateWearLogDate(logId, wornDate, startedAt, endedAt)
+    editingId.value = null
+    editingLog.value = null
+    await load()
+  } catch (error) {
+    editError.value = error instanceof Error
+      ? error.message
+      : 'Unable to update this wear log.'
+  }
 }
 
 async function handleDelete(logId: number) {
@@ -277,19 +311,12 @@ function toDateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-function toTimeInput(dateStr?: string) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  if (Number.isNaN(date.getTime())) return ''
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
-function fromDateTime(date: string, time: string) {
-  return new Date(`${date}T${time}:00`).toISOString()
+function fromDateKey(dateKey: string) {
+  return new Date(`${dateKey}T12:00:00`)
 }
 
 function formatDayLabel(dateKey: string) {
-  return new Date(`${dateKey}T12:00:00`).toLocaleDateString(undefined, {
+  return formatCalendarDate(dateKey, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -298,9 +325,15 @@ function formatDayLabel(dateKey: string) {
 }
 
 function formatLogTime(log: WearLog) {
-  if (!log.startedAt && !log.endedAt) return new Date(log.wornDate).toLocaleDateString()
-  const start = log.startedAt ? new Date(log.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''
-  const end = log.endedAt ? new Date(log.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''
+  if (!log.startedAt && !log.endedAt) {
+    return formatInstant(log.wornDate, { year: 'numeric', month: 'numeric', day: 'numeric' })
+  }
+  const start = log.startedAt
+    ? formatInstant(log.startedAt, { hour: 'numeric', minute: '2-digit' })
+    : ''
+  const end = log.endedAt
+    ? formatInstant(log.endedAt, { hour: 'numeric', minute: '2-digit' })
+    : ''
   return end ? `${start} - ${end}` : start
 }
 

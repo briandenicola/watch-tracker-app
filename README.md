@@ -8,6 +8,11 @@ It also includes a **wish list** for tracking watches you want to buy, a **stats
 
 On first launch, a setup wizard walks you through creating an admin account and configuring application settings.
 
+Administrators configure one application-wide IANA timezone under **Admin → App
+Settings → Regional Settings**. Timestamps are stored as UTC and displayed,
+grouped, and edited using that timezone so calendar dates remain consistent
+across browsers and devices.
+
 ## Architecture
 
 | Layer    | Tech                             | Path       |

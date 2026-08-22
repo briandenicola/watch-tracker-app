@@ -252,6 +252,7 @@ import { getWatches, imageUrl, reorderWishlist } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { usePreferences, type SortOption } from '@/stores/preferences'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
+import { formatInstant } from '@/utils/dateTime'
 
 const route = useRoute()
 const { prefs } = usePreferences()
@@ -274,10 +275,7 @@ function money(value: number, currency?: string): string {
 }
 
 function observedDate(value: string): string {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? 'at an unknown time'
-    : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date)
+  return formatInstant(value, { dateStyle: 'medium' }) || 'at an unknown time'
 }
 
 // Filter & Sort state — default from preferences

@@ -110,6 +110,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import type { DispositionType, UpdateWatchDisposition, Watch, WatchDisposition } from '@/types'
+import { currentDateKey, dateInputValue } from '@/utils/dateTime'
 
 const props = defineProps<{
   currentWatchId: number
@@ -125,8 +126,7 @@ const emit = defineEmits<{
 }>()
 
 function dateInput(value?: string): string {
-  if (!value) return new Date().toISOString().split('T')[0]
-  return value.split('T')[0]
+  return value ? dateInputValue(value) : currentDateKey()
 }
 
 const form = reactive({

@@ -210,7 +210,7 @@
               <span class="ml-2 px-1.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide bg-bg-surface border border-border text-text-muted">
                 {{ entry.source === 'Manual' ? 'Manual' : 'Web Estimate' }}
               </span>
-              <span class="ml-2 text-xs text-text-muted">{{ new Date(entry.recordedAt).toLocaleDateString() }}</span>
+              <span class="ml-2 text-xs text-text-muted">{{ formatInstant(entry.recordedAt, { year: 'numeric', month: 'numeric', day: 'numeric' }) }}</span>
               <p v-if="entry.reasoning" class="text-xs text-text-muted mt-0.5 truncate" :title="entry.reasoning">{{ entry.reasoning }}</p>
             </div>
             <button @click="handleDeleteResaleEntry(entry.id)" class="text-xs text-danger hover:underline flex-shrink-0">Remove</button>
@@ -256,6 +256,7 @@ import DetailRow from '@/components/common/DetailRow.vue'
 import DispositionModal from '@/components/common/DispositionModal.vue'
 import StyleAgentModal from '@/components/common/StyleAgentModal.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
+import { dateInputValue, formatCalendarDate, formatInstant } from '@/utils/dateTime'
 import {
   getWatch, getWatches, imageUrl, recordWear, deleteWatch, uploadImage, deleteImage, removeBackground,
   analyzeWatch, updateWatch, toUpdatePayload, getResaleHistory, addManualResaleValue,
@@ -271,7 +272,15 @@ function renderMarkdown(text: string): string {
 
 function formatFullDate(dateStr?: string): string | undefined {
   if (!dateStr) return undefined
-  return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  return formatInstant(dateStr, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function formatCalendarValue(dateStr?: string): string | undefined {
+  if (!dateStr) return undefined
+  return formatCalendarDate(
+    dateStr.slice(0, 10),
+    { year: 'numeric', month: 'short', day: 'numeric' },
+  )
 }
 
 const watch = ref<Watch | null>(null)
@@ -305,9 +314,7 @@ const fieldError = ref<{ field: InlineField, message: string } | null>(null)
 const storageLocations = ref<string[]>([])
 
 function formatDateForInput(value?: string | null): string {
-  if (!value) return ''
-  const date = new Date(value)
-  return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0]
+  return dateInputValue(value)
 }
 
 /** The stored value of a field, as the matching input wants to receive it. */
@@ -510,14 +517,14 @@ const detailSections = computed(() => {
         { label: 'Power Reserve', value: w.powerReserveHours ? `${w.powerReserveHours} hours` : undefined, field: 'powerReserveHours' },
         { label: 'Calendar', value: w.calendarType, field: 'calendarType' },
         { label: 'Battery Type', value: w.batteryType, field: 'batteryType' },
-        { label: 'Last Battery Changed', value: formatFullDate(w.lastBatteryChangedDate), field: 'lastBatteryChangedDate' },
+        { label: 'Last Battery Changed', value: formatCalendarValue(w.lastBatteryChangedDate), field: 'lastBatteryChangedDate' },
       ],
     },
     {
       heading: 'Purchase Details',
       rows: [
         { label: w.isWishList ? 'Target Price' : 'Purchase Price', value: money(w.purchasePrice), field: 'purchasePrice' },
-        { label: 'Purchase Date', value: formatFullDate(w.purchaseDate), field: 'purchaseDate' },
+        { label: 'Purchase Date', value: formatCalendarValue(w.purchaseDate), field: 'purchaseDate' },
         { label: 'Acquisition Type', value: w.acquisitionType, field: 'acquisitionType' },
         { label: 'Acquired From', value: w.acquiredFrom, field: 'acquiredFrom' },
         ...(editMode.value
@@ -541,7 +548,7 @@ const detailSections = computed(() => {
           heading: 'Disposition',
           rows: [
             { label: 'Action', value: dispositionLabel(w) },
-            { label: 'Date', value: formatFullDate(w.disposition.dispositionDate) },
+            { label: 'Date', value: formatCalendarValue(w.disposition.dispositionDate) },
             { label: 'Sold To', value: w.disposition.soldTo },
             { label: 'Sale Price', value: money(w.disposition.salePrice) },
             { label: 'Received Watch', value: w.disposition.receivedWatchName },

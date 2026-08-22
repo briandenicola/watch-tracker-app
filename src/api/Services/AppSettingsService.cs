@@ -24,6 +24,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string SearXngUrl = "SearXngUrl";
         public const string EbayClientId = "EbayClientId";
         public const string EbayClientSecret = "EbayClientSecret";
+        public const string ApplicationTimeZone = "ApplicationTimeZone";
     }
 
     private static readonly Dictionary<string, string> Defaults = new()
@@ -43,7 +44,8 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.WebSearchProvider] = "Brave",
         [Keys.SearXngUrl] = "",
         [Keys.EbayClientId] = "",
-        [Keys.EbayClientSecret] = ""
+        [Keys.EbayClientSecret] = "",
+        [Keys.ApplicationTimeZone] = "America/Chicago"
     };
 
     public async Task<string> GetAsync(string key, string defaultValue = "")
@@ -81,5 +83,29 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
             stored.TryAdd(key, val);
         }
         return stored;
+    }
+
+    public static bool IsValidTimeZoneId(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (value != "UTC"
+            && !TimeZoneInfo.TryConvertIanaIdToWindowsId(value, out _))
+        {
+            return false;
+        }
+
+        try
+        {
+            _ = TimeZoneInfo.FindSystemTimeZoneById(value);
+            return true;
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return false;
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return false;
+        }
     }
 }

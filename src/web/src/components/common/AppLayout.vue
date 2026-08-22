@@ -115,7 +115,7 @@
 
     <!-- Main Content -->
     <main class="mobile-main lg:ml-64 lg:p-6">
-      <RouterView />
+      <RouterView v-if="applicationSettingsReady" />
     </main>
 
     <!-- Mobile Bottom Nav (hidden when keyboard is open) -->
@@ -158,11 +158,14 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/stores/theme'
+import { useApplicationSettings } from '@/stores/application'
 import AppIcon from '@/components/icons/AppIcon.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
 const theme = useTheme()
+const applicationSettings = useApplicationSettings()
+const applicationSettingsReady = applicationSettings.ready
 const sidebarOpen = ref(false)
 const windowWidth = ref(window.innerWidth)
 const keyboardOpen = ref(false)
@@ -184,6 +187,7 @@ function onViewportResize() {
 }
 
 onMounted(() => {
+  void applicationSettings.load()
   window.addEventListener('resize', onResize)
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', onViewportResize)

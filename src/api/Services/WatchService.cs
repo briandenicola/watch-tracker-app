@@ -277,13 +277,13 @@ public class WatchService(AppDbContext context) : IWatchService
 
         if (log is null) return false;
 
-        log.WornDate = dto.WornDate;
-        log.StartedAt = dto.StartedAt;
-        log.EndedAt = dto.EndedAt;
+        log.WornDate = dto.WornDate.UtcDateTime;
+        log.StartedAt = dto.StartedAt?.UtcDateTime;
+        log.EndedAt = dto.EndedAt?.UtcDateTime;
 
         // Recalculate LastWornDate for the watch
         var latestDate = log.Watch.WearLogs
-            .Select(wl => wl.Id == logId ? dto.WornDate : wl.WornDate)
+            .Select(wl => wl.Id == logId ? dto.WornDate.UtcDateTime : wl.WornDate)
             .OrderByDescending(d => d)
             .FirstOrDefault();
         log.Watch.LastWornDate = latestDate;
@@ -590,9 +590,13 @@ public class WatchService(AppDbContext context) : IWatchService
             WatchId = log.WatchId,
             WatchBrand = log.Watch.Brand,
             WatchModel = log.Watch.Model,
-            WornDate = log.WornDate,
-            StartedAt = log.StartedAt,
-            EndedAt = log.EndedAt,
+            WornDate = DateTime.SpecifyKind(log.WornDate, DateTimeKind.Utc),
+            StartedAt = log.StartedAt is null
+                ? null
+                : DateTime.SpecifyKind(log.StartedAt.Value, DateTimeKind.Utc),
+            EndedAt = log.EndedAt is null
+                ? null
+                : DateTime.SpecifyKind(log.EndedAt.Value, DateTimeKind.Utc),
             DurationMinutes = duration,
             WatchImageUrl = log.Watch.Images.OrderBy(i => i.SortOrder).Select(i => $"/uploads/{i.FileName}").FirstOrDefault(),
         };

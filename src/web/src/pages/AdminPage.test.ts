@@ -30,6 +30,7 @@ describe('Admin Ollama settings', () => {
           { key: 'EbayClientId', value: 'client-id' },
           { key: 'EbayClientSecret', value: 'secret' },
           { key: 'ResaleValueRefreshIntervalDays', value: '7' },
+          { key: 'ApplicationTimeZone', value: 'America/Chicago' },
         ],
       })
     })
@@ -87,5 +88,26 @@ describe('Admin Ollama settings', () => {
     expect(recommendationPrompt).toBeGreaterThan(advisorPrompt)
     expect(stylePrompt).toBeGreaterThan(recommendationPrompt)
     expect(analysisPrompt).toBeGreaterThan(stylePrompt)
+  })
+
+  it('renders and saves the application timezone with the other settings', async () => {
+    api.put.mockResolvedValue({ data: undefined })
+    const wrapper = mount(AdminPage)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Regional Settings')
+    const timeZoneInput = wrapper.findAll('input').find(input =>
+      input.element.value === 'America/Chicago')
+    expect(timeZoneInput).toBeDefined()
+
+    await wrapper.findAll('button').find(button => button.text() === 'Save Settings')!.trigger('click')
+    await flushPromises()
+
+    expect(api.put).toHaveBeenCalledWith(
+      '/api/admin/settings',
+      expect.arrayContaining([
+        { key: 'ApplicationTimeZone', value: 'America/Chicago' },
+      ]),
+    )
   })
 })

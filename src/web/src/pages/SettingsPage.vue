@@ -228,7 +228,7 @@
           <div v-for="key in apiKeys" :key="key.id" class="flex items-center justify-between p-3 bg-bg-surface border border-border rounded-lg">
             <div>
               <p class="text-sm text-text">{{ key.name }}</p>
-              <p class="text-xs text-text-muted">{{ key.prefix }}… · Created {{ new Date(key.createdAt).toLocaleDateString() }}</p>
+              <p class="text-xs text-text-muted">{{ key.prefix }}… · Created {{ formatInstant(key.createdAt, { year: 'numeric', month: 'numeric', day: 'numeric' }) }}</p>
             </div>
             <button
               @click="handleDeleteApiKey(key.id)"
@@ -284,6 +284,7 @@ import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme, type ThemeMode } from '@/stores/theme'
 import { usePreferences, type SortOption } from '@/stores/preferences'
+import { currentDateKey, formatInstant } from '@/utils/dateTime'
 
 const authStore = useAuthStore()
 const theme = useTheme()
@@ -510,7 +511,7 @@ async function handleExport() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `watch-collection-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `watch-collection-${currentDateKey()}.json`
     a.click()
     URL.revokeObjectURL(url)
     dataMsg.value = 'Export downloaded'

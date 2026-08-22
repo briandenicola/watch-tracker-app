@@ -329,6 +329,7 @@ import {
   startAdvisorSession,
 } from '@/services/advisor'
 import { useAuthStore } from '@/stores/auth'
+import { formatInstant } from '@/utils/dateTime'
 import type {
   AdvisorChatState,
   AdvisorFeedbackKind,
@@ -563,12 +564,10 @@ function money(value?: number | null, currency?: string | null): string {
 
 function observed(value?: string | null): string {
   if (!value) return 'at an unknown time'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'at an unknown time'
-  return new Intl.DateTimeFormat(undefined, {
+  return formatInstant(value, {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(date)
+  }) || 'at an unknown time'
 }
 
 function safeExternalUrl(value?: string | null): boolean {

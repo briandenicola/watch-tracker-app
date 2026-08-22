@@ -82,6 +82,16 @@
                     <option value="Brave">Brave</option>
                     <option value="SearXNG">SearXNG</option>
                   </select>
+                  <template v-else-if="setting.key === 'ApplicationTimeZone'">
+                    <input
+                      v-model="setting.value"
+                      list="application-timezones"
+                      class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                    />
+                    <datalist id="application-timezones">
+                      <option v-for="timeZone in commonTimeZones" :key="timeZone" :value="timeZone" />
+                    </datalist>
+                  </template>
                   <template v-else-if="setting.key === 'SearXngUrl'">
                     <input
                       v-model="setting.value"
@@ -251,8 +261,10 @@
 import { ref, computed, onMounted } from 'vue'
 import type { UserDto, AppSettingDto, OidcProvider, OidcProviderSettings, OidcProviderTestResult } from '@/types'
 import { api } from '@/services/api'
+import { setApplicationTimeZone } from '@/utils/dateTime'
 
 const SETTING_GROUPS: { label: string; keys: string[] }[] = [
+  { label: 'Regional Settings', keys: ['ApplicationTimeZone'] },
   { label: 'Ollama Configuration', keys: ['OllamaUrl', 'OllamaModel'] },
   { label: 'Web Search Configuration', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
   { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },
@@ -269,6 +281,21 @@ const SETTING_GROUPS: { label: string; keys: string[] }[] = [
   },
   { label: 'Security', keys: ['MaxFailedAttempts', 'LockoutDurationMinutes'] },
   { label: 'Logging', keys: ['LogLevel'] },
+]
+
+const commonTimeZones = [
+  'UTC',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+  'Europe/London',
+  'Europe/Paris',
+  'Asia/Tokyo',
+  'Australia/Sydney',
 ]
 
 const loading = ref(true)
@@ -371,6 +398,8 @@ async function handleSaveSettings() {
   settingsMsg.value = ''
   try {
     await api.put('/api/admin/settings', settings.value)
+    const timeZone = settings.value.find(setting => setting.key === 'ApplicationTimeZone')
+    if (timeZone) setApplicationTimeZone(timeZone.value)
     settingsMsg.value = 'Settings saved'
   } catch {
     settingsMsg.value = 'Error saving settings'

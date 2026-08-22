@@ -438,6 +438,7 @@ import type { Watch, WearLog } from '@/types'
 import { getWatches, getWearLogs, imageUrl } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
+import { currentDateKey, formatCalendarDate, formatInstant, instantDateKey } from '@/utils/dateTime'
 
 const { refreshing, pullDistance, pulling } = usePullToRefresh(load)
 
@@ -732,16 +733,18 @@ function movementColor(type: string): string {
 }
 
 function daysSince(dateStr: string): number {
-  // Parse as local date to avoid timezone offset issues with date-only strings
-  const parts = dateStr.split('T')[0].split('-')
-  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
+  const dateKey = instantDateKey(dateStr)
+  const currentKey = currentDateKey()
+  return Math.floor(
+    (Date.parse(`${currentKey}T00:00:00Z`) - Date.parse(`${dateKey}T00:00:00Z`))
+      / (1000 * 60 * 60 * 24),
+  )
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return /^\d{4}-\d{2}-\d{2}T00:00:00(?:\.0+)?Z?$/.test(dateStr)
+    ? formatCalendarDate(dateStr.slice(0, 10), { month: 'short', day: 'numeric' })
+    : formatInstant(dateStr, { month: 'short', day: 'numeric' })
 }
 
 async function load() {

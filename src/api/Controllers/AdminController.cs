@@ -62,8 +62,27 @@ public class AdminController(
 
     [HttpPut("settings")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateSettings(List<AppSettingDto> settings)
     {
+        var duplicateKey = settings
+            .GroupBy(setting => setting.Key, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicateKey is not null)
+        {
+            return ValidationProblem(
+                $"Setting '{duplicateKey.Key}' was provided more than once.");
+        }
+
+        var timeZoneEntry = settings.SingleOrDefault(
+            s => s.Key == AppSettingsService.Keys.ApplicationTimeZone);
+        if (timeZoneEntry is not null
+            && !AppSettingsService.IsValidTimeZoneId(timeZoneEntry.Value))
+        {
+            return ValidationProblem(
+                $"'{timeZoneEntry.Value}' is not a recognized IANA timezone.");
+        }
+
         foreach (var s in settings)
         {
             await appSettings.SetAsync(s.Key, s.Value);

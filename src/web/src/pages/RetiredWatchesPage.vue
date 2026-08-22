@@ -128,6 +128,7 @@ import {
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import DispositionModal from '@/components/common/DispositionModal.vue'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
+import { formatCalendarDate } from '@/utils/dateTime'
 
 const { refreshing, pullDistance, pulling } = usePullToRefresh(load)
 
@@ -148,7 +149,9 @@ function dispositionLabel(watch: Watch): string {
 }
 
 function formatDate(value?: string): string {
-  return value ? new Date(value).toLocaleDateString() : 'Date unknown'
+  return value
+    ? formatCalendarDate(value.slice(0, 10), { year: 'numeric', month: 'numeric', day: 'numeric' })
+    : 'Date unknown'
 }
 
 function formatCurrency(value: number): string {

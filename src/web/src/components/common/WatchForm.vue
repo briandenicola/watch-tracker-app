@@ -373,6 +373,7 @@ import { reactive, ref, computed, watch as vueWatch } from 'vue'
 import type { CreateWatch, Watch } from '@/types'
 import { imageUrl as toImageUrl } from '@/services/watches'
 import { bandTypes, crystalTypes } from '@/constants/watch'
+import { dateInputValue } from '@/utils/dateTime'
 
 const props = defineProps<{
   initial?: Partial<Watch>
@@ -419,10 +420,7 @@ const existingImageUrl = computed(() => {
 
 // Format purchaseDate for date input (needs YYYY-MM-DD)
 function formatDateForInput(dateStr?: string): string {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  return d.toISOString().split('T')[0]
+  return dateInputValue(dateStr)
 }
 
 // Normalize band/crystal type to match dropdown casing

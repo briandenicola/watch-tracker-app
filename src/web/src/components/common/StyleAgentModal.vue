@@ -116,7 +116,7 @@
                 <div class="min-w-0">
                   <p class="text-sm text-text">{{ item.summary }}</p>
                   <p class="text-[0.7rem] text-text-muted mt-0.5">
-                    {{ new Date(item.createdAt).toLocaleDateString() }}
+                    {{ formatInstant(item.createdAt, { year: 'numeric', month: 'numeric', day: 'numeric' }) }}
                     <template v-if="item.occasion"> · {{ item.occasion }}</template>
                     <template v-if="item.weather"> · {{ item.weather }}</template>
                   </p>
@@ -286,6 +286,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { marked } from 'marked'
 import type { SendStyleMessage, StyleChatState, StyleRecommendation } from '@/types'
 import AppIcon from '@/components/icons/AppIcon.vue'
+import { formatInstant } from '@/utils/dateTime'
 import {
   forgetStyleRecommendation, getStyleChat, rateStyleRecommendation, sendStyleMessage, startStyleSession,
 } from '@/services/style'

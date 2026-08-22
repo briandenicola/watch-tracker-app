@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using WatchTracker.Api.Authentication;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.Services;
+using WatchTracker.Api.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,11 @@ var dynamicConfigSource = new DynamicConfigurationSource();
 builder.Services.AddSingleton(dynamicConfigSource.Provider);
 
 builder.Services.AddControllers()
-    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        o.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
+    });
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
