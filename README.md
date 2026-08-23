@@ -204,8 +204,8 @@ Each watch can store:
 Upload photos of a watch and run **AI Analyze** from the overflow menu. Ollama looks at the cover photo and comes back
 with two things:
 
-- **A short description** — under 70 words, saved to the watch's AI analysis and merged into its notes, replacing any
-  previous analysis rather than stacking up.
+- **A short description** — under 70 words, saved to the watch's AI analysis, replacing the previous one. It is not
+  copied into notes: notes are yours to write.
 - **Suggested values for fields the record is missing** — dial colour, case shape, bezel, crystal, crown, calendar,
   band type and colour, water resistance, origin, battery type, reference, case size, lug width, power reserve and
   production year. Each comes with a confidence and a one-line reason.

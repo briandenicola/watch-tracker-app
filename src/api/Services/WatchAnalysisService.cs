@@ -16,8 +16,6 @@ public class WatchAnalysisService(
     IWebHostEnvironment env,
     ILogger<WatchAnalysisService> logger) : IWatchAnalysisService
 {
-    private const string AnalysisNotesSeparator = "\n\n---\n\n## AI Analysis\n\n";
-
     public async Task<WatchAnalysisResultDto> AnalyzeAsync(int watchId, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
@@ -45,8 +43,9 @@ public class WatchAnalysisService(
             .Select(page => new AnalysisSourceDto { Label = page.Label, Url = page.Excerpt.Url })
             .ToList();
 
+        // The summary lives on the watch's AI analysis alone. Notes are the
+        // owner's, and a copy there only went stale next to this one.
         watch.AiAnalysis = result.Summary;
-        watch.Notes = MergeAnalysisIntoNotes(watch.Notes, result.Summary);
         watch.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(ct);
 
@@ -335,25 +334,6 @@ public class WatchAnalysisService(
             ?? throw new InvalidOperationException("No content in Ollama response.");
 
         return analysis;
-    }
-
-    private static string MergeAnalysisIntoNotes(string? notes, string analysis)
-    {
-        if (string.IsNullOrWhiteSpace(notes))
-            return analysis;
-
-        var existingNotes = notes.TrimEnd();
-        var existingAnalysisStart = existingNotes.IndexOf(AnalysisNotesSeparator, StringComparison.Ordinal);
-        if (existingAnalysisStart >= 0)
-            existingNotes = existingNotes[..existingAnalysisStart].TrimEnd();
-
-        if (string.Equals(existingNotes.Trim(), analysis.Trim(), StringComparison.Ordinal))
-            return analysis;
-
-        if (string.IsNullOrWhiteSpace(existingNotes))
-            return analysis;
-
-        return $"{existingNotes}{AnalysisNotesSeparator}{analysis}";
     }
 
     public async Task<List<string>> GetOllamaModelsAsync(string url, CancellationToken ct = default)
