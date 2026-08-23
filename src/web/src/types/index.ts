@@ -353,6 +353,47 @@ export interface AdvisorChatState {
   session: AdvisorSession
 }
 
+export interface WatchShare {
+  token: string
+  /** Path on this app's own origin, e.g. "/s/<token>". */
+  path: string
+  createdAt: string
+  lastViewedAt?: string | null
+  viewCount: number
+}
+
+/**
+ * The redacted watch a share link exposes. Anything absent here is absent by
+ * design — price, provenance, serial, notes, resale, storage and wear history
+ * never leave the account.
+ */
+export interface SharedWatch {
+  brand: string
+  model: string
+  sku?: string | null
+  movementType: MovementType
+  caseSizeMm?: number | null
+  caseShape?: string | null
+  crystalType?: string | null
+  bezelType?: string | null
+  crownType?: string | null
+  calendarType?: string | null
+  dialColor?: string | null
+  bandType?: string | null
+  bandColor?: string | null
+  lugWidthMm?: number | null
+  waterResistance?: string | null
+  powerReserveHours?: number | null
+  batteryType?: string | null
+  productionYear?: number | null
+  countryOfOrigin?: string | null
+  linkUrl?: string | null
+  linkText?: string | null
+  isWishList: boolean
+  imageUrls: WatchImage[]
+  sharedAt: string
+}
+
 export interface AppSettingDto {
   key: string
   value: string

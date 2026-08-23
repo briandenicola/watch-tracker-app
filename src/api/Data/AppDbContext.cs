@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Data;
@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AdvisorSession> AdvisorSessions => Set<AdvisorSession>();
     public DbSet<AdvisorMessage> AdvisorMessages => Set<AdvisorMessage>();
     public DbSet<AdvisorRecommendationFeedback> AdvisorRecommendationFeedback => Set<AdvisorRecommendationFeedback>();
+    public DbSet<WatchShare> WatchShares => Set<WatchShare>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -148,6 +149,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(w => w.RowVersion)
                 .IsRowVersion();
+        });
+
+        modelBuilder.Entity<WatchShare>(entity =>
+        {
+            entity.HasOne(s => s.Watch)
+                .WithMany()
+                .HasForeignKey(s => s.WatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // The token is the lookup key for every public view of a watch.
+            entity.HasIndex(s => s.Token).IsUnique();
+
+            // One live link per watch, so revoking really does revoke.
+            entity.HasIndex(s => s.WatchId).IsUnique();
         });
 
         modelBuilder.Entity<WatchDisposition>(entity =>

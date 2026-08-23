@@ -62,6 +62,7 @@
               </label>
               <button @click="handleAnalyzeFromMenu" :disabled="analyzing || !watch.imageUrls.length" class="menu-action">{{ analyzing ? 'Analyzing…' : 'AI Analyze' }}</button>
               <button @click="openStyleAgent" class="menu-action">Style Agent</button>
+              <button @click="openShare" class="menu-action">Share</button>
               <button @click="handleRefreshResaleFromMenu" :disabled="refreshingResale" class="menu-action">{{ refreshingResale ? 'Queuing…' : 'Refresh Resale' }}</button>
               <button @click="openDisposition" class="menu-action">{{ watch.disposition ? 'Edit disposition' : 'Remove from collection' }}</button>
               <button v-if="watch.disposition" @click="handleRestore" class="menu-action text-accent">Restore to collection</button>
@@ -70,6 +71,7 @@
             <template v-else>
               <button @click="handlePurchaseFromMenu" :disabled="purchasing" class="menu-action text-accent">{{ purchasing ? 'Moving…' : 'Mark Purchased' }}</button>
               <button @click="openStyleAgent" class="menu-action">Style Agent</button>
+              <button @click="openShare" class="menu-action">Share</button>
               <label class="menu-action cursor-pointer">
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
@@ -225,6 +227,12 @@
       </section>
     </div>
     <div v-else class="text-center py-20 text-text-muted">Watch not found.</div>
+    <ShareWatchModal
+      v-if="showShare && watch"
+      :watch-id="watch.id"
+      :watch-name="`${watch.brand} ${watch.model}`"
+      @close="showShare = false"
+    />
     <StyleAgentModal
       v-if="showStyleAgent && watch"
       :watch-id="watch.id"
@@ -255,6 +263,7 @@ import { api } from '@/services/api'
 import DetailRow from '@/components/common/DetailRow.vue'
 import DispositionModal from '@/components/common/DispositionModal.vue'
 import StyleAgentModal from '@/components/common/StyleAgentModal.vue'
+import ShareWatchModal from '@/components/common/ShareWatchModal.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import { dateInputValue, formatCalendarDate, formatInstant } from '@/utils/dateTime'
 import {
@@ -634,6 +643,7 @@ const manualResaleNotes = ref('')
 const savingManualResale = ref(false)
 const allWatches = ref<Watch[]>([])
 const showStyleAgent = ref(false)
+const showShare = ref(false)
 const showDispositionModal = ref(false)
 const savingDisposition = ref(false)
 const dispositionError = ref('')
@@ -668,6 +678,11 @@ async function handleWear() {
 async function handleWearFromMenu() {
   actionsOpen.value = false
   await handleWear()
+}
+
+function openShare() {
+  actionsOpen.value = false
+  showShare.value = true
 }
 
 function openStyleAgent() {

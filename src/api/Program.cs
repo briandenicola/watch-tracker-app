@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
@@ -132,6 +132,19 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    // Shared links are the app's only unauthenticated surface, so the public
+    // read is capped per IP — enough for a page and its refreshes, not enough
+    // to walk the token space.
+    options.AddPolicy("public-share", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
     options.AddPolicy("style-agent", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -182,6 +195,7 @@ builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>(
 builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>();
 builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
+builder.Services.AddScoped<IWatchShareService, WatchShareService>();
 builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOidcService, OidcService>();

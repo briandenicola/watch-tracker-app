@@ -237,6 +237,23 @@ Recommendations can be added to the wishlist and marked helpful, irrelevant, alr
 
 Configuration, provider behavior, operational limits, privacy-safe diagnostics, evaluation thresholds, and troubleshooting are documented in [`docs/collection-advisor.md`](docs/collection-advisor.md).
 
+### Share a Watch
+
+**Share** in a watch's overflow menu creates a public link — `/s/<token>` — that shows that one watch to anyone,
+including people with no account.
+
+- **The token is the credential.** 32 random bytes, unguessable, and the only way in: the public endpoint takes a token
+  and nothing else, so there is no watch id to walk. One link per watch, revocable at any time from the same dialog,
+  after which the link 404s for everyone holding it.
+- **The shared view is an allow-list.** Visitors see photos, brand and model, reference, case, dial, strap, movement,
+  water resistance and any product link. They never see what you paid, where you bought it, the serial number, notes,
+  AI analysis, resale values, storage location, wear history, disposition, or anything identifying the owner. The
+  public payload is mapped field by field in `SharedWatchDto`, so adding a column to `Watch` cannot quietly publish it.
+- **The dialog spells out both lists** before you create a link, and afterwards shows the view count and when it was
+  last opened.
+
+The public read is rate limited per IP, and is the only unauthenticated endpoint in the app.
+
 ### Cover Image Selection
 
 When editing a watch with multiple images, a **Gallery Image** picker lets you choose which image appears as the cover in the gallery view.
