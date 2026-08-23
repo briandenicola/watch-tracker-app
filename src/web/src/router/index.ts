@@ -23,6 +23,12 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      // Public by design: no auth meta, so the guard lets anyone through.
+      path: '/s/:token',
+      name: 'shared-watch',
+      component: () => import('@/pages/SharedWatchPage.vue'),
+    },
+    {
       path: '/oidc/callback',
       name: 'oidc-callback',
       component: () => import('@/pages/OidcCallbackPage.vue'),

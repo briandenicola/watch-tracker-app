@@ -1,7 +1,7 @@
 import { api } from './api'
 import type {
   Watch, CreateWatch, UpdateWatch, WearLog, ResaleValueEntry, CreateResaleValueEntry,
-  UpdateWatchDisposition,
+  UpdateWatchDisposition, WatchAnalysisResult, ApplyAnalysisResult,
 } from '@/types'
 
 const BASE_URL = window.location.origin
@@ -134,9 +134,19 @@ export async function removeBackground(watchId: number, imageId: number): Promis
   await api.post(`/api/watches/${watchId}/images/${imageId}/remove-background`)
 }
 
-export async function analyzeWatch(watchId: number, _imageId: number): Promise<string> {
-  const { data } = await api.post<{ analysis: string }>(`/api/watches/${watchId}/analyze`)
-  return data.analysis
+/** Describes the watch and proposes values for its empty fields. Writes only the description. */
+export async function analyzeWatch(watchId: number): Promise<WatchAnalysisResult> {
+  const { data } = await api.post<WatchAnalysisResult>(`/api/watches/${watchId}/analyze`)
+  return data
+}
+
+/** Writes the suggested values the owner ticked. */
+export async function applyAnalysisSuggestions(
+  watchId: number,
+  values: Record<string, string>,
+): Promise<ApplyAnalysisResult> {
+  const { data } = await api.post<ApplyAnalysisResult>(`/api/watches/${watchId}/analyze/apply`, { values })
+  return data
 }
 
 export async function getWearLogs(): Promise<WearLog[]> {

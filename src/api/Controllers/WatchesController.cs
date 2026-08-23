@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -67,19 +67,29 @@ public class WatchesController(
     }
 
     [HttpPost("{id}/analyze")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(WatchAnalysisResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<object>> Analyze(int id, CancellationToken ct)
+    public async Task<ActionResult<WatchAnalysisResultDto>> Analyze(int id, CancellationToken ct)
     {
         try
         {
-            var analysis = await analysisService.AnalyzeAsync(id, UserId, ct);
-            return Ok(new { analysis });
+            return Ok(await analysisService.AnalyzeAsync(id, UserId, ct));
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>Writes the suggested values the owner approved. Nothing is written without this call.</summary>
+    [HttpPost("{id}/analyze/apply")]
+    [ProducesResponseType(typeof(ApplyAnalysisResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApplyAnalysisResultDto>> ApplyAnalysis(
+        int id, ApplyAnalysisSuggestionsDto dto, CancellationToken ct)
+    {
+        var result = await analysisService.ApplySuggestionsAsync(id, UserId, dto, ct);
+        return result is null ? NotFound() : Ok(result);
     }
 
     [HttpPost("{id}/wear")]

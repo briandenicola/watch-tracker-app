@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.Models;
 
@@ -32,7 +32,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.MaxFailedAttempts] = "5",
         [Keys.LockoutDurationMinutes] = "15",
         [Keys.LogLevel] = "Information",
-        [Keys.AiAnalysisPrompt] = "You are a watch expert. Analyze this watch image and provide a detailed description including the brand, model (if identifiable), movement type, case material, approximate case size, dial color, and any notable features or complications. Be concise but informative.",
+        [Keys.AiAnalysisPrompt] = "You are a watch expert looking at a photo of a single watch. Describe it briefly and concretely — brand and model if the dial is legible, case, dial, hands, bezel and strap, and anything notable — then propose values for the record's missing fields, but only where the photo or the reference itself gives you good reason.",
         [Keys.StyleAgentPrompt] = "You are a personal style consultant helping the owner of a watch collection build an outfit around one specific watch. You are warm, concrete and opinionated, you dress for the real world rather than the runway, and you work with clothes people plausibly already own.",
         [Keys.CollectionAdvisorPrompt] = "You are a practical watch collection advisor. Help the user understand collection coverage, redundancy, wear patterns, and missing metadata. Be concise, explain uncertainty, and never claim guaranteed financial returns.",
         [Keys.WatchRecommendationPrompt] = "You are an expert watch stylist. Recommend the watch that best complements the outfit, occasion, colors, formality, weather, and stated preferences. Consider visual harmony and practicality. When choices are similarly strong, favor a watch that has not been worn recently.",

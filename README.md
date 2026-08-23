@@ -201,7 +201,32 @@ Each watch can store:
 
 ### AI Watch Analysis
 
-Upload photos of a watch and click **🤖 Analyze with AI** to get an AI-powered analysis via Ollama. The analysis is returned in a modal popup rendered as Markdown. If accepted, the analysis is appended to the watch's notes.
+Upload photos of a watch and run **AI Analyze** from the overflow menu. Ollama looks at the cover photo and comes back
+with two things:
+
+- **A short description** — under 70 words, saved to the watch's AI analysis and merged into its notes, replacing any
+  previous analysis rather than stacking up.
+- **Suggested values for fields the record is missing** — dial colour, case shape, bezel, crystal, crown, calendar,
+  band type and colour, water resistance, origin, battery type, reference, case size, lug width, power reserve and
+  production year. Each comes with a confidence and a one-line reason.
+
+It reads the watch's links too. If the watch has a **Product / Reference** link or an **Acquisition Source** link, both
+pages are fetched and their text goes to the model alongside the photo, so specs come off a spec sheet instead of a
+guess. The model is told to believe a page over its own recollection for anything written down, and to believe the
+photo over a page for colour and finish — a listing often covers several variants of one model. The review dialog names
+which pages were read. A link that will not load is simply left out.
+
+Fetching a user-supplied URL is fenced in: http(s) only, redirects followed by hand and re-checked at each hop,
+responses capped in size, and connections opened only to public IP addresses — checked at connect time, so a hostname
+that resolves to an internal address cannot be used to make the server read your private network. Page text is given to
+the model as reference material with an explicit instruction to ignore any directions inside it, and it can still only
+propose values for allow-listed fields that you approve.
+
+**Nothing is written from a suggestion until you approve it.** The review dialog lists each one with a checkbox and an
+editable value — low-confidence guesses start unticked — and only the ones you tick are saved. Fields that already have
+a value are never suggested, and the server re-validates every approved value against the same rules as the edit form,
+so a bad guess is refused rather than stored. The list of fillable fields is an allow-list in code: serial number,
+prices, provenance, storage and notes are not on it.
 
 ### Style Agent
 
@@ -236,6 +261,31 @@ The **Collection Advisor** at `/advisor` answers collection-gap, overlap, brand,
 Recommendations can be added to the wishlist and marked helpful, irrelevant, already owned, or not interested. Only the ten most recent structured feedback records are included in future advisor context.
 
 Configuration, provider behavior, operational limits, privacy-safe diagnostics, evaluation thresholds, and troubleshooting are documented in [`docs/collection-advisor.md`](docs/collection-advisor.md).
+
+### JSON Output
+
+Append `format=json` to a watch detail URL to get the record itself instead of the page.
+
+- `/s/<token>?format=json` is answered by the API, so a share link works from `curl` or a script, not just a browser.
+  The payload is the same redacted view the shared page shows.
+- `/watches/<id>?format=json` renders your own watch as JSON in the app, for a quick look at the raw record.
+
+### Share a Watch
+
+**Share** in a watch's overflow menu creates a public link — `/s/<token>` — that shows that one watch to anyone,
+including people with no account.
+
+- **The token is the credential.** 32 random bytes, unguessable, and the only way in: the public endpoint takes a token
+  and nothing else, so there is no watch id to walk. One link per watch, revocable at any time from the same dialog,
+  after which the link 404s for everyone holding it.
+- **The shared view is an allow-list.** Visitors see photos, brand and model, reference, case, dial, strap, movement,
+  water resistance and any product link. They never see what you paid, where you bought it, the serial number, notes,
+  AI analysis, resale values, storage location, wear history, disposition, or anything identifying the owner. The
+  public payload is mapped field by field in `SharedWatchDto`, so adding a column to `Watch` cannot quietly publish it.
+- **The dialog spells out both lists** before you create a link, and afterwards shows the view count and when it was
+  last opened.
+
+The public read is rate limited per IP, and is the only unauthenticated endpoint in the app.
 
 ### Cover Image Selection
 

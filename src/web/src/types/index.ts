@@ -353,6 +353,75 @@ export interface AdvisorChatState {
   session: AdvisorSession
 }
 
+/** A value the AI analysis proposes for a field the watch has no value for. */
+export interface WatchFieldSuggestion {
+  field: string
+  label: string
+  kind: 'text' | 'number' | 'integer'
+  value: string
+  confidence: 'high' | 'medium' | 'low'
+  reason?: string | null
+}
+
+/** A page the analysis read — the watch's reference link, or the store it came from. */
+export interface AnalysisSource {
+  label: string
+  url: string
+}
+
+export interface WatchAnalysisResult {
+  summary: string
+  suggestions: WatchFieldSuggestion[]
+  sources: AnalysisSource[]
+}
+
+export interface ApplyAnalysisResult {
+  applied: string[]
+  rejected: string[]
+  watch: Watch
+}
+
+export interface WatchShare {
+  token: string
+  /** Path on this app's own origin, e.g. "/s/<token>". */
+  path: string
+  createdAt: string
+  lastViewedAt?: string | null
+  viewCount: number
+}
+
+/**
+ * The redacted watch a share link exposes. Anything absent here is absent by
+ * design — price, provenance, serial, notes, resale, storage and wear history
+ * never leave the account.
+ */
+export interface SharedWatch {
+  brand: string
+  model: string
+  sku?: string | null
+  movementType: MovementType
+  caseSizeMm?: number | null
+  caseShape?: string | null
+  crystalType?: string | null
+  bezelType?: string | null
+  crownType?: string | null
+  calendarType?: string | null
+  dialColor?: string | null
+  bandType?: string | null
+  bandColor?: string | null
+  lugWidthMm?: number | null
+  waterResistance?: string | null
+  powerReserveHours?: number | null
+  batteryType?: string | null
+  productionYear?: number | null
+  countryOfOrigin?: string | null
+  linkUrl?: string | null
+  linkText?: string | null
+  isWishList: boolean
+  imageUrls: WatchImage[]
+  sharedAt: string
+}
+
 export interface AppSettingDto {
   key: string
   value: string

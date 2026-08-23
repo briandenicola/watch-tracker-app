@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -132,6 +133,19 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    // Shared links are the app's only unauthenticated surface, so the public
+    // read is capped per IP — enough for a page and its refreshes, not enough
+    // to walk the token space.
+    options.AddPolicy("public-share", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
     options.AddPolicy("style-agent", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -182,6 +196,7 @@ builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>(
 builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>();
 builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
+builder.Services.AddScoped<IWatchShareService, WatchShareService>();
 builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOidcService, OidcService>();
@@ -189,6 +204,12 @@ builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
+// Fetches whatever page a watch links to, so the analysis can read a spec sheet
+// instead of guessing. Its handler refuses to connect to anything but a public
+// address — see ProductPageReader for why that lives on the handler.
+builder.Services.AddHttpClient<IProductPageReader, ProductPageReader>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10))
+    .ConfigurePrimaryHttpMessageHandler(() => ProductPageReader.CreateHandler());
 // These clients talk to Ollama and retain its default timeout because AI
 // generation can legitimately take longer than a typical API call.
 builder.Services.AddHttpClient<IStyleAgentService, StyleAgentService>();
@@ -245,6 +266,35 @@ app.UseStaticFiles();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// A share link answers with JSON when asked, so the same URL works for a person
+// and for a script: /s/<token>?format=json. Anything else falls through to the
+// SPA, which renders the page.
+app.MapGet("/s/{token}", async (
+        string token,
+        [FromQuery] string? format,
+        IWatchShareService shares,
+        IWebHostEnvironment environment,
+        CancellationToken ct) =>
+    {
+        if (!string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+        {
+            var webRoot = environment.WebRootPath;
+            if (string.IsNullOrEmpty(webRoot)) return Results.NotFound();
+
+            var indexPath = Path.Combine(webRoot, "index.html");
+            return File.Exists(indexPath)
+                ? Results.File(indexPath, "text/html")
+                : Results.NotFound();
+        }
+
+        var watch = await shares.ViewAsync(token, ct);
+        return watch is null
+            ? Results.NotFound(new { error = "This share link is not available." })
+            : Results.Ok(watch);
+    })
+    .RequireRateLimiting("public-share")
+    .AllowAnonymous();
 
 // SPA fallback — serve index.html for client-side routes
 app.MapFallbackToFile("index.html");
