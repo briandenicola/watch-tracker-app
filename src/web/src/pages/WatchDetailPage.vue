@@ -231,10 +231,23 @@
         </div>
       </section>
 
-      <!-- Notes -->
-      <section v-if="watch.notes" class="detail-card">
+      <!-- Notes — a free-text field, so it gets a real editor rather than a row -->
+      <section v-if="editMode || watch.notes" class="detail-card">
         <h2 class="detail-heading">Notes</h2>
-        <div class="prose-markdown text-sm text-text" v-html="renderMarkdown(watch.notes)" />
+        <template v-if="editMode">
+          <textarea
+            v-model="notesDraft"
+            rows="10"
+            maxlength="10000"
+            placeholder="Anything worth remembering about this watch. Markdown works here."
+            aria-label="Notes"
+            class="notes-editor"
+          />
+          <p class="mt-1.5 text-xs text-text-muted">
+            Markdown supported · {{ notesDraft.length.toLocaleString() }} / 10,000
+          </p>
+        </template>
+        <div v-else-if="watch.notes" class="prose-markdown text-sm text-text" v-html="renderMarkdown(watch.notes)" />
       </section>
     </div>
     <div v-else class="text-center py-20 text-text-muted">Watch not found.</div>
@@ -436,6 +449,16 @@ function commitEdit(): boolean {
   cancelEdit()
   return true
 }
+
+// Notes are edited as a whole rather than a row at a time, so the textarea
+// writes straight into the same pending changes the Save button sends. Blanking
+// it clears the field rather than storing an empty string.
+const notesDraft = computed<string>({
+  get: () => draftChanges.value.notes ?? watch.value?.notes ?? '',
+  set: (value) => {
+    draftChanges.value = { ...draftChanges.value, notes: value.trim() === '' ? undefined : value }
+  },
+})
 
 const editableWatch = computed<Watch | null>(() => {
   if (!watch.value) return null
@@ -927,6 +950,24 @@ async function handleDeleteResaleEntry(entryId: number) {
   line-height: 1.6;
   overflow-x: auto;
   white-space: pre;
+}
+
+.notes-editor {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.notes-editor:focus {
+  border-color: var(--color-accent);
+  outline: none;
 }
 
 .detail-card {
