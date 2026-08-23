@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace WatchTracker.Api.DTOs;
 
@@ -20,12 +20,21 @@ public class WatchFieldSuggestionDto
     public string? Reason { get; set; }
 }
 
+/// <summary>A page the analysis read before answering, shown so the owner knows what informed it.</summary>
+public class AnalysisSourceDto
+{
+    public required string Label { get; set; }
+    public required string Url { get; set; }
+}
+
 public class WatchAnalysisResultDto
 {
     /// <summary>The short description of the watch, saved to the watch as before.</summary>
     public required string Summary { get; set; }
 
     public List<WatchFieldSuggestionDto> Suggestions { get; set; } = [];
+
+    public List<AnalysisSourceDto> Sources { get; set; } = [];
 }
 
 public class ApplyAnalysisSuggestionsDto

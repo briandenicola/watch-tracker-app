@@ -34,6 +34,13 @@
           <div class="prose-markdown text-sm text-text" v-html="renderMarkdown(result.summary)" />
           <p class="text-xs text-text-muted">Saved to this watch's AI analysis.</p>
 
+          <p v-if="result.sources.length" class="text-xs text-text-muted">
+            Read alongside the photo:
+            <template v-for="(source, index) in result.sources" :key="source.url">
+              <a :href="source.url" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">{{ source.label }}</a><span v-if="index < result.sources.length - 1">, </span>
+            </template>
+          </p>
+
           <!-- Suggestions -->
           <template v-if="rows.length">
             <div class="flex items-center justify-between gap-3 pt-1">

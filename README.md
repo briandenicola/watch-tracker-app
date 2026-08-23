@@ -210,6 +210,18 @@ with two things:
   band type and colour, water resistance, origin, battery type, reference, case size, lug width, power reserve and
   production year. Each comes with a confidence and a one-line reason.
 
+It reads the watch's links too. If the watch has a **Product / Reference** link or an **Acquisition Source** link, both
+pages are fetched and their text goes to the model alongside the photo, so specs come off a spec sheet instead of a
+guess. The model is told to believe a page over its own recollection for anything written down, and to believe the
+photo over a page for colour and finish — a listing often covers several variants of one model. The review dialog names
+which pages were read. A link that will not load is simply left out.
+
+Fetching a user-supplied URL is fenced in: http(s) only, redirects followed by hand and re-checked at each hop,
+responses capped in size, and connections opened only to public IP addresses — checked at connect time, so a hostname
+that resolves to an internal address cannot be used to make the server read your private network. Page text is given to
+the model as reference material with an explicit instruction to ignore any directions inside it, and it can still only
+propose values for allow-listed fields that you approve.
+
 **Nothing is written from a suggestion until you approve it.** The review dialog lists each one with a checkbox and an
 editable value — low-confidence guesses start unticked — and only the ones you tick are saved. Fields that already have
 a value are never suggested, and the server re-validates every approved value against the same rules as the edit form,

@@ -363,9 +363,16 @@ export interface WatchFieldSuggestion {
   reason?: string | null
 }
 
+/** A page the analysis read — the watch's reference link, or the store it came from. */
+export interface AnalysisSource {
+  label: string
+  url: string
+}
+
 export interface WatchAnalysisResult {
   summary: string
   suggestions: WatchFieldSuggestion[]
+  sources: AnalysisSource[]
 }
 
 export interface ApplyAnalysisResult {

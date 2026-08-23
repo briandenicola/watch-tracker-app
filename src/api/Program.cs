@@ -204,6 +204,12 @@ builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
+// Fetches whatever page a watch links to, so the analysis can read a spec sheet
+// instead of guessing. Its handler refuses to connect to anything but a public
+// address — see ProductPageReader for why that lives on the handler.
+builder.Services.AddHttpClient<IProductPageReader, ProductPageReader>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10))
+    .ConfigurePrimaryHttpMessageHandler(() => ProductPageReader.CreateHandler());
 // These clients talk to Ollama and retain its default timeout because AI
 // generation can legitimately take longer than a typical API call.
 builder.Services.AddHttpClient<IStyleAgentService, StyleAgentService>();
