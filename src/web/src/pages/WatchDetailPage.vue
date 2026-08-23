@@ -9,6 +9,16 @@
     <div v-if="loading" class="flex justify-center py-20">
       <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
     </div>
+    <!-- ?format=json — the same detail, machine-readable -->
+    <div v-else-if="watch && jsonView" class="max-w-5xl mx-auto">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h1 class="font-display text-2xl font-semibold text-text">{{ watch.brand }} {{ watch.model }}</h1>
+        <RouterLink :to="{ path: route.path }" class="text-sm text-accent hover:underline">
+          Back to the full page
+        </RouterLink>
+      </div>
+      <pre class="json-view">{{ watchJson }}</pre>
+    </div>
     <div v-else-if="watch" class="max-w-5xl mx-auto">
       <!-- Header -->
       <div class="relative mb-5 flex items-start justify-between gap-4">
@@ -81,6 +91,7 @@
           </div>
         </div>
         <p v-if="editSessionError" class="text-sm text-danger mb-5">{{ editSessionError }}</p>
+        <p v-if="analysisError" class="text-sm text-danger mb-5">{{ analysisError }}</p>
       </div>
 
       <!-- Image Gallery -->
@@ -227,6 +238,14 @@
       </section>
     </div>
     <div v-else class="text-center py-20 text-text-muted">Watch not found.</div>
+    <AnalysisReviewModal
+      v-if="analysisResult && watch"
+      :watch-id="watch.id"
+      :watch-name="`${watch.brand} ${watch.model}`"
+      :result="analysisResult"
+      @applied="onAnalysisApplied"
+      @close="analysisResult = null"
+    />
     <ShareWatchModal
       v-if="showShare && watch"
       :watch-id="watch.id"
@@ -257,13 +276,14 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch as vueWatch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
-import type { AuthResponse, UpdateWatch, UpdateWatchDisposition, Watch, ResaleValueEntry } from '@/types'
+import type { AuthResponse, UpdateWatch, UpdateWatchDisposition, Watch, ResaleValueEntry, WatchAnalysisResult } from '@/types'
 import { fieldMeta, type InlineField } from '@/constants/watch'
 import { api } from '@/services/api'
 import DetailRow from '@/components/common/DetailRow.vue'
 import DispositionModal from '@/components/common/DispositionModal.vue'
 import StyleAgentModal from '@/components/common/StyleAgentModal.vue'
 import ShareWatchModal from '@/components/common/ShareWatchModal.vue'
+import AnalysisReviewModal from '@/components/common/AnalysisReviewModal.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import { dateInputValue, formatCalendarDate, formatInstant } from '@/utils/dateTime'
 import {
@@ -293,6 +313,12 @@ function formatCalendarValue(dateStr?: string): string | undefined {
 }
 
 const watch = ref<Watch | null>(null)
+
+// A watch detail URL with ?format=json renders the record itself rather than
+// the page. Shared links do the same, but answer from the server so the JSON
+// is reachable by anything that speaks HTTP, not just this app.
+const jsonView = computed(() => String(route.query.format ?? '').toLowerCase() === 'json')
+const watchJson = computed(() => (watch.value ? JSON.stringify(watch.value, null, 2) : ''))
 const loading = ref(true)
 
 function dispositionLabel(w: Watch): string {
@@ -644,6 +670,8 @@ const savingManualResale = ref(false)
 const allWatches = ref<Watch[]>([])
 const showStyleAgent = ref(false)
 const showShare = ref(false)
+const analysisResult = ref<WatchAnalysisResult | null>(null)
+const analysisError = ref('')
 const showDispositionModal = ref(false)
 const savingDisposition = ref(false)
 const dispositionError = ref('')
@@ -678,6 +706,10 @@ async function handleWear() {
 async function handleWearFromMenu() {
   actionsOpen.value = false
   await handleWear()
+}
+
+function onAnalysisApplied(updated: Watch) {
+  watch.value = updated
 }
 
 function openShare() {
@@ -798,13 +830,15 @@ async function handleRemoveBackground() {
 }
 
 async function handleAnalyze() {
-  if (!watch.value || !watch.value.imageUrls[imageIndex.value]) return
+  if (!watch.value || !watch.value.imageUrls.length) return
   analyzing.value = true
+  analysisError.value = ''
   try {
-    const img = watch.value.imageUrls[imageIndex.value]
-    const analysis = await analyzeWatch(watch.value.id, img.id)
-    watch.value.aiAnalysis = analysis
+    analysisResult.value = await analyzeWatch(watch.value.id)
+    // The description is already saved; the suggestions wait for approval.
     watch.value = await getWatch(watch.value.id)
+  } catch (error) {
+    analysisError.value = serverMessage(error) || 'The AI analysis could not run.'
   } finally {
     analyzing.value = false
   }
@@ -880,6 +914,19 @@ async function handleDeleteResaleEntry(entryId: number) {
   visibility: hidden;
   white-space: nowrap;
   pointer-events: none;
+}
+
+.json-view {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
 }
 
 .detail-card {

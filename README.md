@@ -201,7 +201,20 @@ Each watch can store:
 
 ### AI Watch Analysis
 
-Upload photos of a watch and click **🤖 Analyze with AI** to get an AI-powered analysis via Ollama. The analysis is returned in a modal popup rendered as Markdown. If accepted, the analysis is appended to the watch's notes.
+Upload photos of a watch and run **AI Analyze** from the overflow menu. Ollama looks at the cover photo and comes back
+with two things:
+
+- **A short description** — under 70 words, saved to the watch's AI analysis and merged into its notes, replacing any
+  previous analysis rather than stacking up.
+- **Suggested values for fields the record is missing** — dial colour, case shape, bezel, crystal, crown, calendar,
+  band type and colour, water resistance, origin, battery type, reference, case size, lug width, power reserve and
+  production year. Each comes with a confidence and a one-line reason.
+
+**Nothing is written from a suggestion until you approve it.** The review dialog lists each one with a checkbox and an
+editable value — low-confidence guesses start unticked — and only the ones you tick are saved. Fields that already have
+a value are never suggested, and the server re-validates every approved value against the same rules as the edit form,
+so a bad guess is refused rather than stored. The list of fillable fields is an allow-list in code: serial number,
+prices, provenance, storage and notes are not on it.
 
 ### Style Agent
 
@@ -236,6 +249,14 @@ The **Collection Advisor** at `/advisor` answers collection-gap, overlap, brand,
 Recommendations can be added to the wishlist and marked helpful, irrelevant, already owned, or not interested. Only the ten most recent structured feedback records are included in future advisor context.
 
 Configuration, provider behavior, operational limits, privacy-safe diagnostics, evaluation thresholds, and troubleshooting are documented in [`docs/collection-advisor.md`](docs/collection-advisor.md).
+
+### JSON Output
+
+Append `format=json` to a watch detail URL to get the record itself instead of the page.
+
+- `/s/<token>?format=json` is answered by the API, so a share link works from `curl` or a script, not just a browser.
+  The payload is the same redacted view the shared page shows.
+- `/watches/<id>?format=json` renders your own watch as JSON in the app, for a quick look at the raw record.
 
 ### Share a Watch
 

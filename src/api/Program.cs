@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -259,6 +260,35 @@ app.UseStaticFiles();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// A share link answers with JSON when asked, so the same URL works for a person
+// and for a script: /s/<token>?format=json. Anything else falls through to the
+// SPA, which renders the page.
+app.MapGet("/s/{token}", async (
+        string token,
+        [FromQuery] string? format,
+        IWatchShareService shares,
+        IWebHostEnvironment environment,
+        CancellationToken ct) =>
+    {
+        if (!string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+        {
+            var webRoot = environment.WebRootPath;
+            if (string.IsNullOrEmpty(webRoot)) return Results.NotFound();
+
+            var indexPath = Path.Combine(webRoot, "index.html");
+            return File.Exists(indexPath)
+                ? Results.File(indexPath, "text/html")
+                : Results.NotFound();
+        }
+
+        var watch = await shares.ViewAsync(token, ct);
+        return watch is null
+            ? Results.NotFound(new { error = "This share link is not available." })
+            : Results.Ok(watch);
+    })
+    .RequireRateLimiting("public-share")
+    .AllowAnonymous();
 
 // SPA fallback — serve index.html for client-side routes
 app.MapFallbackToFile("index.html");

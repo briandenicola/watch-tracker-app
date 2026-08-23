@@ -50,6 +50,13 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:5062', changeOrigin: true },
       '/uploads': { target: 'http://localhost:5062', changeOrigin: true },
+      // A share link is rendered by Vite in dev, except for ?format=json, which
+      // only the API can answer — so that one variant is proxied through.
+      '/s': {
+        target: 'http://localhost:5062',
+        changeOrigin: true,
+        bypass: (req) => (/[?&]format=json(&|$)/i.test(req.url ?? '') ? undefined : '/index.html'),
+      },
     },
   },
 })

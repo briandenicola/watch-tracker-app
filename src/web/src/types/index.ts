@@ -353,6 +353,27 @@ export interface AdvisorChatState {
   session: AdvisorSession
 }
 
+/** A value the AI analysis proposes for a field the watch has no value for. */
+export interface WatchFieldSuggestion {
+  field: string
+  label: string
+  kind: 'text' | 'number' | 'integer'
+  value: string
+  confidence: 'high' | 'medium' | 'low'
+  reason?: string | null
+}
+
+export interface WatchAnalysisResult {
+  summary: string
+  suggestions: WatchFieldSuggestion[]
+}
+
+export interface ApplyAnalysisResult {
+  applied: string[]
+  rejected: string[]
+  watch: Watch
+}
+
 export interface WatchShare {
   token: string
   /** Path on this app's own origin, e.g. "/s/<token>". */
