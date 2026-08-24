@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
@@ -9,12 +7,6 @@ namespace WatchTracker.Api.Services;
 
 public class WatchShareService(AppDbContext context, IAppSettingsService appSettings) : IWatchShareService
 {
-    /// 32 bytes — the link is the whole credential, so it is sized like one.
-    private const int TokenBytes = 32;
-
-    /// Longer than any token this issues; anything else cannot be a real link.
-    private const int MaxTokenLength = 100;
-
     public async Task<WatchShareDto?> GetAsync(int watchId, int userId, CancellationToken ct = default)
     {
         var share = await context.WatchShares
@@ -36,7 +28,7 @@ public class WatchShareService(AppDbContext context, IAppSettingsService appSett
         {
             WatchId = watchId,
             UserId = userId,
-            Token = GenerateToken()
+            Token = ShareTokens.Generate()
         };
 
         context.WatchShares.Add(share);
@@ -58,7 +50,7 @@ public class WatchShareService(AppDbContext context, IAppSettingsService appSett
 
     public async Task<SharedWatchDto?> ViewAsync(string token, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(token) || token.Length > MaxTokenLength) return null;
+        if (!ShareTokens.IsWellFormed(token)) return null;
 
         var share = await context.WatchShares
             .Include(s => s.Watch)
@@ -144,6 +136,4 @@ public class WatchShareService(AppDbContext context, IAppSettingsService appSett
         };
     }
 
-    private static string GenerateToken() =>
-        WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(TokenBytes));
 }

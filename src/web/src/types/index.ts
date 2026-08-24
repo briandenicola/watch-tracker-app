@@ -381,6 +381,43 @@ export interface ApplyAnalysisResult {
   watch: Watch
 }
 
+export interface WishlistShare {
+  token: string
+  url?: string | null
+  path: string
+  /** Whether visitors see each item's target price. */
+  includePrices: boolean
+  createdAt: string
+  lastViewedAt?: string | null
+  viewCount: number
+}
+
+export interface SharedWishlistItem {
+  brand: string
+  model: string
+  sku?: string | null
+  movementType: MovementType
+  caseSizeMm?: number | null
+  caseShape?: string | null
+  dialColor?: string | null
+  bandType?: string | null
+  bandColor?: string | null
+  waterResistance?: string | null
+  countryOfOrigin?: string | null
+  linkUrl?: string | null
+  linkText?: string | null
+  /** Present only when the owner chose to publish prices. */
+  targetPrice?: number | null
+  imageUrls: WatchImage[]
+}
+
+export interface SharedWishlist {
+  ownerName: string
+  includesPrices: boolean
+  items: SharedWishlistItem[]
+  sharedAt: string
+}
+
 export interface WatchShare {
   token: string
   /** The full link, when an admin has set a public address for shares. */

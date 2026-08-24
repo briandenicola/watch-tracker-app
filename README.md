@@ -262,6 +262,21 @@ Recommendations can be added to the wishlist and marked helpful, irrelevant, alr
 
 Configuration, provider behavior, operational limits, privacy-safe diagnostics, evaluation thresholds, and troubleshooting are documented in [`docs/collection-advisor.md`](docs/collection-advisor.md).
 
+### Share a Wish List
+
+**Share Wish List** on the wish list tab creates one public link — `/w/<token>` — to your whole list, in your priority
+order. It always reflects the list as it stands, so an item added or bought later needs no new link.
+
+- Same shape as a watch share: an unguessable token, one link per person, revocable at any time, `noindex`, rate
+  limited, and honouring `ShareLinkBaseUrl`.
+- Visitors see your display name and, per item, its photos, brand and model, reference, case, dial, strap, movement,
+  water resistance and any product link. They never see your collection, what you paid for anything, notes, storage,
+  wear history or account details.
+- **Target prices are off by default** and can be switched on from the same dialog — handy when you are hinting, but
+  nobody should publish their budget by not noticing a checkbox. Changing it does not reissue the link.
+
+`?format=json` works here too: `/w/<token>?format=json` returns the same payload for a script.
+
 ### JSON Output
 
 Append `format=json` to a watch detail URL to get the record itself instead of the page.
