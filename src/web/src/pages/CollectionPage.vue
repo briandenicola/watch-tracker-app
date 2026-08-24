@@ -87,14 +87,6 @@
     >
       Clear brand and movement filters to drag watches into priority order.
     </p>
-    <button
-      v-if="tab === 'wishlist'"
-      type="button"
-      class="flex min-h-11 items-center justify-center mb-4 px-5 py-2.5 bg-bg-surface border border-border hover:border-accent text-text-secondary font-medium rounded-lg transition-colors w-full sm:w-auto"
-      @click="showShare = true"
-    >
-      Share Wish List
-    </button>
     <RouterLink
       v-if="tab === 'wishlist' && sortBy === 'priority' && !isDesktop && allWatches.some(watch => watch.isWishList)"
       to="/wishlist/order"
@@ -250,7 +242,6 @@
       </RouterLink>
     </div>
   </div>
-    <ShareWishlistModal v-if="showShare" @close="showShare = false" />
 </template>
 
 <script setup lang="ts">
@@ -262,9 +253,6 @@ import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { usePreferences, type SortOption } from '@/stores/preferences'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 import { formatInstant } from '@/utils/dateTime'
-import ShareWishlistModal from '@/components/common/ShareWishlistModal.vue'
-
-const showShare = ref(false)
 
 const route = useRoute()
 const { prefs } = usePreferences()
