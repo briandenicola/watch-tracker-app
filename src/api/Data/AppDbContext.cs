@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AdvisorMessage> AdvisorMessages => Set<AdvisorMessage>();
     public DbSet<AdvisorRecommendationFeedback> AdvisorRecommendationFeedback => Set<AdvisorRecommendationFeedback>();
     public DbSet<WatchShare> WatchShares => Set<WatchShare>();
+    public DbSet<WishlistShare> WishlistShares => Set<WishlistShare>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -168,6 +169,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             // One live link per watch, so revoking really does revoke.
             entity.HasIndex(s => s.WatchId).IsUnique();
+        });
+
+        modelBuilder.Entity<WishlistShare>(entity =>
+        {
+            entity.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(s => s.Token).IsUnique();
+
+            // One live link per user, so revoking really does revoke.
+            entity.HasIndex(s => s.UserId).IsUnique();
         });
 
         modelBuilder.Entity<WatchDisposition>(entity =>

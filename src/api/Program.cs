@@ -197,6 +197,7 @@ builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>(
 builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
 builder.Services.AddScoped<IWatchShareService, WatchShareService>();
+builder.Services.AddScoped<IWishlistShareService, WishlistShareService>();
 builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOidcService, OidcService>();
@@ -292,6 +293,33 @@ app.MapGet("/s/{token}", async (
         return watch is null
             ? Results.NotFound(new { error = "This share link is not available." })
             : Results.Ok(watch);
+    })
+    .RequireRateLimiting("public-share")
+    .AllowAnonymous();
+
+// The wish list link answers with JSON on the same terms as a watch link.
+app.MapGet("/w/{token}", async (
+        string token,
+        [FromQuery] string? format,
+        IWishlistShareService shares,
+        IWebHostEnvironment environment,
+        CancellationToken ct) =>
+    {
+        if (!string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+        {
+            var webRoot = environment.WebRootPath;
+            if (string.IsNullOrEmpty(webRoot)) return Results.NotFound();
+
+            var indexPath = Path.Combine(webRoot, "index.html");
+            return File.Exists(indexPath)
+                ? Results.File(indexPath, "text/html")
+                : Results.NotFound();
+        }
+
+        var wishlist = await shares.ViewAsync(token, ct);
+        return wishlist is null
+            ? Results.NotFound(new { error = "This share link is not available." })
+            : Results.Ok(wishlist);
     })
     .RequireRateLimiting("public-share")
     .AllowAnonymous();

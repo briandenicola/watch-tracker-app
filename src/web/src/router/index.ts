@@ -24,6 +24,12 @@ const router = createRouter({
     },
     {
       // Public by design: no auth meta, so the guard lets anyone through.
+      path: '/w/:token',
+      name: 'shared-wishlist',
+      component: () => import('@/pages/SharedWishlistPage.vue'),
+    },
+    {
+      // Public by design: no auth meta, so the guard lets anyone through.
       path: '/s/:token',
       name: 'shared-watch',
       component: () => import('@/pages/SharedWatchPage.vue'),
