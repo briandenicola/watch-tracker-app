@@ -152,6 +152,22 @@
         </div>
       </section>
 
+      <!-- Sharing Section -->
+      <section class="bg-bg-card border border-border rounded-xl p-4">
+        <h3 class="text-lg font-medium text-text mb-4">Sharing</h3>
+        <p class="text-sm text-text-secondary mb-3">
+          A public link to your wish list, for anyone you send it to — no account needed. It stays current as you add
+          watches, and you can revoke it at any time.
+        </p>
+        <button
+          type="button"
+          class="inline-flex items-center px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors whitespace-nowrap"
+          @click="showWishlistShare = true"
+        >
+          Share Wish List
+        </button>
+      </section>
+
       <!-- Password Section -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Change Password</h3>
@@ -275,6 +291,7 @@
       </section>
     </div>
   </div>
+    <ShareWishlistModal v-if="showWishlistShare" @close="showWishlistShare = false" />
 </template>
 
 <script setup lang="ts">
@@ -285,6 +302,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useTheme, type ThemeMode } from '@/stores/theme'
 import { usePreferences, type SortOption } from '@/stores/preferences'
 import { currentDateKey, formatInstant } from '@/utils/dateTime'
+import ShareWishlistModal from '@/components/common/ShareWishlistModal.vue'
+
+const showWishlistShare = ref(false)
 
 const authStore = useAuthStore()
 const theme = useTheme()
