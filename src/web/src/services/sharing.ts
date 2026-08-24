@@ -1,9 +1,13 @@
 import { api } from './api'
 import type { SharedWatch, WatchShare } from '@/types'
 
-/** The absolute link to hand out, built from whatever origin the app is on. */
+/**
+ * The absolute link to hand out. Prefers the public address an admin configured,
+ * since the host the owner administers from may be one their friends cannot
+ * reach; falls back to the current origin when nothing is set.
+ */
 export function shareUrl(share: WatchShare): string {
-  return `${window.location.origin}${share.path}`
+  return share.url || `${window.location.origin}${share.path}`
 }
 
 /** The watch's existing link, or null when it has never been shared. */

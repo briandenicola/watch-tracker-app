@@ -1,4 +1,4 @@
-using WatchTracker.Api.Models;
+﻿using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.DTOs;
 
@@ -8,9 +8,15 @@ public class WatchShareDto
     public required string Token { get; set; }
 
     /// <summary>
-    /// Where the link lives, relative to the app's own origin. The client turns
-    /// this into an absolute URL, so the link is always correct for whatever
-    /// host the owner is actually using.
+    /// The full link, when an administrator has set a public address for shares.
+    /// That address wins over the host the owner happens to be browsing, which
+    /// may be an internal one their friends cannot reach.
+    /// </summary>
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// Where the link lives, relative to the app's own origin. Used when no
+    /// public address is configured, so the link still works out of the box.
     /// </summary>
     public required string Path { get; set; }
 
