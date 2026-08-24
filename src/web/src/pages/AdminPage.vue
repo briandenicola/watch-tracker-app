@@ -123,10 +123,15 @@
                   <input
                     v-else
                     v-model="setting.value"
+                    :placeholder="setting.key === 'ShareLinkBaseUrl' ? 'https://watches.example.com' : ''"
                     :type="setting.key === 'BraveSearchApiKey' || setting.key === 'EbayClientSecret' ? 'password' : 'text'"
                     class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
                   />
                 </div>
+                <p v-if="setting.key === 'ShareLinkBaseUrl'" class="text-xs text-text-muted mt-1 sm:ml-[13rem]">
+                  The address share links should use, for people outside your network. Leave blank to build links from
+                  whichever address you are viewing the app on.
+                </p>
                 <p
                   v-if="setting.key === 'SearXngUrl' && searXngTestMsg"
                   class="text-xs mt-1 sm:ml-[13rem]"
@@ -265,6 +270,7 @@ import { setApplicationTimeZone } from '@/utils/dateTime'
 
 const SETTING_GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Regional Settings', keys: ['ApplicationTimeZone'] },
+  { label: 'Sharing', keys: ['ShareLinkBaseUrl'] },
   { label: 'Ollama Configuration', keys: ['OllamaUrl', 'OllamaModel'] },
   { label: 'Web Search Configuration', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
   { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },

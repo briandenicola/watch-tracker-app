@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
@@ -7,7 +7,7 @@ using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
-public class WatchShareService(AppDbContext context) : IWatchShareService
+public class WatchShareService(AppDbContext context, IAppSettingsService appSettings) : IWatchShareService
 {
     /// 32 bytes — the link is the whole credential, so it is sized like one.
     private const int TokenBytes = 32;
@@ -20,7 +20,7 @@ public class WatchShareService(AppDbContext context) : IWatchShareService
         var share = await context.WatchShares
             .FirstOrDefaultAsync(s => s.WatchId == watchId && s.UserId == userId, ct);
 
-        return share is null ? null : ToDto(share);
+        return share is null ? null : ToDto(share, await GetShareBaseUrlAsync());
     }
 
     public async Task<WatchShareDto?> CreateAsync(int watchId, int userId, CancellationToken ct = default)
@@ -30,7 +30,7 @@ public class WatchShareService(AppDbContext context) : IWatchShareService
 
         var existing = await context.WatchShares
             .FirstOrDefaultAsync(s => s.WatchId == watchId && s.UserId == userId, ct);
-        if (existing is not null) return ToDto(existing);
+        if (existing is not null) return ToDto(existing, await GetShareBaseUrlAsync());
 
         var share = new WatchShare
         {
@@ -42,7 +42,7 @@ public class WatchShareService(AppDbContext context) : IWatchShareService
         context.WatchShares.Add(share);
         await context.SaveChangesAsync(ct);
 
-        return ToDto(share);
+        return ToDto(share, await GetShareBaseUrlAsync());
     }
 
     public async Task<bool> RevokeAsync(int watchId, int userId, CancellationToken ct = default)
@@ -74,9 +74,29 @@ public class WatchShareService(AppDbContext context) : IWatchShareService
         return ToSharedDto(share);
     }
 
-    private static WatchShareDto ToDto(WatchShare share) => new()
+    /// <summary>
+    /// The address to hand out, when the app is reachable somewhere other than
+    /// where its owner administers it — an internal hostname is no use to the
+    /// friend the link is for. Empty (the default) means the client falls back
+    /// to whatever origin it is being viewed on.
+    /// </summary>
+    private async Task<string?> GetShareBaseUrlAsync()
+    {
+        var configured = await appSettings.GetAsync(AppSettingsService.Keys.ShareLinkBaseUrl);
+        if (string.IsNullOrWhiteSpace(configured)) return null;
+
+        // A typo here would produce links that quietly go nowhere, so anything
+        // that is not an absolute web address is treated as unset.
+        if (!Uri.TryCreate(configured.Trim(), UriKind.Absolute, out var parsed)) return null;
+        if (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps) return null;
+
+        return parsed.GetLeftPart(UriPartial.Authority) + parsed.AbsolutePath.TrimEnd('/');
+    }
+
+    private static WatchShareDto ToDto(WatchShare share, string? baseUrl) => new()
     {
         Token = share.Token,
+        Url = baseUrl is null ? null : $"{baseUrl}/s/{share.Token}",
         Path = $"/s/{share.Token}",
         CreatedAt = share.CreatedAt,
         LastViewedAt = share.LastViewedAt,

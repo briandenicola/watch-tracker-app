@@ -383,7 +383,9 @@ export interface ApplyAnalysisResult {
 
 export interface WatchShare {
   token: string
-  /** Path on this app's own origin, e.g. "/s/<token>". */
+  /** The full link, when an admin has set a public address for shares. */
+  url?: string | null
+  /** Path on this app's own origin, e.g. "/s/<token>". Used when no public address is set. */
   path: string
   createdAt: string
   lastViewedAt?: string | null

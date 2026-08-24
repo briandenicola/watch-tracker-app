@@ -287,6 +287,11 @@ including people with no account.
 
 The public read is rate limited per IP, and is the only unauthenticated endpoint in the app.
 
+**If the app answers on more than one address**, set **Admin → App Settings → Sharing → `ShareLinkBaseUrl`** to the one
+your friends can reach, e.g. `https://chronos.example.com`. Share links are otherwise built from whichever address you
+happen to be using, which is no use to anyone outside your network when you administer the app on an internal hostname.
+Anything that is not an absolute `http(s)` address is ignored, and links fall back to the current origin.
+
 ### Cover Image Selection
 
 When editing a watch with multiple images, a **Gallery Image** picker lets you choose which image appears as the cover in the gallery view.
