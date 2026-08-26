@@ -51,6 +51,7 @@ export interface Watch {
   countryOfOrigin?: string
   waterResistance?: string
   lugWidthMm?: number
+  lugToLugMm?: number
   dialColor?: string
   bezelType?: string
   powerReserveHours?: number
@@ -115,6 +116,7 @@ export interface CreateWatch {
   countryOfOrigin?: string
   waterResistance?: string
   lugWidthMm?: number
+  lugToLugMm?: number
   dialColor?: string
   bezelType?: string
   powerReserveHours?: number
@@ -459,6 +461,7 @@ export interface SharedWatch {
   bandType?: string | null
   bandColor?: string | null
   lugWidthMm?: number | null
+  lugToLugMm?: number | null
   waterResistance?: string | null
   powerReserveHours?: number | null
   batteryType?: string | null

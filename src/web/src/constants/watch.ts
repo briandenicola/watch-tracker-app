@@ -52,6 +52,7 @@ export const fieldMeta: Record<InlineField, FieldMeta> = {
 
   caseSizeMm: { input: 'number', min: 1, max: 200, step: 0.1 },
   lugWidthMm: { input: 'number', min: 1, max: 100, step: 0.5 },
+  lugToLugMm: { input: 'number', min: 1, max: 200, step: 0.1 },
   caseShape: { input: 'text', maxlength: 100 },
   crystalType: { input: 'select', options: crystalTypes },
   bezelType: { input: 'text', maxlength: 100 },

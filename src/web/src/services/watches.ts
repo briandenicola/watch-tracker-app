@@ -62,6 +62,7 @@ const UPDATE_FIELDS: Record<keyof UpdateWatch, true> = {
   countryOfOrigin: true,
   waterResistance: true,
   lugWidthMm: true,
+  lugToLugMm: true,
   dialColor: true,
   bezelType: true,
   powerReserveHours: true,

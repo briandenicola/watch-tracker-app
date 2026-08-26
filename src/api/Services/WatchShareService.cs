@@ -120,6 +120,7 @@ public class WatchShareService(AppDbContext context, IAppSettingsService appSett
             BandType = watch.BandType,
             BandColor = watch.BandColor,
             LugWidthMm = watch.LugWidthMm,
+            LugToLugMm = watch.LugToLugMm,
             WaterResistance = watch.WaterResistance,
             PowerReserveHours = watch.PowerReserveHours,
             BatteryType = watch.BatteryType,

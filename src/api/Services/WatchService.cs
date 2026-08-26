@@ -76,6 +76,7 @@ public class WatchService(AppDbContext context) : IWatchService
                 CountryOfOrigin = dto.CountryOfOrigin,
                 WaterResistance = dto.WaterResistance,
                 LugWidthMm = dto.LugWidthMm,
+                LugToLugMm = dto.LugToLugMm,
                 DialColor = dto.DialColor,
                 BezelType = dto.BezelType,
                 PowerReserveHours = dto.PowerReserveHours,
@@ -134,6 +135,7 @@ public class WatchService(AppDbContext context) : IWatchService
         watch.CountryOfOrigin = dto.CountryOfOrigin;
         watch.WaterResistance = dto.WaterResistance;
         watch.LugWidthMm = dto.LugWidthMm;
+        watch.LugToLugMm = dto.LugToLugMm;
         watch.DialColor = dto.DialColor;
         watch.BezelType = dto.BezelType;
         watch.PowerReserveHours = dto.PowerReserveHours;
@@ -534,6 +536,7 @@ public class WatchService(AppDbContext context) : IWatchService
         CountryOfOrigin = watch.CountryOfOrigin,
         WaterResistance = watch.WaterResistance,
         LugWidthMm = watch.LugWidthMm,
+        LugToLugMm = watch.LugToLugMm,
         DialColor = watch.DialColor,
         BezelType = watch.BezelType,
         PowerReserveHours = watch.PowerReserveHours,
