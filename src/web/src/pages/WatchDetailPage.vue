@@ -86,6 +86,7 @@
                 {{ uploading ? 'Uploading…' : 'Upload Images' }}
                 <input type="file" accept="image/*" multiple class="hidden" @change="handleImageUpload" :disabled="uploading" />
               </label>
+              <button @click="handleAnalyzeFromMenu" :disabled="analyzing || !watch.imageUrls.length" class="menu-action">{{ analyzing ? 'Analyzing…' : 'AI Analyze' }}</button>
               <button @click="handleDeleteFromMenu" class="menu-action text-danger">Delete</button>
             </template>
           </div>
