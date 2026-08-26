@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AdvisorRecommendationFeedback> AdvisorRecommendationFeedback => Set<AdvisorRecommendationFeedback>();
     public DbSet<WatchShare> WatchShares => Set<WatchShare>();
     public DbSet<WishlistShare> WishlistShares => Set<WishlistShare>();
+    public DbSet<CollectionReview> CollectionReviews => Set<CollectionReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -264,6 +265,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(r => new { r.UserId, r.WatchId, r.CreatedAt });
+        });
+
+        modelBuilder.Entity<CollectionReview>(entity =>
+        {
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One review per user; each run replaces the last.
+            entity.HasIndex(r => r.UserId).IsUnique();
         });
 
         modelBuilder.Entity<AdvisorSession>(entity =>
