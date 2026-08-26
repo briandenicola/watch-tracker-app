@@ -149,6 +149,20 @@
       <polyline points="9 6 15 12 9 18" />
     </template>
 
+    <!-- Compact grid: many small tiles -->
+    <template v-else-if="name === 'grid'">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </template>
+
+    <!-- Cards: one large tile with a caption -->
+    <template v-else-if="name === 'cards'">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="3" y1="15" x2="21" y2="15" />
+    </template>
+
     <!-- Sign Out: door with arrow -->
     <template v-else-if="name === 'sign-out'">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

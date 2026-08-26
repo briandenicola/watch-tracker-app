@@ -27,6 +27,7 @@ public class Watch
     public string? CountryOfOrigin { get; set; }
     public string? WaterResistance { get; set; }
     public double? LugWidthMm { get; set; }
+    public double? LugToLugMm { get; set; }
     public string? DialColor { get; set; }
     public string? BezelType { get; set; }
     public int? PowerReserveHours { get; set; }

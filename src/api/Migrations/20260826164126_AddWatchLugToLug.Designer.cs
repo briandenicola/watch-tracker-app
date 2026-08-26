@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WatchTracker.Api.Data;
 
@@ -10,9 +11,11 @@ using WatchTracker.Api.Data;
 namespace WatchTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260826164126_AddWatchLugToLug")]
+    partial class AddWatchLugToLug
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -180,54 +183,6 @@ namespace WatchTracker.Api.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("AppSettings");
-                });
-
-            modelBuilder.Entity("WatchTracker.Api.Models.CollectionReview", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CollectionWatchCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("FactsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("GeneratedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RecommendationsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("StrengthsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Summary")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("WatchesUpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("WeaknessesJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("WishlistWatchCount")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("CollectionReviews");
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.ExternalLogin", b =>
@@ -1019,17 +974,6 @@ namespace WatchTracker.Api.Migrations
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.ApiKey", b =>
-                {
-                    b.HasOne("WatchTracker.Api.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("WatchTracker.Api.Models.CollectionReview", b =>
                 {
                     b.HasOne("WatchTracker.Api.Models.User", "User")
                         .WithMany()

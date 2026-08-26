@@ -164,18 +164,32 @@ services:
 
 ### Collection Views
 
-The main collection page supports two view modes:
+The main page holds the **Collection** and **Wish List** behind a tab toggle. Either tab renders in whichever of two
+view modes the toolbar has selected:
 
-- **Gallery View** — Card grid showing each watch's cover image with brand and model. Supports infinite scroll (loads 12 at a time), filtering by brand and band type, and sorting by date added, brand, or last worn date (ascending/descending).
-- **Table View** — Sortable table with columns for Brand, Model, Size, Type, Date Added, Last Worn, and Worn Count. All columns are sortable. On mobile screens (≤600px), the table collapses to Brand, Model, and Date Added for readability.
+- **Card view** — Large cards showing the cover image with brand and model. On desktop this is a grid that fills the
+  width; on mobile it is a full-width swipe gallery — one watch at a time, with arrows and a position counter.
+- **Compact grid** — Square thumbnails, three across on mobile and up to six on desktop, captioned with brand and
+  model. It scrolls vertically, so a collection of any size can be scanned at a glance. Tapping a tile opens the watch.
 
-Toggle between views using the ▦/☰ buttons in the toolbar. The Brand field on the Add/Edit Watch forms includes an autocomplete dropdown populated from existing brands in your collection.
+The pair of buttons at the right of the toolbar switches between them. The choice is remembered in the browser and
+applies to both tabs.
+
+Beside them, the number is how many watches are currently shown; clicking it opens the filter panel, which filters by
+brand and movement type and sorts by date added, brand, last worn, most worn and — on the wish list — priority.
+Filters and sorting apply to whichever view is active.
+
+On the wish list sorted by priority, watches can be dragged into order in the desktop card grid, once the brand and
+movement filters are cleared. Mobile and the compact grid link to the **Arrange Priority** page instead.
+
+The Brand field on the Add/Edit Watch forms includes an autocomplete dropdown populated from existing brands in your
+collection.
 
 ### Wish List
 
 Track watches you'd like to buy without cluttering your main collection:
 
-- **Add to Wish List** — Paste a product-page URL to extract the brand, model/reference, USD target price, store link, and main image with the configured Ollama model. The extracted values fill the normal form for review and editing; nothing is saved until you confirm. Manual entry remains available when a store blocks extraction or omits details.
+- **Add to Wish List** — Paste a product-page URL to extract the brand, model/reference, USD target price, store link, and main image with the configured Ollama model. The extracted values fill the normal form for review and editing; nothing is saved until you confirm. A × inside the URL field empties it when you want to try a different page. Manual entry remains available when a store blocks extraction or omits details.
 - **Wish List Gallery** — Toggle the "Wish List" button in the toolbar to view your wish list. Cards show the watch image (click to edit) and the brand/model as a link to the product page.
 - **Edit Wish List Item** — Update details, replace the image, delete the item, or mark it as **Purchased** which redirects to the Add Watch page with the brand and model pre-filled.
 
@@ -189,12 +203,22 @@ Each time you click **Wore Today** on a watch detail page, an individual wear ev
 - **Wear Heatmap** — A GitHub-style 365-day heatmap showing wear frequency per day, with 4 intensity levels and dark/light theme support
 - **Wear Timeline** — Chronological list of the 30 most recent wear events, each linking to the watch detail page
 
+The **Wear Log** page, also in the navigation bar, is where individual wear events are reviewed and corrected:
+
+- **Timeline** — Every wear event, newest first, grouped by day.
+- **Calendar** — A month grid with a dot on each day that has a wear. Selecting a day lists what was worn on it.
+- **Add watch worn** — From the selected day, pick a watch to log a wear on that date, including past days. Only
+  active collection watches are offered — wish list and retired ones are not — and a filter box narrows a larger
+  collection. The day's list, its calendar dot and the timeline update immediately.
+- **Edit / Remove** — Any entry can be moved to another date, given or cleared of start and end times, or deleted.
+  Back-dating an entry never pulls a watch's last-worn date behind a more recent wear.
+
 ### Watch Details
 
 Each watch can store:
 
 - **Core fields** — Brand, model, movement type, case size, band type, purchase date/price
-- **Extended properties** — Crystal type, case shape, crown type, calendar type, country of origin, water resistance, lug width, dial color, bezel type, power reserve, serial/reference number
+- **Extended properties** — Crystal type, case shape, crown type, calendar type, country of origin, water resistance, lug width, lug-to-lug, dial color, bezel type, power reserve, serial/reference number
 - **Link** — A URL with customizable display text (defaults to "Product Page"), shown as a chip on the detail page
 - **Notes** — Markdown-supported notes field, displayed in a scrollable container within the Additional Details accordion
 - **Images** — Multiple image uploads per watch with the ability to choose a cover image for the gallery view
@@ -207,8 +231,8 @@ with two things:
 - **A short description** — under 70 words, saved to the watch's AI analysis, replacing the previous one. It is not
   copied into notes: notes are yours to write.
 - **Suggested values for fields the record is missing** — dial colour, case shape, bezel, crystal, crown, calendar,
-  band type and colour, water resistance, origin, battery type, reference, case size, lug width, power reserve and
-  production year. Each comes with a confidence and a one-line reason.
+  band type and colour, water resistance, origin, battery type, reference, case size, lug width, lug-to-lug,
+  power reserve and production year. Each comes with a confidence and a one-line reason.
 
 It reads the watch's links too. If the watch has a **Product / Reference** link or an **Acquisition Source** link, both
 pages are fetched and their text goes to the model alongside the photo, so specs come off a spec sheet instead of a
@@ -315,24 +339,34 @@ When editing a watch with multiple images, a **Gallery Image** picker lets you c
 
 ### User Preferences
 
-All authenticated users can access **Settings** (click your avatar in the navigation bar) to configure:
+All authenticated users can open **Settings** from the navigation bar:
 
-- **My Account** — Change your display username and profile photo. Your email address is shown but not editable.
+- **Profile** — Change your display username and profile photo. Your email address is shown but not editable.
+- **Appearance** — Switch between light and dark mode. Defaults to the OS preference and persists in the browser.
+- **Collection** — Default sort for the collection and for the wish list, plus the storage locations offered on the
+  watch form.
+- **Sharing** — Create or revoke the public link to your wish list.
 - **Change Password** — Update your account password.
-- **Theme** — Switch between light and dark mode. Defaults to the OS preference and persists in the browser.
-- **Default View** — Choose between gallery and table as the default collection view.
-- **Time Zone** — Select your time zone for date/time display. Defaults to your browser's time zone.
+- **Linked Sign-in Accounts** — Connect or disconnect an OIDC provider.
+- **API Keys** — Issue and revoke keys for programmatic access. A key is shown once, at creation.
+- **Data** — Export your collection, or import one.
 
-Settings are displayed in a modal popup rather than a separate page.
+Two related settings live elsewhere: the collection view mode is remembered from the toolbar toggle rather than set
+here, and the time zone is application-wide and set by an admin.
 
 ### Admin Settings
 
 Admins can manage application-wide settings under **Admin → Settings**, organized into grouped sections:
 
-- **My Account** — Change your display username. Your email address is shown but not editable.
-- **AI Configuration** — Configure the Ollama URL, model, and AI analysis prompt.
-- **Style Agent** — The persona the style agent uses when recommending outfits.
-- **Collection Advisor** — The advisor persona. Tool, grounding, privacy, and safety rules remain fixed in code.
+- **Regional Settings** — The application-wide IANA time zone. Timestamps are stored as UTC and displayed, grouped
+  and edited against it.
+- **Sharing** — The public base address share links are built from.
+- **Ollama Configuration** — The Ollama URL and model.
+- **Web Search Configuration** — The search provider and its credentials (Brave or SearXNG).
+- **eBay Pricing** — eBay client credentials, used for resale lookups.
+- **Resale Configuration** — How often resale values are refreshed.
+- **Prompts** — The personas and instructions behind AI analysis, resale valuation, the style agent, the watch
+  recommendation and the collection advisor. Tool, grounding, privacy and safety rules remain fixed in code.
 - **Security** — Max failed login attempts and lockout duration.
 - **Logging** — Runtime log level (Trace through None). Changes take effect immediately without a restart.
 

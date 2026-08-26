@@ -559,6 +559,7 @@ const detailSections = computed(() => {
       rows: [
         { label: 'Case Size', value: mm(w.caseSizeMm), field: 'caseSizeMm' },
         { label: 'Lug Width', value: mm(w.lugWidthMm), field: 'lugWidthMm' },
+        { label: 'Lug-to-Lug', value: mm(w.lugToLugMm), field: 'lugToLugMm' },
         { label: 'Case Shape', value: w.caseShape, field: 'caseShape' },
         { label: 'Crystal', value: w.crystalType, field: 'crystalType' },
         { label: 'Bezel', value: w.bezelType, field: 'bezelType' },

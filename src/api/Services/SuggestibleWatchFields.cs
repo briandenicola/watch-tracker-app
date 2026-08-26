@@ -66,6 +66,8 @@ public static class SuggestibleWatchFields
             w => w.CaseSizeMm, (w, v) => w.CaseSizeMm = v),
         Number("lugWidthMm", "Lug Width", "lug width in millimetres", 1, 100,
             w => w.LugWidthMm, (w, v) => w.LugWidthMm = v),
+        Number("lugToLugMm", "Lug-to-Lug", "lug-to-lug length in millimetres, tip of one lug to the other", 1, 200,
+            w => w.LugToLugMm, (w, v) => w.LugToLugMm = v),
 
         Integer("powerReserveHours", "Power Reserve", "power reserve in hours, for a mechanical movement", 0, 10000,
             w => w.PowerReserveHours, (w, v) => w.PowerReserveHours = v),
