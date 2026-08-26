@@ -22,17 +22,36 @@
         </button>
       </div>
 
-      <!-- Filter toggle + count -->
-      <button
-        @click="showFilters = !showFilters"
-        class="flex items-center gap-2 px-3 py-2 text-sm text-text-muted hover:text-text transition-colors"
-        :class="{ '!text-accent': hasActiveFilters }"
-      >
-        <span>{{ filteredWatches.length }}</span>
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2" />
-        </svg>
-      </button>
+      <div class="flex items-center gap-1">
+        <!-- View toggle -->
+        <div class="flex gap-1 bg-bg-surface border border-border rounded-lg p-1" role="group" aria-label="View mode">
+          <button
+            v-for="mode in viewModes"
+            :key="mode.value"
+            type="button"
+            :data-testid="`view-${mode.value}`"
+            :aria-label="mode.label"
+            :aria-pressed="viewMode === mode.value"
+            class="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+            :class="viewMode === mode.value ? 'bg-accent text-bg' : 'text-text-secondary hover:text-text'"
+            @click="setCollectionViewMode(mode.value)"
+          >
+            <AppIcon :name="mode.icon" :size="16" :stroke-width="1.75" />
+          </button>
+        </div>
+
+        <!-- Filter toggle + count -->
+        <button
+          @click="showFilters = !showFilters"
+          class="flex items-center gap-2 px-3 py-2 text-sm text-text-muted hover:text-text transition-colors"
+          :class="{ '!text-accent': hasActiveFilters }"
+        >
+          <span>{{ filteredWatches.length }}</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Collapsible Filter Panel -->
@@ -82,13 +101,13 @@
     </Transition>
     <p v-if="prioritySaveError" class="text-sm text-danger mb-4">{{ prioritySaveError }}</p>
     <p
-      v-else-if="tab === 'wishlist' && sortBy === 'priority' && isDesktop && !canDragPriority"
+      v-else-if="tab === 'wishlist' && sortBy === 'priority' && isDesktop && viewMode === 'cards' && !canDragPriority"
       class="text-xs text-text-muted mb-4"
     >
       Clear brand and movement filters to drag watches into priority order.
     </p>
     <RouterLink
-      v-if="tab === 'wishlist' && sortBy === 'priority' && !isDesktop && allWatches.some(watch => watch.isWishList)"
+      v-if="tab === 'wishlist' && sortBy === 'priority' && (!isDesktop || viewMode === 'compact') && allWatches.some(watch => watch.isWishList)"
       to="/wishlist/order"
       class="flex min-h-11 items-center justify-center mb-4 px-5 py-2.5 bg-bg-surface border border-border hover:border-accent text-text-secondary font-medium rounded-lg transition-colors"
     >
@@ -118,6 +137,37 @@
       <p class="text-text-secondary mb-4">Your wish list is empty</p>
       <RouterLink to="/wishlist/new" class="inline-block px-5 py-2.5 bg-accent hover:bg-accent-hover text-bg font-medium rounded-lg transition-colors">
         Add a Watch to Your Wish List
+      </RouterLink>
+    </div>
+
+    <!-- Compact Thumbnail Grid -->
+    <div v-else-if="viewMode === 'compact'" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+      <RouterLink
+        :to="tab === 'wishlist' ? '/wishlist/new' : '/watches/new'"
+        class="group flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-accent/50 transition-colors"
+        :aria-label="tab === 'wishlist' ? 'Add to Wish List' : 'Add Watch'"
+      >
+        <span class="text-2xl text-text-muted group-hover:text-accent transition-colors">+</span>
+      </RouterLink>
+      <RouterLink
+        v-for="watch in filteredWatches"
+        :key="watch.id"
+        :to="`/watches/${watch.id}`"
+        class="group"
+        :title="`${watch.brand} ${watch.model}`"
+      >
+        <div class="aspect-square bg-bg-surface border border-border rounded-lg overflow-hidden group-hover:border-accent/50 transition-colors">
+          <img
+            v-if="watch.imageUrls.length > 0"
+            :src="imageUrl(watch.imageUrls[0].url)"
+            :alt="`${watch.brand} ${watch.model}`"
+            class="w-full h-full object-contain p-2"
+            loading="lazy"
+          />
+          <div v-else class="w-full h-full flex items-center justify-center text-2xl text-text-muted">⌚</div>
+        </div>
+        <p class="mt-1 text-[0.7rem] leading-tight text-text-secondary truncate">{{ watch.brand }}</p>
+        <p class="text-[0.65rem] leading-tight text-text-muted truncate">{{ watch.model }}</p>
       </RouterLink>
     </div>
 
@@ -250,12 +300,13 @@ import { useRoute } from 'vue-router'
 import type { Watch } from '@/types'
 import { getWatches, imageUrl, reorderWishlist } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
-import { usePreferences, type SortOption } from '@/stores/preferences'
+import { usePreferences, type SortOption, type ViewMode } from '@/stores/preferences'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
+import AppIcon from '@/components/icons/AppIcon.vue'
 import { formatInstant } from '@/utils/dateTime'
 
 const route = useRoute()
-const { prefs } = usePreferences()
+const { prefs, setCollectionViewMode } = usePreferences()
 
 const allWatches = ref<Watch[]>([])
 const loading = ref(true)
@@ -264,6 +315,12 @@ const currentIndex = ref(0)
 const windowWidth = ref(window.innerWidth)
 const isDesktop = computed(() => windowWidth.value >= 1024)
 const swipeEl = ref<HTMLElement | null>(null)
+
+const viewMode = computed(() => prefs.value.collectionViewMode)
+const viewModes: { value: ViewMode; label: string; icon: string }[] = [
+  { value: 'cards', label: 'Card view', icon: 'cards' },
+  { value: 'compact', label: 'Compact grid', icon: 'grid' },
+]
 
 function money(value: number, currency?: string): string {
   if (!currency) return `$${value.toFixed(2)}`
@@ -340,6 +397,7 @@ const hasActiveFilters = computed(() =>
 )
 const canDragPriority = computed(() =>
   isDesktop.value
+  && viewMode.value === 'cards'
   && tab.value === 'wishlist'
   && sortBy.value === 'priority'
   && filterBrand.value === ''
@@ -354,7 +412,7 @@ function clearFilters() {
 }
 
 // Reset carousel index when tab or filters change
-vueWatch([tab, filterBrand, filterMovement, sortBy], () => { currentIndex.value = 0 })
+vueWatch([tab, filterBrand, filterMovement, sortBy, viewMode], () => { currentIndex.value = 0 })
 vueWatch(tab, (nextTab) => {
   sortBy.value = defaultSortForTab(nextTab)
 })

@@ -2,16 +2,21 @@ import { ref, watch } from 'vue'
 
 export type SortOption = 'dateAdded' | 'brand' | 'lastWorn' | 'timesWorn' | 'priority'
 
+/** 'cards' is the swipe gallery on mobile and the large card grid on desktop. */
+export type ViewMode = 'cards' | 'compact'
+
 const STORAGE_KEY = 'watch-tracker-preferences'
 
 interface Preferences {
   collectionDefaultSort: Exclude<SortOption, 'priority'>
   wishlistDefaultSort: SortOption
+  collectionViewMode: ViewMode
 }
 
 const defaults: Preferences = {
   collectionDefaultSort: 'dateAdded',
   wishlistDefaultSort: 'priority',
+  collectionViewMode: 'cards',
 }
 
 function load(): Preferences {
@@ -27,6 +32,7 @@ function load(): Preferences {
         wishlistDefaultSort: stored.wishlistDefaultSort
           ?? legacySort
           ?? defaults.wishlistDefaultSort,
+        collectionViewMode: stored.collectionViewMode ?? defaults.collectionViewMode,
       }
     }
   } catch { /* ignore */ }
@@ -47,6 +53,9 @@ export function usePreferences() {
     },
     setWishlistDefaultSort(sort: SortOption) {
       prefs.value.wishlistDefaultSort = sort
+    },
+    setCollectionViewMode(mode: ViewMode) {
+      prefs.value.collectionViewMode = mode
     },
   }
 }
