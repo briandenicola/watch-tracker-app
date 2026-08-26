@@ -175,7 +175,7 @@ Toggle between views using the ▦/☰ buttons in the toolbar. The Brand field o
 
 Track watches you'd like to buy without cluttering your main collection:
 
-- **Add to Wish List** — Simplified form collecting brand, model, estimated price, product page URL, and an image URL. The image is downloaded from the URL and stored locally.
+- **Add to Wish List** — Paste a product-page URL to extract the brand, model/reference, USD target price, store link, and main image with the configured Ollama model. The extracted values fill the normal form for review and editing; nothing is saved until you confirm. Manual entry remains available when a store blocks extraction or omits details.
 - **Wish List Gallery** — Toggle the "Wish List" button in the toolbar to view your wish list. Cards show the watch image (click to edit) and the brand/model as a link to the product page.
 - **Edit Wish List Item** — Update details, replace the image, delete the item, or mark it as **Purchased** which redirects to the Add Watch page with the brand and model pre-filled.
 

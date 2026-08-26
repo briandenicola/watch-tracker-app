@@ -1,3 +1,4 @@
+﻿using System.Net;
 using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
@@ -7,6 +8,8 @@ namespace WatchTracker.Api.Services;
 
 public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IHttpClientFactory httpClientFactory, IBackgroundRemovalService bgRemoval) : IWatchImageService
 {
+    private const int MaxRemoteImageBytes = 10 * 1024 * 1024;
+    private const int MaxRedirects = 3;
     private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
     private static readonly Dictionary<string, string> MimeToExt = new()
@@ -77,16 +80,18 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
 
         if (watch is null) return null;
 
-        var httpClient = httpClientFactory.CreateClient();
-        using var response = await httpClient.GetAsync(imageUrl, ct);
-        response.EnsureSuccessStatusCode();
+        if (!TryParseWebUrl(imageUrl, out var uri))
+            throw new InvalidOperationException("Image URL must use HTTP or HTTPS.");
 
-        var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+        var httpClient = httpClientFactory.CreateClient("RemoteImage");
+        byte[] bytes;
+        using (var response = await DownloadAsync(httpClient, uri, ct))
+        {
+            bytes = await ReadCappedAsync(response, ct);
+        }
 
-        // Detect type from magic bytes first, then Content-Type header, then URL extension
-        var contentType = DetectImageType(bytes)
-            ?? response.Content.Headers.ContentType?.MediaType
-            ?? InferFromUrl(imageUrl);
+        // The remote server and URL are untrusted; only the bytes decide the type.
+        var contentType = DetectImageType(bytes);
 
         if (contentType is null || !AllowedTypes.Contains(contentType))
             return null;
@@ -98,20 +103,100 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
         var filePath = Path.Combine(uploadsDir, fileName);
 
         await File.WriteAllBytesAsync(filePath, bytes, ct);
-
-        var maxSort = watch.Images.Count > 0 ? watch.Images.Max(i => i.SortOrder) : -1;
-        var image = new WatchImage
+        try
         {
-            WatchId = watchId,
-            FileName = fileName,
-            ContentType = contentType,
-            SortOrder = ++maxSort,
-        };
+            var maxSort = watch.Images.Count > 0 ? watch.Images.Max(i => i.SortOrder) : -1;
+            var image = new WatchImage
+            {
+                WatchId = watchId,
+                FileName = fileName,
+                ContentType = contentType,
+                SortOrder = ++maxSort,
+            };
 
-        context.WatchImages.Add(image);
-        await context.SaveChangesAsync(ct);
+            context.WatchImages.Add(image);
+            await context.SaveChangesAsync(ct);
 
-        return new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" };
+            return new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" };
+        }
+        catch
+        {
+            File.Delete(filePath);
+            throw;
+        }
+    }
+
+    private static async Task<HttpResponseMessage> DownloadAsync(
+        HttpClient httpClient,
+        Uri initialUri,
+        CancellationToken ct)
+    {
+        var uri = initialUri;
+        for (var hop = 0; hop <= MaxRedirects; hop++)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            request.Headers.TryAddWithoutValidation("Accept", "image/*");
+            var response = await httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct);
+
+            if (IsRedirect(response.StatusCode))
+            {
+                var location = response.Headers.Location;
+                response.Dispose();
+                if (location is null || hop == MaxRedirects)
+                    throw new HttpRequestException("The image URL redirected too many times.");
+
+                var next = location.IsAbsoluteUri ? location : new Uri(uri, location);
+                if (!TryParseWebUrl(next.ToString(), out uri))
+                    throw new HttpRequestException("The image redirected to an unsupported URL.");
+                continue;
+            }
+
+            response.EnsureSuccessStatusCode();
+            if (response.Content.Headers.ContentLength > MaxRemoteImageBytes)
+            {
+                response.Dispose();
+                throw new HttpRequestException("The remote image is too large.");
+            }
+
+            return response;
+        }
+
+        throw new HttpRequestException("The image URL redirected too many times.");
+    }
+
+    private static async Task<byte[]> ReadCappedAsync(
+        HttpResponseMessage response,
+        CancellationToken ct)
+    {
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var output = new MemoryStream();
+        var buffer = new byte[81920];
+        while (true)
+        {
+            var read = await stream.ReadAsync(buffer, ct);
+            if (read == 0) break;
+            if (output.Length + read > MaxRemoteImageBytes)
+                throw new HttpRequestException("The remote image is too large.");
+            await output.WriteAsync(buffer.AsMemory(0, read), ct);
+        }
+
+        return output.ToArray();
+    }
+
+    private static bool IsRedirect(HttpStatusCode status) =>
+        status is HttpStatusCode.Moved or HttpStatusCode.Found or HttpStatusCode.SeeOther
+            or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+
+    private static bool TryParseWebUrl(string value, out Uri uri)
+    {
+        uri = null!;
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var parsed)) return false;
+        if (parsed.Scheme is not ("http" or "https")) return false;
+        uri = parsed;
+        return true;
     }
 
     private static string? DetectImageType(byte[] data)
@@ -136,23 +221,6 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             return "image/webp";
 
         return null;
-    }
-
-    private static string? InferFromUrl(string imageUrl)
-    {
-        try
-        {
-            var ext = Path.GetExtension(new Uri(imageUrl).AbsolutePath).ToLowerInvariant();
-            return ext switch
-            {
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".webp" => "image/webp",
-                ".gif" => "image/gif",
-                _ => null,
-            };
-        }
-        catch { return null; }
     }
 
     public async Task<bool> DeleteAsync(int imageId, int userId, CancellationToken ct = default)

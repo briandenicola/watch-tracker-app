@@ -1,7 +1,46 @@
 <template>
   <div>
     <h2 class="font-display text-2xl font-semibold text-text mb-6">Add to Wish List</h2>
-    <WatchForm mode="wishlist" @submit="handleSubmit" :loading="loading" :existing-brands="brands" :storage-locations="storageLocations" />
+    <section class="max-w-lg mb-6 p-4 bg-bg-surface border border-border rounded-xl">
+      <h3 class="font-medium text-text mb-1">Import from a product page</h3>
+      <p class="text-xs text-text-muted mb-3">
+        Extract the core details with Ollama, then review them before saving.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input
+          v-model="sourceUrl"
+          data-testid="wishlist-source-url"
+          type="url"
+          maxlength="2000"
+          placeholder="https://store.example/watch"
+          class="flex-1 px-3 py-2.5 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+          @keydown.enter.prevent="handleExtract"
+        />
+        <button
+          type="button"
+          :disabled="extracting || !sourceUrl.trim()"
+          class="px-4 py-2.5 bg-accent hover:bg-accent-hover text-bg text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+          @click="handleExtract"
+        >
+          {{ extracting ? 'Extracting...' : 'Extract details' }}
+        </button>
+      </div>
+      <p v-if="extractError" class="text-danger text-sm mt-3">{{ extractError }}</p>
+      <div v-else-if="extractionComplete" class="mt-3">
+        <p class="text-success text-sm">Details added below. Review them before saving.</p>
+        <ul v-if="extractionWarnings.length" class="mt-2 space-y-1 text-xs text-warning">
+          <li v-for="warning in extractionWarnings" :key="warning">{{ warning }}</li>
+        </ul>
+      </div>
+    </section>
+    <WatchForm
+      ref="watchForm"
+      mode="wishlist"
+      @submit="handleSubmit"
+      :loading="loading"
+      :existing-brands="brands"
+      :storage-locations="storageLocations"
+    />
     <p v-if="error" class="text-danger text-sm mt-4">{{ error }}</p>
   </div>
 </template>
@@ -9,7 +48,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createWatch, getWatches, uploadImage, importImageFromUrl } from '@/services/watches'
+import {
+  createWatch,
+  extractWishlistUrl,
+  getWatches,
+  uploadImage,
+  importImageFromUrl,
+} from '@/services/watches'
 import { api } from '@/services/api'
 import WatchForm from '@/components/common/WatchForm.vue'
 import type { AuthResponse, CreateWatch } from '@/types'
@@ -19,6 +64,12 @@ const loading = ref(false)
 const error = ref('')
 const brands = ref<string[]>([])
 const storageLocations = ref<string[]>([])
+const sourceUrl = ref('')
+const extracting = ref(false)
+const extractError = ref('')
+const extractionComplete = ref(false)
+const extractionWarnings = ref<string[]>([])
+const watchForm = ref<InstanceType<typeof WatchForm> | null>(null)
 
 onMounted(async () => {
   try {
@@ -30,6 +81,31 @@ onMounted(async () => {
     storageLocations.value = profileResp.data.storageLocations || []
   } catch { /* non-critical */ }
 })
+
+async function handleExtract() {
+  if (!sourceUrl.value.trim() || extracting.value) return
+
+  extracting.value = true
+  extractError.value = ''
+  extractionComplete.value = false
+  extractionWarnings.value = []
+  try {
+    const result = await extractWishlistUrl(sourceUrl.value.trim())
+    watchForm.value?.applyDraft({
+      brand: result.brand,
+      model: result.model,
+      purchasePrice: result.purchasePrice,
+      linkUrl: result.linkUrl,
+      linkText: result.linkText,
+    }, result.imageUrl)
+    extractionWarnings.value = result.warnings
+    extractionComplete.value = true
+  } catch (e: any) {
+    extractError.value = e.response?.data?.error || 'Could not extract details from this page.'
+  } finally {
+    extracting.value = false
+  }
+}
 
 async function handleSubmit(data: CreateWatch, photo?: File, imageUrl?: string) {
   loading.value = true

@@ -2,6 +2,7 @@ import { api } from './api'
 import type {
   Watch, CreateWatch, UpdateWatch, WearLog, ResaleValueEntry, CreateResaleValueEntry,
   UpdateWatchDisposition, WatchAnalysisResult, ApplyAnalysisResult,
+  WishlistExtractionResult,
 } from '@/types'
 
 const BASE_URL = window.location.origin
@@ -25,6 +26,14 @@ export async function getWatch(id: number): Promise<Watch> {
 
 export async function createWatch(watch: CreateWatch): Promise<Watch> {
   const { data } = await api.post<Watch>('/api/watches', watch)
+  return data
+}
+
+export async function extractWishlistUrl(url: string): Promise<WishlistExtractionResult> {
+  const { data } = await api.post<WishlistExtractionResult>(
+    '/api/watches/wishlist/extract',
+    { url },
+  )
   return data
 }
 

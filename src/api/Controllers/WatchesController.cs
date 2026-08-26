@@ -13,6 +13,7 @@ namespace WatchTracker.Api.Controllers;
 public class WatchesController(
     IWatchService watchService,
     IWatchAnalysisService analysisService,
+    IWishlistExtractionService wishlistExtractionService,
     IResaleValueRefreshService resaleRefreshService,
     IBackgroundTaskQueue taskQueue,
     ILogger<WatchesController> logger) : ControllerBase
@@ -46,6 +47,29 @@ public class WatchesController(
     {
         var watch = await watchService.CreateAsync(dto, UserId, ct);
         return CreatedAtAction(nameof(GetById), new { id = watch.Id }, watch);
+    }
+
+    [HttpPost("wishlist/extract")]
+    [EnableRateLimiting("wishlist-extraction")]
+    [ProducesResponseType(typeof(WishlistExtractionResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<WishlistExtractionResultDto>> ExtractWishlist(
+        WishlistExtractionRequestDto dto,
+        CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await wishlistExtractionService.ExtractAsync(dto.Url, ct));
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(503, new { error = "The extraction service could not be reached." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]

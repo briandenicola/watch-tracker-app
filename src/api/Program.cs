@@ -176,6 +176,18 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    options.AddPolicy("wishlist-extraction", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
     options.AddPolicy("collection-advisor", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -205,11 +217,15 @@ builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
+builder.Services.AddHttpClient<IWishlistExtractionService, WishlistExtractionService>();
 // Fetches whatever page a watch links to, so the analysis can read a spec sheet
 // instead of guessing. Its handler refuses to connect to anything but a public
 // address — see ProductPageReader for why that lives on the handler.
 builder.Services.AddHttpClient<IProductPageReader, ProductPageReader>()
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10))
+    .ConfigurePrimaryHttpMessageHandler(() => ProductPageReader.CreateHandler());
+builder.Services.AddHttpClient("RemoteImage")
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(15))
     .ConfigurePrimaryHttpMessageHandler(() => ProductPageReader.CreateHandler());
 // These clients talk to Ollama and retain its default timeout because AI
 // generation can legitimately take longer than a typical API call.

@@ -21,6 +21,7 @@ public class ProductPageReader(HttpClient httpClient, ILogger<ProductPageReader>
     private const int MaxBytes = 512 * 1024;
     private const int MaxRedirects = 3;
     private const int MaxTextLength = 2500;
+    private const int MaxJsonLdLength = 12000;
 
     private static readonly Regex ScriptOrStyle = new(
         @"<(script|style|noscript|svg)\b[^>]*>.*?</\1>",
@@ -39,6 +40,17 @@ public class ProductPageReader(HttpClient httpClient, ILogger<ProductPageReader>
         @"<title\b[^>]*>(.*?)</title>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromSeconds(2));
 
+    private static readonly Regex JsonLdTag = new(
+        @"<script\b[^>]*\btype\s*=\s*[""']application/ld\+json[""'][^>]*>(.*?)</script>",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromSeconds(2));
+
+    private static readonly Regex MetaTag = new(
+        @"<meta\b[^>]*>", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2));
+
+    private static readonly Regex Attribute = new(
+        @"(?<name>[\w:-]+)\s*=\s*(?:""(?<value>[^""]*)""|'(?<value>[^']*)'|(?<value>[^\s>]+))",
+        RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2));
+
     /// <summary>
     /// The handler this reader must be registered with: it resolves each host at
     /// connect time and refuses anything that is not a public address, which is
@@ -47,6 +59,7 @@ public class ProductPageReader(HttpClient httpClient, ILogger<ProductPageReader>
     public static SocketsHttpHandler CreateHandler() => new()
     {
         AllowAutoRedirect = false,
+        UseProxy = false,
         ConnectCallback = async (context, ct) =>
         {
             var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, ct);
@@ -103,7 +116,12 @@ public class ProductPageReader(HttpClient httpClient, ILogger<ProductPageReader>
                 var text = ExtractText(html);
                 if (text.Length == 0) return null;
 
-                return new LinkedPageExcerpt(uri.ToString(), ExtractTitle(html), text);
+                return new LinkedPageExcerpt(
+                    uri.ToString(),
+                    ExtractTitle(html),
+                    text,
+                    ExtractMetadata(html, uri),
+                    ExtractJsonLd(html));
             }
 
             return null;
@@ -182,6 +200,67 @@ public class ProductPageReader(HttpClient httpClient, ILogger<ProductPageReader>
         {
             return null;
         }
+    }
+
+    private static IReadOnlyDictionary<string, string> ExtractMetadata(string html, Uri pageUri)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            foreach (Match tag in MetaTag.Matches(html))
+            {
+                var attributes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (Match attribute in Attribute.Matches(tag.Value))
+                    attributes.TryAdd(
+                        attribute.Groups["name"].Value,
+                        WebUtility.HtmlDecode(attribute.Groups["value"].Value).Trim());
+
+                if (!attributes.TryGetValue("property", out var key)
+                    && !attributes.TryGetValue("name", out key))
+                    continue;
+                if (!attributes.TryGetValue("content", out var value)
+                    || string.IsNullOrWhiteSpace(key)
+                    || string.IsNullOrWhiteSpace(value))
+                    continue;
+
+                if (key is "og:image" or "twitter:image"
+                    && Uri.TryCreate(pageUri, value, out var imageUri))
+                    value = imageUri.ToString();
+
+                result.TryAdd(key.Trim().ToLowerInvariant(), value);
+            }
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return result;
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<string> ExtractJsonLd(string html)
+    {
+        var result = new List<string>();
+        var remaining = MaxJsonLdLength;
+        try
+        {
+            foreach (Match match in JsonLdTag.Matches(html))
+            {
+                var value = WebUtility.HtmlDecode(match.Groups[1].Value).Trim();
+                if (value.Length == 0) continue;
+
+                var bounded = value[..Math.Min(value.Length, remaining)];
+                result.Add(bounded);
+                remaining -= bounded.Length;
+                if (remaining == 0) break;
+            }
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return result;
+        }
+
+        return result;
     }
 
     private static bool IsPublicAddress(IPAddress address)

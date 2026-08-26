@@ -1,7 +1,12 @@
 namespace WatchTracker.Api.Services;
 
-/// <summary>Readable text pulled from a page the owner linked to the watch.</summary>
-public sealed record LinkedPageExcerpt(string Url, string? Title, string Text);
+/// <summary>Bounded product-page evidence pulled from a link supplied by the owner.</summary>
+public sealed record LinkedPageExcerpt(
+    string Url,
+    string? Title,
+    string Text,
+    IReadOnlyDictionary<string, string>? Metadata = null,
+    IReadOnlyList<string>? JsonLd = null);
 
 public interface IProductPageReader
 {

@@ -131,6 +131,16 @@ export interface CreateWatch {
 
 export type UpdateWatch = CreateWatch
 
+export interface WishlistExtractionResult {
+  brand?: string
+  model?: string
+  purchasePrice?: number
+  linkUrl: string
+  linkText: string
+  imageUrl?: string
+  warnings: string[]
+}
+
 export interface AuthResponse {
   token: string
   refreshToken?: string

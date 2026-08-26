@@ -559,6 +559,21 @@ function handleFormSubmit() {
   }
   emit('submit', cleaned as CreateWatch, photoFile.value || undefined, imageUrlInput.value || undefined)
 }
+
+function applyDraft(draft: Partial<CreateWatch>, imageUrl?: string) {
+  for (const [key, value] of Object.entries(draft)) {
+    if (value !== null && value !== undefined && key in formData) {
+      ;(formData as Record<string, unknown>)[key] = value
+    }
+  }
+
+  if (imageUrl && !photoFile.value) {
+    imageUrlMode.value = true
+    imageUrlInput.value = imageUrl
+  }
+}
+
+defineExpose({ applyDraft })
 </script>
 
 <style scoped>
