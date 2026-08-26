@@ -225,6 +225,9 @@ builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>(
 builder.Services.AddHttpClient<ICollectionReviewService, CollectionReviewService>()
     .ConfigureHttpClient(c => c.Timeout =
         CollectionReviewService.MaxExecutionTime + TimeSpan.FromSeconds(30));
+builder.Services.AddHttpClient<ICollectionReviewCandidateService, CollectionReviewCandidateService>()
+    .ConfigureHttpClient(c => c.Timeout =
+        CollectionReviewCandidateService.MaxExecutionTime + TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
 builder.Services.AddScoped<IWatchShareService, WatchShareService>();
