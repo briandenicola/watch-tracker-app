@@ -203,6 +203,130 @@
           </ul>
         </details>
       </section>
+
+      <section class="rounded-2xl border border-border bg-bg-card p-5 sm:p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 class="font-display text-xl font-semibold text-text">Watches that would fill the gaps</h3>
+            <p class="mt-1 text-xs text-text-muted">
+              Real listings, scored against your collection. Prices and availability come from the
+              marketplace, never from the model.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="rounded-lg border border-accent/50 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
+            data-test="find-candidates"
+            :disabled="!canFindCandidates"
+            @click="findCandidates"
+          >
+            {{ findingCandidates ? 'Searching…' : candidates.length ? 'Search again' : 'Find candidates' }}
+          </button>
+        </div>
+
+        <p v-if="candidateError" role="alert" class="mt-4 rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm text-danger">
+          {{ candidateError }}
+        </p>
+
+        <p
+          v-for="status in unavailableProviders"
+          :key="status.provider"
+          class="mt-4 rounded-xl border border-border-light bg-bg-surface p-3 text-sm text-text-secondary"
+        >
+          <template v-if="status.status === 'NotConfigured'">
+            {{ status.provider }} is not set up{{ auth.isAdmin ? ' — add its credentials under Admin → Settings.' : '. Ask an administrator to set it up.' }}
+          </template>
+          <template v-else>
+            {{ status.provider }} could not be reached{{ status.error ? `: ${status.error}` : '.' }}
+          </template>
+        </p>
+
+        <div v-if="findingCandidates" class="mt-6 flex flex-col items-center py-8 text-center">
+          <div class="mb-4 h-9 w-9 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <p class="text-sm text-text-muted">
+            Searching for watches that answer the gaps, then scoring what comes back.
+          </p>
+        </div>
+
+        <div v-else-if="candidates.length" class="mt-5 grid gap-3">
+          <article
+            v-for="card in candidates"
+            :key="`${card.provider}-${card.providerItemId}`"
+            class="overflow-hidden rounded-xl border border-border bg-bg-surface"
+          >
+            <div class="grid grid-cols-[5.5rem_1fr] gap-3 p-3 sm:grid-cols-[7rem_1fr]">
+              <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-bg-elevated">
+                <img
+                  v-if="safeImageUrl(card.imageUrl)"
+                  :src="card.imageUrl!"
+                  :alt="card.title"
+                  class="h-full w-full object-contain"
+                  loading="lazy"
+                />
+                <AppIcon v-else name="watch" :size="34" class="text-text-muted" />
+              </div>
+              <div class="min-w-0">
+                <h4 class="line-clamp-2 text-sm font-semibold text-text">{{ card.title }}</h4>
+                <p class="mt-2 text-base font-semibold text-text">
+                  {{ money(card.totalPrice ?? card.price, card.currency) }}
+                </p>
+                <p v-if="card.shippingPrice != null" class="text-[0.7rem] text-text-muted">
+                  Item {{ money(card.price, card.currency) }} + shipping
+                  {{ money(card.shippingPrice, card.currency) }}
+                </p>
+                <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[0.7rem] text-text-muted">
+                  <span>{{ card.condition || 'Condition not provided' }}</span>
+                  <span v-if="card.fitScore != null">Fit score {{ card.fitScore }}/100</span>
+                  <span>Observed {{ observed(card.observedAt) }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="border-t border-border px-3 py-2">
+              <ul v-if="card.reasons.length" class="space-y-1">
+                <li v-for="reason in card.reasons" :key="reason" class="flex gap-2 text-xs text-text-secondary">
+                  <span class="text-accent">✦</span>
+                  <span>{{ reason }}</span>
+                </li>
+              </ul>
+              <div class="mt-3 flex flex-wrap items-center gap-3">
+                <a
+                  v-if="safeExternalUrl(card.itemUrl)"
+                  :href="card.itemUrl!"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-xs font-medium text-accent hover:underline"
+                >
+                  View the listing
+                </a>
+                <button
+                  type="button"
+                  class="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-accent/50 hover:text-accent disabled:opacity-50"
+                  data-test="add-candidate"
+                  :disabled="pendingAdd === cardKey(card)"
+                  @click="addToWishlist(card)"
+                >
+                  {{ pendingAdd === cardKey(card) ? 'Adding…' : 'Add to wish list' }}
+                </button>
+                <span v-if="addStatus[cardKey(card)]" class="text-xs text-text-muted">
+                  {{ addStatus[cardKey(card)] }}
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <p v-if="review.candidates.droppedStaleListings" class="text-xs text-text-muted">
+            Some listings found earlier have been dropped for being over a week old. Search again for
+            what is on sale now.
+          </p>
+        </div>
+
+        <p v-else-if="!candidateError && !unavailableProviders.length" class="mt-5 text-sm text-text-muted">
+          {{ review.candidates.generatedAt
+            ? 'Nothing came back that fills a gap. Try again later — listings turn over daily.'
+            : 'Search the marketplace for watches that answer the gaps above.' }}
+        </p>
+      </section>
+
     </div>
   </div>
 </template>
@@ -212,10 +336,15 @@ import axios from 'axios'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppIcon from '@/components/icons/AppIcon.vue'
-import { generateCollectionReview, getCollectionReview } from '@/services/review'
+import {
+  addCandidateToWishlist,
+  generateCandidates,
+  generateCollectionReview,
+  getCollectionReview,
+} from '@/services/review'
 import { useAuthStore } from '@/stores/auth'
 import { formatInstant } from '@/utils/dateTime'
-import type { CollectionReviewState, ReviewWatch } from '@/types'
+import type { AdvisorRecommendationCard, CollectionReviewState, ReviewWatch } from '@/types'
 
 const auth = useAuthStore()
 const state = ref<CollectionReviewState | null>(null)
@@ -223,10 +352,21 @@ const loading = ref(true)
 const generating = ref(false)
 const errorMessage = ref('')
 const loadFailed = ref(false)
+const findingCandidates = ref(false)
+const candidateError = ref('')
+const pendingAdd = ref('')
+const addStatus = ref<Record<string, string>>({})
 
 const review = computed(() => state.value?.review ?? null)
 const configured = computed(() => state.value?.configured ?? false)
 const canGenerate = computed(() => configured.value && !generating.value)
+const candidates = computed(() => review.value?.candidates.candidates ?? [])
+const canFindCandidates = computed(() =>
+  configured.value && !generating.value && !findingCandidates.value)
+
+// Success needs no announcement; the cards are the announcement.
+const unavailableProviders = computed(() =>
+  (review.value?.candidates.marketplaceStatus ?? []).filter((s) => s.status !== 'Success'))
 
 const configurationMessage = computed(() => auth.isAdmin
   ? state.value?.configurationHint || 'The collection review needs Ollama.'
@@ -279,6 +419,44 @@ function watchName(watchId: number): string {
   return watch ? `${watch.brand} ${watch.model}`.trim() : `Watch #${watchId}`
 }
 
+function cardKey(card: AdvisorRecommendationCard): string {
+  return `${card.provider}-${card.providerItemId}`
+}
+
+function money(value?: number | null, currency?: string | null): string {
+  if (value == null) return 'Price unavailable'
+  if (!currency) return value.toLocaleString()
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value)
+  } catch {
+    return `${value.toLocaleString()} ${currency}`
+  }
+}
+
+function observed(value?: string | null): string {
+  if (!value) return 'at an unknown time'
+  return formatInstant(value, { dateStyle: 'medium' }) || 'at an unknown time'
+}
+
+function safeExternalUrl(value?: string | null): boolean {
+  if (!value) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' || url.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
+function safeImageUrl(value?: string | null): boolean {
+  if (!value) return false
+  try {
+    return new URL(value).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 function barWidth(count: number, total: number): number {
   return total > 0 ? Math.round((count / total) * 100) : 0
 }
@@ -315,6 +493,37 @@ async function generate() {
     errorMessage.value = requestError(error, 'Unable to review your collection right now.')
   } finally {
     generating.value = false
+  }
+}
+
+async function findCandidates() {
+  if (!canFindCandidates.value || !review.value) return
+  findingCandidates.value = true
+  candidateError.value = ''
+  addStatus.value = {}
+  try {
+    review.value.candidates = await generateCandidates()
+  } catch (error: unknown) {
+    candidateError.value = requestError(error, 'Unable to search for candidates right now.')
+  } finally {
+    findingCandidates.value = false
+  }
+}
+
+async function addToWishlist(card: AdvisorRecommendationCard) {
+  if (!card.provider || !card.providerItemId) return
+  const key = cardKey(card)
+  pendingAdd.value = key
+  try {
+    const result = await addCandidateToWishlist(card.provider, card.providerItemId)
+    addStatus.value = { ...addStatus.value, [key]: result.message }
+  } catch (error: unknown) {
+    addStatus.value = {
+      ...addStatus.value,
+      [key]: requestError(error, 'Could not add this one to your wish list.'),
+    }
+  } finally {
+    pendingAdd.value = ''
   }
 }
 

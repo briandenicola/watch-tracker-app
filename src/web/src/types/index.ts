@@ -573,6 +573,19 @@ export interface CollectionReviewFinding {
   watchIds: number[]
 }
 
+export interface MarketplaceProviderStatus {
+  provider: string
+  status: 'Success' | 'NotConfigured' | 'ProviderError'
+  error?: string | null
+}
+
+export interface CollectionReviewCandidates {
+  candidates: AdvisorRecommendationCard[]
+  marketplaceStatus: MarketplaceProviderStatus[]
+  generatedAt?: string | null
+  droppedStaleListings: boolean
+}
+
 export interface CollectionReview {
   summary?: string | null
   strengths: CollectionReviewFinding[]
@@ -581,6 +594,7 @@ export interface CollectionReview {
   facts: CollectionReviewFacts
   generatedAt: string
   isStale: boolean
+  candidates: CollectionReviewCandidates
 }
 
 export interface CollectionReviewState {
