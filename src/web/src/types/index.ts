@@ -217,6 +217,13 @@ export interface WearLog {
   watchImageUrl?: string
 }
 
+/** Optional overrides for a recorded wear. Omitted entirely, the server uses "now". */
+export interface RecordWearOptions {
+  wornDate: string
+  startedAt?: string
+  endedAt?: string
+}
+
 export type ResaleValueSource = 'Manual' | 'WebSearchEstimate'
 
 export interface ResaleValueEntry {

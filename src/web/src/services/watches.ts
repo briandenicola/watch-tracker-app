@@ -2,7 +2,7 @@ import { api } from './api'
 import type {
   Watch, CreateWatch, UpdateWatch, WearLog, ResaleValueEntry, CreateResaleValueEntry,
   UpdateWatchDisposition, WatchAnalysisResult, ApplyAnalysisResult,
-  WishlistExtractionResult,
+  WishlistExtractionResult, RecordWearOptions,
 } from '@/types'
 
 const BASE_URL = window.location.origin
@@ -100,8 +100,12 @@ export async function deleteWatch(id: number): Promise<void> {
   await api.delete(`/api/watches/${id}`)
 }
 
-export async function recordWear(id: number): Promise<void> {
-  await api.post(`/api/watches/${id}/wear`)
+/**
+ * Records a wear. With no options the server stamps it "now"; pass a date to
+ * log a wear for a past day, as the wear log calendar does.
+ */
+export async function recordWear(id: number, worn?: RecordWearOptions): Promise<void> {
+  await api.post(`/api/watches/${id}/wear`, worn)
 }
 
 export async function retireWatch(id: number): Promise<void> {

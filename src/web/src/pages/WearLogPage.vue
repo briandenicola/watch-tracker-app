@@ -77,6 +77,75 @@
               @delete="handleDelete"
             />
           </div>
+
+          <div class="mt-4 pt-4 border-t border-border">
+            <button
+              v-if="!pickerOpen"
+              type="button"
+              data-testid="add-worn-watch"
+              class="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border text-sm font-semibold text-text-secondary hover:border-accent hover:text-text transition-colors"
+              @click="openPicker"
+            >
+              <span class="text-lg leading-none">+</span>
+              Add watch worn
+            </button>
+
+            <div v-else class="space-y-3">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-text">Which watch?</p>
+                <button
+                  type="button"
+                  class="text-xs text-text-muted hover:text-text transition-colors"
+                  @click="closePicker"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <input
+                v-model="pickerFilter"
+                type="search"
+                placeholder="Filter by brand or model"
+                class="w-full px-3 py-2.5 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+              />
+
+              <p v-if="pickerLoading" class="text-sm text-text-muted">Loading your collection...</p>
+              <p v-else-if="pickerError" class="text-sm text-danger">{{ pickerError }}</p>
+              <p v-else-if="pickerWatches.length === 0" class="text-sm text-text-muted">
+                No watches in your collection yet.
+              </p>
+              <p v-else-if="filteredPickerWatches.length === 0" class="text-sm text-text-muted">
+                No watches match "{{ pickerFilter }}".
+              </p>
+              <ul v-else class="max-h-72 overflow-y-auto space-y-2">
+                <li v-for="candidate in filteredPickerWatches" :key="candidate.id">
+                  <button
+                    type="button"
+                    :disabled="savingWatchId !== null"
+                    class="flex min-h-11 w-full items-center gap-3 rounded-xl border border-border bg-bg-surface p-2 text-left hover:border-accent disabled:opacity-50 transition-colors"
+                    @click="logWear(candidate)"
+                  >
+                    <img
+                      v-if="candidate.imageUrls.length > 0"
+                      :src="imageUrl(candidate.imageUrls[0].url)"
+                      :alt="`${candidate.brand} ${candidate.model}`"
+                      class="w-10 h-10 rounded-full bg-bg border border-border object-contain"
+                      loading="lazy"
+                    />
+                    <span
+                      v-else
+                      class="w-10 h-10 rounded-full bg-bg border border-border flex items-center justify-center text-text-muted"
+                    >⌚</span>
+                    <span class="flex-1 min-w-0">
+                      <span class="block text-sm font-semibold text-text truncate">{{ candidate.brand }}</span>
+                      <span class="block text-xs text-text-muted truncate">{{ candidate.model }}</span>
+                    </span>
+                    <span v-if="savingWatchId === candidate.id" class="text-xs text-text-muted">Saving...</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -110,8 +179,15 @@
 
 <script setup lang="ts">
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
-import type { WearLog } from '@/types'
-import { deleteWearLog, getWearLogs, imageUrl, updateWearLogDate } from '@/services/watches'
+import type { Watch, WearLog } from '@/types'
+import {
+  deleteWearLog,
+  getWatches,
+  getWearLogs,
+  imageUrl,
+  recordWear,
+  updateWearLogDate,
+} from '@/services/watches'
 import {
   currentDateKey,
   formatCalendarDate,
@@ -140,6 +216,14 @@ const editingId = ref<number | null>(null)
 const editingLog = ref<WearLog | null>(null)
 const editError = ref('')
 const editForm = reactive({ date: '', startTime: '', endTime: '' })
+
+const pickerOpen = ref(false)
+const pickerWatches = ref<Watch[]>([])
+const pickerLoaded = ref(false)
+const pickerLoading = ref(false)
+const pickerError = ref('')
+const pickerFilter = ref('')
+const savingWatchId = ref<number | null>(null)
 
 const WearLogItem = defineComponent({
   props: {
@@ -234,6 +318,60 @@ const groupedLogs = computed(() => {
   }
   return Object.entries(groups).map(([date, logs]) => ({ date, label: formatDayLabel(date), logs }))
 })
+
+const filteredPickerWatches = computed(() => {
+  const needle = pickerFilter.value.trim().toLowerCase()
+  if (!needle) return pickerWatches.value
+  return pickerWatches.value.filter(candidate =>
+    `${candidate.brand} ${candidate.model}`.toLowerCase().includes(needle))
+})
+
+async function openPicker() {
+  pickerOpen.value = true
+  pickerFilter.value = ''
+  // The collection is only needed once the picker is actually used, so it is
+  // fetched on first open rather than with the page.
+  if (pickerLoaded.value || pickerLoading.value) return
+
+  pickerLoading.value = true
+  pickerError.value = ''
+  try {
+    const watches = await getWatches()
+    pickerWatches.value = watches
+      .filter(candidate => !candidate.isWishList && !candidate.isRetired)
+      .sort((a, b) => `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`))
+    pickerLoaded.value = true
+  } catch {
+    pickerError.value = 'Could not load your collection.'
+  } finally {
+    pickerLoading.value = false
+  }
+}
+
+function closePicker() {
+  pickerOpen.value = false
+  pickerFilter.value = ''
+  pickerError.value = ''
+}
+
+async function logWear(candidate: Watch) {
+  if (savingWatchId.value !== null) return
+
+  savingWatchId.value = candidate.id
+  pickerError.value = ''
+  try {
+    // Noon on the selected day, matching the fallback the edit form uses when
+    // no start time is given.
+    const wornDate = zonedDateTimeToUtc(selectedDate.value, '12:00')
+    await recordWear(candidate.id, { wornDate })
+    closePicker()
+    await load()
+  } catch (e: any) {
+    pickerError.value = e.response?.data?.error || 'Could not log this wear.'
+  } finally {
+    savingWatchId.value = null
+  }
+}
 
 function startEdit(log: WearLog) {
   editingId.value = log.id

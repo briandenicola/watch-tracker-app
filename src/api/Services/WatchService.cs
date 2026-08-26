@@ -192,7 +192,7 @@ public class WatchService(AppDbContext context) : IWatchService
         return true;
     }
 
-    public async Task<WatchDto?> RecordWearAsync(int id, int userId, CancellationToken ct = default)
+    public async Task<WatchDto?> RecordWearAsync(int id, int userId, RecordWearDto? dto = null, CancellationToken ct = default)
     {
         // Retry on concurrency conflict (e.g. rapid double-tap)
         for (var attempt = 0; attempt < 3; attempt++)
@@ -206,18 +206,27 @@ public class WatchService(AppDbContext context) : IWatchService
             if (watch is null) return null;
             if (watch.Disposition is not null)
                 throw new InvalidOperationException("Wear cannot be recorded for a former watch.");
+            if (watch.IsWishList)
+                throw new InvalidOperationException("Wear cannot be recorded for a wish list watch.");
+
+            var now = DateTime.UtcNow;
+            var wornAt = dto?.WornDate?.UtcDateTime ?? now;
 
             watch.TimesWorn++;
-            watch.LastWornDate = DateTime.UtcNow;
-            watch.UpdatedAt = DateTime.UtcNow;
+            // A back-dated wear must not drag LastWornDate backwards off a more
+            // recent one, so this keeps whichever is later.
+            watch.LastWornDate = watch.LastWornDate is { } previous && previous > wornAt
+                ? previous
+                : wornAt;
+            watch.UpdatedAt = now;
 
-            var wornAt = DateTime.UtcNow;
             context.WearLogs.Add(new WearLog
             {
                 WatchId = watch.Id,
                 UserId = userId,
                 WornDate = wornAt,
-                StartedAt = wornAt,
+                StartedAt = dto?.StartedAt?.UtcDateTime ?? wornAt,
+                EndedAt = dto?.EndedAt?.UtcDateTime,
             });
 
             try
