@@ -22,6 +22,9 @@ public class ProductPageReader(HttpClient httpClient, ILogger<ProductPageReader>
     private const int MaxRedirects = 3;
     private const int MaxTextLength = 2500;
     private const int MaxJsonLdLength = 12000;
+    private const string BrowserUserAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 
     private static readonly Regex ScriptOrStyle = new(
         @"<(script|style|noscript|svg)\b[^>]*>.*?</\1>",
@@ -92,6 +95,7 @@ public class ProductPageReader(HttpClient httpClient, ILogger<ProductPageReader>
                 using var request = new HttpRequestMessage(HttpMethod.Get, uri);
                 // Some storefronts serve a stub to clients that ask for nothing.
                 request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml");
+                request.Headers.TryAddWithoutValidation("User-Agent", BrowserUserAgent);
 
                 using var response = await httpClient.SendAsync(
                     request, HttpCompletionOption.ResponseHeadersRead, ct);

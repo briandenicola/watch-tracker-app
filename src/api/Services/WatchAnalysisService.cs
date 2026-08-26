@@ -1,6 +1,10 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
@@ -16,6 +20,9 @@ public class WatchAnalysisService(
     IWebHostEnvironment env,
     ILogger<WatchAnalysisService> logger) : IWatchAnalysisService
 {
+    private const int MaxImageEdge = 1024;
+    private const int ImageQuality = 85;
+
     public async Task<WatchAnalysisResultDto> AnalyzeAsync(int watchId, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
@@ -30,8 +37,7 @@ public class WatchAnalysisService(
         if (!File.Exists(filePath))
             throw new InvalidOperationException("Image file not found.");
 
-        var imageBytes = await File.ReadAllBytesAsync(filePath, ct);
-        var base64 = Convert.ToBase64String(imageBytes);
+        var base64 = await PrepareImageAsync(filePath, watchId, ct);
 
         var missing = SuggestibleWatchFields.MissingOn(watch);
         var pages = await ReadLinkedPagesAsync(watch, ct);
@@ -50,6 +56,53 @@ public class WatchAnalysisService(
         await context.SaveChangesAsync(ct);
 
         return result;
+    }
+
+    private async Task<string> PrepareImageAsync(
+        string filePath,
+        int watchId,
+        CancellationToken ct)
+    {
+        try
+        {
+            using var photo = await Image.LoadAsync<Rgba32>(filePath, ct);
+            while (photo.Frames.Count > 1)
+                photo.Frames.RemoveFrame(1);
+
+            photo.Mutate(ctx =>
+            {
+                ctx.AutoOrient();
+                ctx.BackgroundColor(Color.White);
+                if (photo.Width > MaxImageEdge || photo.Height > MaxImageEdge)
+                {
+                    ctx.Resize(new ResizeOptions
+                    {
+                        Size = new Size(MaxImageEdge, MaxImageEdge),
+                        Mode = ResizeMode.Max
+                    });
+                }
+            });
+
+            using var buffer = new MemoryStream();
+            await photo.SaveAsJpegAsync(
+                buffer,
+                new JpegEncoder { Quality = ImageQuality },
+                ct);
+            return Convert.ToBase64String(buffer.ToArray());
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Could not prepare the photo of watch {WatchId} for AI analysis.",
+                watchId);
+            throw new InvalidOperationException(
+                "The watch image could not be prepared for AI analysis.");
+        }
     }
 
     public async Task<ApplyAnalysisResultDto?> ApplySuggestionsAsync(

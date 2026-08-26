@@ -34,7 +34,8 @@ public class ProductPageReaderTests
               <body><h1>Seiko Prospex</h1></body>
             </html>
             """;
-        var client = new HttpClient(new StaticHandler(html));
+        var handler = new StaticHandler(html);
+        var client = new HttpClient(handler);
         var reader = new ProductPageReader(
             client,
             NullLogger<ProductPageReader>.Instance);
@@ -49,14 +50,22 @@ public class ProductPageReaderTests
             result.Metadata["og:image"]);
         Assert.Contains("\"@type\":\"Product\"", Assert.Single(result.JsonLd!));
         Assert.DoesNotContain("@type", result.Text);
+        Assert.Equal(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+            handler.UserAgent);
     }
 
     private sealed class StaticHandler(string html) : HttpMessageHandler
     {
+        public string? UserAgent { get; private set; }
+
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
-            CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            CancellationToken cancellationToken)
+        {
+            UserAgent = request.Headers.UserAgent.ToString();
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 RequestMessage = request,
                 Content = new StringContent(html)
@@ -64,5 +73,6 @@ public class ProductPageReaderTests
                     Headers = { ContentType = new("text/html") }
                 }
             });
+        }
     }
 }
