@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
@@ -10,15 +9,16 @@ namespace WatchTracker.Api.Services;
 public class CollectionAdvisorService(
     AppDbContext context,
     ICollectionProfileService collectionProfile,
-    IAdvisorReplyGenerator replyGenerator) : ICollectionAdvisorService
+    IAdvisorReplyGenerator replyGenerator,
+    IRecommendationWishlistService recommendationWishlist) : ICollectionAdvisorService
 {
     // The system prompt and current user turn occupy the other two request slots.
     private const int MaxModelHistoryMessages = 18;
     private const int MaxStateMessages = 100;
     private const string NotConfiguredHint =
         "The collection advisor needs Ollama. Set the Ollama URL and model under Admin -> Settings.";
+    private const string WishlistNote = "Added from a Collection Advisor recommendation.";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly ConcurrentDictionary<int, SemaphoreSlim> WishlistLocks = new();
 
     public async Task<AdvisorChatStateDto> GetCurrentStateAsync(
         int userId,
@@ -173,72 +173,9 @@ public class CollectionAdvisorService(
         CancellationToken ct = default)
     {
         var card = await FindOwnedCardAsync(messageId, userId, dto.Provider, dto.ProviderItemId, ct);
-        if (card is null || string.IsNullOrWhiteSpace(card.ItemUrl)) return null;
-
-        var wishlistLock = WishlistLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
-        await wishlistLock.WaitAsync(ct);
-        try
-        {
-        var normalizedBrand = Normalize(card.Brand);
-        var normalizedModel = Normalize(card.Model);
-        var normalizedReference = Normalize(card.ReferenceNumber);
-        var existing = await context.Watches
-            .Where(w => w.UserId == userId && w.IsWishList && w.Disposition == null)
-            .ToListAsync(ct);
-        var duplicate = existing.FirstOrDefault(w =>
-            (string.Equals(w.MarketplaceProvider, card.Provider, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(w.MarketplaceItemId, card.ProviderItemId, StringComparison.OrdinalIgnoreCase))
-            || string.Equals(NormalizeUrl(w.LinkUrl), NormalizeUrl(card.ItemUrl), StringComparison.OrdinalIgnoreCase)
-            || (normalizedBrand.Length > 0
-                && normalizedModel.Length > 0
-                && Normalize(w.Brand) == normalizedBrand
-                && Normalize(w.Model) == normalizedModel
-                && (normalizedReference.Length == 0 || Normalize(w.Sku) == normalizedReference)));
-        if (duplicate is not null)
-        {
-            return new AdvisorWishlistActionResultDto
-            {
-                Added = false,
-                WatchId = duplicate.Id,
-                Message = "This recommendation is already on your wishlist."
-            };
-        }
-
-        var priority = (existing.Max(w => w.WishlistPriority) ?? -1) + 1;
-        var watch = new Watch
-        {
-            UserId = userId,
-            Brand = TrimTo(card.Brand ?? card.Provider!, 200),
-            Model = TrimTo(card.Model ?? card.Title, 200),
-            MovementType = MovementType.Unknown,
-            IsWishList = true,
-            WishlistPriority = priority,
-            PurchasePrice = card.TotalPrice ?? card.Price,
-            Sku = TrimNullableTo(card.ReferenceNumber, 100),
-            LinkUrl = card.ItemUrl,
-            LinkText = TrimTo(card.Title, 200),
-            AcquiredFrom = TrimNullableTo(card.Provider, 200),
-            MarketplaceProvider = card.Provider,
-            MarketplaceItemId = card.ProviderItemId,
-            MarketplaceCurrency = card.Currency,
-            MarketplaceObservedAt = card.ObservedAt,
-            Notes = "Added from a Collection Advisor recommendation.",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-        context.Watches.Add(watch);
-        await context.SaveChangesAsync(ct);
-        return new AdvisorWishlistActionResultDto
-        {
-            Added = true,
-            WatchId = watch.Id,
-            Message = "Added to your wishlist."
-        };
-        }
-        finally
-        {
-            wishlistLock.Release();
-        }
+        return card is null
+            ? null
+            : await recommendationWishlist.AddAsync(card, userId, WishlistNote, ct);
     }
 
     private Task<AdvisorSession?> FindOwnedSessionAsync(
@@ -348,18 +285,6 @@ public class CollectionAdvisorService(
 
     private static string CardKey(int messageId, string provider, string providerItemId) =>
         $"{messageId}|{provider}|{providerItemId}";
-
-    private static string Normalize(string? value) =>
-        new((value ?? "").Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
-
-    private static string NormalizeUrl(string? value) =>
-        (value ?? "").Trim().TrimEnd('/');
-
-    private static string TrimTo(string value, int length) =>
-        value.Length <= length ? value : value[..length];
-
-    private static string? TrimNullableTo(string? value, int length) =>
-        string.IsNullOrWhiteSpace(value) ? null : TrimTo(value.Trim(), length);
 
     private static T Deserialize<T>(string json) where T : new()
     {
