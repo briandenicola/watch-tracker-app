@@ -49,6 +49,7 @@ public class SharedWatchDto
     public string? BandType { get; set; }
     public string? BandColor { get; set; }
     public double? LugWidthMm { get; set; }
+    public double? LugToLugMm { get; set; }
     public string? WaterResistance { get; set; }
     public int? PowerReserveHours { get; set; }
     public string? BatteryType { get; set; }

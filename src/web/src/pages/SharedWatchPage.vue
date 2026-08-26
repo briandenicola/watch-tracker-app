@@ -145,6 +145,7 @@ const sections = computed<{ heading: string, rows: Row[] }[]>(() => {
       rows: [
         row('Case Size', mm(w.caseSizeMm)),
         row('Lug Width', mm(w.lugWidthMm)),
+        row('Lug-to-Lug', mm(w.lugToLugMm)),
         row('Case Shape', text(w.caseShape)),
         row('Crystal', text(w.crystalType)),
         row('Bezel', text(w.bezelType)),

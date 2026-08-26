@@ -118,12 +118,16 @@ public class WatchesController(
 
     [HttpPost("{id}/wear")]
     [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<WatchDto>> RecordWear(int id, CancellationToken ct)
+    public async Task<ActionResult<WatchDto>> RecordWear(
+        int id,
+        CancellationToken ct,
+        [FromBody] RecordWearDto? dto = null)
     {
         try
         {
-            var watch = await watchService.RecordWearAsync(id, UserId, ct);
+            var watch = await watchService.RecordWearAsync(id, UserId, dto, ct);
             return watch is null ? NotFound() : Ok(watch);
         }
         catch (InvalidOperationException ex)

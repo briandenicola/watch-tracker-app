@@ -194,7 +194,7 @@ Each time you click **Wore Today** on a watch detail page, an individual wear ev
 Each watch can store:
 
 - **Core fields** — Brand, model, movement type, case size, band type, purchase date/price
-- **Extended properties** — Crystal type, case shape, crown type, calendar type, country of origin, water resistance, lug width, dial color, bezel type, power reserve, serial/reference number
+- **Extended properties** — Crystal type, case shape, crown type, calendar type, country of origin, water resistance, lug width, lug-to-lug, dial color, bezel type, power reserve, serial/reference number
 - **Link** — A URL with customizable display text (defaults to "Product Page"), shown as a chip on the detail page
 - **Notes** — Markdown-supported notes field, displayed in a scrollable container within the Additional Details accordion
 - **Images** — Multiple image uploads per watch with the ability to choose a cover image for the gallery view
@@ -207,8 +207,8 @@ with two things:
 - **A short description** — under 70 words, saved to the watch's AI analysis, replacing the previous one. It is not
   copied into notes: notes are yours to write.
 - **Suggested values for fields the record is missing** — dial colour, case shape, bezel, crystal, crown, calendar,
-  band type and colour, water resistance, origin, battery type, reference, case size, lug width, power reserve and
-  production year. Each comes with a confidence and a one-line reason.
+  band type and colour, water resistance, origin, battery type, reference, case size, lug width, lug-to-lug,
+  power reserve and production year. Each comes with a confidence and a one-line reason.
 
 It reads the watch's links too. If the watch has a **Product / Reference** link or an **Acquisition Source** link, both
 pages are fetched and their text goes to the model alongside the photo, so specs come off a spec sheet instead of a

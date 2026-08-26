@@ -211,6 +211,10 @@
                 <label class="block text-xs font-medium text-text-muted mb-1">Lug Width (mm)</label>
                 <input v-model.number="formData.lugWidthMm" type="number" step="0.5" min="1" max="100" placeholder="e.g. 20" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
               </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Lug-to-Lug (mm)</label>
+                <input v-model.number="formData.lugToLugMm" type="number" step="0.1" min="1" max="200" placeholder="e.g. 47.5" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -448,6 +452,7 @@ const formData = reactive({
   calendarType: props.initial?.calendarType || '',
   countryOfOrigin: props.initial?.countryOfOrigin || '',
   lugWidthMm: props.initial?.lugWidthMm,
+  lugToLugMm: props.initial?.lugToLugMm,
   dialColor: props.initial?.dialColor || '',
   bezelType: props.initial?.bezelType || '',
   waterResistance: props.initial?.waterResistance || '',

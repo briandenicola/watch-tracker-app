@@ -60,6 +60,9 @@ public class UpdateWatchDto
     [Range(1, 100)]
     public double? LugWidthMm { get; set; }
 
+    [Range(1, 200)]
+    public double? LugToLugMm { get; set; }
+
     [StringLength(100)]
     public string? DialColor { get; set; }
 

@@ -7,15 +7,29 @@
         Extract the core details with Ollama, then review them before saving.
       </p>
       <div class="flex flex-col sm:flex-row gap-2">
-        <input
-          v-model="sourceUrl"
-          data-testid="wishlist-source-url"
-          type="url"
-          maxlength="2000"
-          placeholder="https://store.example/watch"
-          class="flex-1 px-3 py-2.5 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-          @keydown.enter.prevent="handleExtract"
-        />
+        <div class="relative flex-1">
+          <input
+            ref="sourceUrlInput"
+            v-model="sourceUrl"
+            data-testid="wishlist-source-url"
+            type="url"
+            maxlength="2000"
+            placeholder="https://store.example/watch"
+            class="w-full pl-3 pr-11 py-2.5 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+            @keydown.enter.prevent="handleExtract"
+          />
+          <button
+            v-if="sourceUrl"
+            type="button"
+            data-testid="wishlist-clear-url"
+            aria-label="Clear URL"
+            :disabled="extracting"
+            class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-text-muted hover:text-text disabled:opacity-40 disabled:hover:text-text-muted transition-colors"
+            @click="clearSourceUrl"
+          >
+            <AppIcon name="close" :size="18" :stroke-width="2" />
+          </button>
+        </div>
         <button
           type="button"
           :disabled="extracting || !sourceUrl.trim()"
@@ -57,6 +71,7 @@ import {
 } from '@/services/watches'
 import { api } from '@/services/api'
 import WatchForm from '@/components/common/WatchForm.vue'
+import AppIcon from '@/components/icons/AppIcon.vue'
 import type { AuthResponse, CreateWatch } from '@/types'
 
 const router = useRouter()
@@ -70,6 +85,7 @@ const extractError = ref('')
 const extractionComplete = ref(false)
 const extractionWarnings = ref<string[]>([])
 const watchForm = ref<InstanceType<typeof WatchForm> | null>(null)
+const sourceUrlInput = ref<HTMLInputElement | null>(null)
 
 onMounted(async () => {
   try {
@@ -81,6 +97,15 @@ onMounted(async () => {
     storageLocations.value = profileResp.data.storageLocations || []
   } catch { /* non-critical */ }
 })
+
+// Clears the URL and the error that described it. The extraction success
+// banner stays: it refers to the values already sitting in the form below,
+// which this button does not touch.
+function clearSourceUrl() {
+  sourceUrl.value = ''
+  extractError.value = ''
+  sourceUrlInput.value?.focus()
+}
 
 async function handleExtract() {
   if (!sourceUrl.value.trim() || extracting.value) return
