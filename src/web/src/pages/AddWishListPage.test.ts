@@ -65,6 +65,35 @@ describe('wishlist URL import', () => {
     expect(push).toHaveBeenCalledWith('/?tab=wishlist')
   })
 
+  it('clears the URL field and its error without touching the extracted values', async () => {
+    watchApi.extractWishlistUrl.mockRejectedValue({
+      response: { data: { error: 'Store blocked the request.' } },
+    })
+    const wrapper = mount(AddWishListPage)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="wishlist-clear-url"]').exists()).toBe(false)
+
+    const url = wrapper.get<HTMLInputElement>('[data-testid="wishlist-source-url"]')
+    await url.setValue('https://shop.example.test/watch')
+    expect(wrapper.find('[data-testid="wishlist-clear-url"]').exists()).toBe(true)
+
+    await findButton(wrapper, 'Extract details').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Store blocked the request.')
+
+    const brand = input(wrapper, 'e.g. Omega, Rolex, Seiko')
+    await brand.setValue('My manual brand')
+
+    await wrapper.get('[data-testid="wishlist-clear-url"]').trigger('click')
+    await flushPromises()
+
+    expect(url.element.value).toBe('')
+    expect(wrapper.text()).not.toContain('Store blocked the request.')
+    expect(wrapper.find('[data-testid="wishlist-clear-url"]').exists()).toBe(false)
+    expect(brand.element.value).toBe('My manual brand')
+  })
+
   it('leaves manually entered values intact when extraction fails', async () => {
     watchApi.extractWishlistUrl.mockRejectedValue({
       response: { data: { error: 'Store blocked the request.' } },
