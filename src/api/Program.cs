@@ -220,6 +220,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IWatchService, WatchService>();
 builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>();
+builder.Services.AddScoped<IRecommendationWishlistService, RecommendationWishlistService>();
 builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>();
 builder.Services.AddHttpClient<ICollectionReviewService, CollectionReviewService>()
     .ConfigureHttpClient(c => c.Timeout =

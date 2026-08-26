@@ -343,7 +343,8 @@ public class CollectionAdvisorServiceTests
         new(
             database.Context,
             new CollectionProfileService(database.Context),
-            generator);
+            generator,
+            new RecommendationWishlistService(database.Context));
 
     private sealed class StubReplyGenerator : IAdvisorReplyGenerator
     {
