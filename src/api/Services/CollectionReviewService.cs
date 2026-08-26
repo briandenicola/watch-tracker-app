@@ -16,6 +16,8 @@ public class CollectionReviewService(
 {
     // A review of one or zero watches has nothing to compare against.
     private const int MinimumWatches = 2;
+    private const string NotConfiguredHint =
+        "The collection review needs Ollama. Set the Ollama URL and model under Admin -> Settings.";
     private const int MaxFindingsPerSection = 6;
     private const int MaxSummaryLength = 600;
     private const int MaxFindingSummaryLength = 160;
@@ -29,19 +31,23 @@ public class CollectionReviewService(
     public static readonly TimeSpan MaxExecutionTime = TimeSpan.FromSeconds(120);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task<CollectionReviewDto?> GetLatestAsync(int userId, CancellationToken ct = default)
+    public async Task<CollectionReviewStateDto> GetStateAsync(int userId, CancellationToken ct = default)
     {
         var stored = await context.CollectionReviews
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.UserId == userId, ct);
-        if (stored is null) return null;
 
-        var dto = Deserialize(stored);
-        dto.IsStale = await IsStaleAsync(stored, userId, ct);
-        return dto;
+        CollectionReviewDto? review = null;
+        if (stored is not null)
+        {
+            review = Deserialize(stored);
+            review.IsStale = await IsStaleAsync(stored, userId, ct);
+        }
+
+        return await BuildStateAsync(review);
     }
 
-    public async Task<CollectionReviewDto> GenerateAsync(int userId, CancellationToken ct = default)
+    public async Task<CollectionReviewStateDto> GenerateAsync(int userId, CancellationToken ct = default)
     {
         var facts = await collectionProfile.GetReviewFactsAsync(userId, ct);
         var totalWatches = facts.Collection.WatchCount + facts.Wishlist.WatchCount;
@@ -70,7 +76,25 @@ public class CollectionReviewService(
 
         var dto = Deserialize(stored);
         dto.IsStale = false;
-        return dto;
+        return await BuildStateAsync(dto);
+    }
+
+    private async Task<CollectionReviewStateDto> BuildStateAsync(CollectionReviewDto? review)
+    {
+        var configured = await IsConfiguredAsync();
+        return new CollectionReviewStateDto
+        {
+            Configured = configured,
+            ConfigurationHint = configured ? null : NotConfiguredHint,
+            Review = review
+        };
+    }
+
+    private async Task<bool> IsConfiguredAsync()
+    {
+        var url = await appSettings.GetAsync(AppSettingsService.Keys.OllamaUrl, "http://localhost:11434");
+        var model = await appSettings.GetAsync(AppSettingsService.Keys.OllamaModel);
+        return !string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(model);
     }
 
     private async Task<(string Url, string Model)> GetOllamaSettingsAsync(CancellationToken ct)
@@ -78,8 +102,7 @@ public class CollectionReviewService(
         var url = await appSettings.GetAsync(AppSettingsService.Keys.OllamaUrl, "http://localhost:11434");
         var model = await appSettings.GetAsync(AppSettingsService.Keys.OllamaModel);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(model))
-            throw new InvalidOperationException(
-                "The collection review needs Ollama. Set the Ollama URL and model under Admin -> Settings.");
+            throw new InvalidOperationException(NotConfiguredHint);
         return (url, model);
     }
 

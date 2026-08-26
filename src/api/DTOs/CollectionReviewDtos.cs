@@ -65,6 +65,17 @@ public class CollectionReviewFindingDto
     public List<int> WatchIds { get; set; } = [];
 }
 
+/// <summary>
+/// What the review page needs on load: whether a review can be generated at all,
+/// and the stored one if there is one.
+/// </summary>
+public class CollectionReviewStateDto
+{
+    public bool Configured { get; set; }
+    public string? ConfigurationHint { get; set; }
+    public CollectionReviewDto? Review { get; set; }
+}
+
 public class CollectionReviewDto
 {
     public string? Summary { get; set; }

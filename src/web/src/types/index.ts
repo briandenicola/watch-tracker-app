@@ -497,3 +497,94 @@ export interface ApiKey {
   createdAt: string
   lastUsedAt?: string
 }
+
+export type CollectionInsightConfidence = 'Low' | 'Medium' | 'High'
+
+export interface CollectionCoverageValue {
+  value: string
+  count: number
+  watchIds: number[]
+}
+
+export interface CollectionCoverage {
+  dimension: string
+  values: CollectionCoverageValue[]
+}
+
+export interface CollectionInsight {
+  summary: string
+  reason: string
+  confidence: CollectionInsightConfidence
+  watchIds: number[]
+  evidenceFields: string[]
+}
+
+export interface WishlistOverlap {
+  wishlistWatchId: number
+  collectionWatchIds: number[]
+  reason: string
+}
+
+export interface CollectionSetStats {
+  label: string
+  watchCount: number
+  dataCompletenessPercent: number
+  coverage: CollectionCoverage[]
+  redundancies: CollectionInsight[]
+  gaps: CollectionInsight[]
+}
+
+export interface ReviewWatch {
+  id: number
+  brand: string
+  model: string
+  movementType: string
+  caseSizeMm?: number | null
+  dialColor?: string | null
+  bandType?: string | null
+  price?: number | null
+  wishlistPriority?: number | null
+  timesWorn?: number | null
+  lastWornDate?: string | null
+}
+
+export interface WishlistFit {
+  watchId: number
+  totalScore: number
+  collectionFitScore: number
+  reasons: string[]
+}
+
+export interface CollectionReviewFacts {
+  collection: CollectionSetStats
+  wishlist: CollectionSetStats
+  combined: CollectionSetStats
+  dataQuality: CollectionInsight[]
+  wishlistOverlaps: WishlistOverlap[]
+  wishlistFit: WishlistFit[]
+  collectionWatches: ReviewWatch[]
+  wishlistWatches: ReviewWatch[]
+  underusedWatchIds: number[]
+}
+
+export interface CollectionReviewFinding {
+  summary: string
+  detail: string
+  watchIds: number[]
+}
+
+export interface CollectionReview {
+  summary?: string | null
+  strengths: CollectionReviewFinding[]
+  weaknesses: CollectionReviewFinding[]
+  recommendations: CollectionReviewFinding[]
+  facts: CollectionReviewFacts
+  generatedAt: string
+  isStale: boolean
+}
+
+export interface CollectionReviewState {
+  configured: boolean
+  configurationHint?: string | null
+  review?: CollectionReview | null
+}
