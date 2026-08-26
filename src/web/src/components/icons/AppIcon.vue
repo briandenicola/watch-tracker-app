@@ -34,6 +34,15 @@
       <line x1="7" y1="10.5" x2="14" y2="10.5" />
     </template>
 
+    <!-- Review: a written report over ruled findings -->
+    <template v-else-if="name === 'review'">
+      <path d="M5 3.5h9.5L19 8v12.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1z" />
+      <polyline points="14 3.5 14 8.5 19 8.5" />
+      <line x1="7.5" y1="12" x2="15.5" y2="12" />
+      <line x1="7.5" y1="15.5" x2="13" y2="15.5" />
+      <line x1="7.5" y1="19" x2="15.5" y2="19" />
+    </template>
+
     <!-- Storage: shelf / case display -->
     <template v-else-if="name === 'storage'">
       <rect x="3" y="5" width="18" height="14" rx="2" />

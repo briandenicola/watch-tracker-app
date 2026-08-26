@@ -62,7 +62,7 @@ public class CollectionReviewServiceTests
             }
         }));
 
-        var review = await service.GenerateAsync(user.Id);
+        var review = (await service.GenerateAsync(user.Id)).Review!;
 
         var strength = Assert.Single(review.Strengths);
         Assert.Equal(new[] { owned.Id, wanted.Id }, strength.WatchIds);
@@ -86,7 +86,7 @@ public class CollectionReviewServiceTests
             }
         }));
 
-        var review = await service.GenerateAsync(user.Id);
+        var review = (await service.GenerateAsync(user.Id)).Review!;
 
         Assert.Empty(Assert.Single(review.Weaknesses).WatchIds);
     }
@@ -103,7 +103,7 @@ public class CollectionReviewServiceTests
             .ToArray();
         var service = Build(database, ReplyWith(new { summary = "Long.", strengths = many }));
 
-        var review = await service.GenerateAsync(user.Id);
+        var review = (await service.GenerateAsync(user.Id)).Review!;
 
         Assert.Equal(6, review.Strengths.Count);
     }
@@ -133,10 +133,40 @@ public class CollectionReviewServiceTests
             + "\n```";
         var service = Build(database, new StubHandler(OllamaBody(padded)));
 
-        var review = await service.GenerateAsync(user.Id);
+        var review = (await service.GenerateAsync(user.Id)).Review!;
 
         Assert.Equal("Good.", review.Summary);
         Assert.Single(review.Strengths);
+    }
+
+    [Fact]
+    public async Task State_reports_an_unconfigured_ollama_before_anything_is_clicked()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = await AddUserAsync(database);
+        var service = Build(
+            database,
+            ReplyWith(new { summary = "Fine." }),
+            new StubSettings(model: ""));
+
+        var state = await service.GetStateAsync(user.Id);
+
+        Assert.False(state.Configured);
+        Assert.Contains("Ollama", state.ConfigurationHint!);
+        Assert.Null(state.Review);
+    }
+
+    [Fact]
+    public async Task State_is_configured_when_ollama_is_set_up()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = await AddUserAsync(database);
+        var service = Build(database, ReplyWith(new { summary = "Fine." }));
+
+        var state = await service.GetStateAsync(user.Id);
+
+        Assert.True(state.Configured);
+        Assert.Null(state.ConfigurationHint);
     }
 
     [Fact]
@@ -146,7 +176,7 @@ public class CollectionReviewServiceTests
         var user = await AddUserAsync(database);
         var service = Build(database, ReplyWith(new { summary = "Fine." }));
 
-        Assert.Null(await service.GetLatestAsync(user.Id));
+        Assert.Null((await service.GetStateAsync(user.Id)).Review);
     }
 
     [Fact]
@@ -163,10 +193,10 @@ public class CollectionReviewServiceTests
         }));
 
         await service.GenerateAsync(user.Id);
-        Assert.False((await service.GetLatestAsync(user.Id))!.IsStale);
+        Assert.False((await service.GetStateAsync(user.Id)).Review!.IsStale);
 
         await AddWatchAsync(database, user, "Tudor", "Black Bay");
-        Assert.True((await service.GetLatestAsync(user.Id))!.IsStale);
+        Assert.True((await service.GetStateAsync(user.Id)).Review!.IsStale);
     }
 
     [Fact]
@@ -181,7 +211,7 @@ public class CollectionReviewServiceTests
             OllamaBody("""{"summary":"Second.","strengths":[{"summary":"B","detail":"b","watchIds":[]}]}""")));
 
         await service.GenerateAsync(user.Id);
-        var second = await service.GenerateAsync(user.Id);
+        var second = (await service.GenerateAsync(user.Id)).Review!;
 
         Assert.Equal("Second.", second.Summary);
         Assert.Single(database.Context.CollectionReviews);

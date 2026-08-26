@@ -14,21 +14,21 @@ public class CollectionReviewController(ICollectionReviewService review) : Contr
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    /// <summary>The stored review, or 204 when one has never been generated.</summary>
+    /// <summary>
+    /// Whether a review can be generated, and the stored one when there is one.
+    /// A user who has never run one still needs the configured flag, so this
+    /// answers with state rather than nothing.
+    /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(CollectionReviewDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<ActionResult<CollectionReviewDto>> GetLatest(CancellationToken ct)
-    {
-        var latest = await review.GetLatestAsync(UserId, ct);
-        return latest is null ? NoContent() : Ok(latest);
-    }
+    [ProducesResponseType(typeof(CollectionReviewStateDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<CollectionReviewStateDto>> GetLatest(CancellationToken ct) =>
+        Ok(await review.GetStateAsync(UserId, ct));
 
     [HttpPost]
     [EnableRateLimiting("collection-review")]
-    [ProducesResponseType(typeof(CollectionReviewDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CollectionReviewStateDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<CollectionReviewDto>> Generate(CancellationToken ct)
+    public async Task<ActionResult<CollectionReviewStateDto>> Generate(CancellationToken ct)
     {
         try
         {
