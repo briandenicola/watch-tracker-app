@@ -122,6 +122,66 @@ public class RecommendationWishlistServiceTests
         Assert.NotEqual(disposed.Id, result.WatchId);
     }
 
+    [Fact]
+    public async Task A_listing_already_bought_and_sold_is_reported_not_inserted_twice()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = await AddUserAsync(database);
+        var service = new RecommendationWishlistService(database.Context);
+        // Wanted, bought, worn, sold — the row keeps the listing it came from, and
+        // the database allows only one row per user per listing.
+        var bought = new Watch
+        {
+            UserId = user.Id,
+            Brand = "Hamilton",
+            Model = "Khaki Field",
+            MovementType = MovementType.Unknown,
+            IsWishList = false,
+            MarketplaceProvider = "eBay",
+            MarketplaceItemId = "item-1"
+        };
+        database.Context.Watches.Add(bought);
+        await database.Context.SaveChangesAsync();
+        database.Context.WatchDispositions.Add(new WatchDisposition
+        {
+            WatchId = bought.Id,
+            Type = DispositionType.Sold,
+            DispositionDate = DateTime.UtcNow
+        });
+        await database.Context.SaveChangesAsync();
+
+        var result = await service.AddAsync(Card(), user.Id, "note");
+
+        Assert.False(result!.Added);
+        Assert.Equal(bought.Id, result.WatchId);
+        Assert.Equal("You already recorded this listing on another watch.", result.Message);
+        Assert.Single(await database.Context.Watches.ToListAsync());
+    }
+
+    [Fact]
+    public async Task A_listing_on_an_owned_watch_is_reported_as_such_not_as_a_wish_list_duplicate()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = await AddUserAsync(database);
+        var service = new RecommendationWishlistService(database.Context);
+        database.Context.Watches.Add(new Watch
+        {
+            UserId = user.Id,
+            Brand = "Hamilton",
+            Model = "Khaki Field",
+            MovementType = MovementType.Unknown,
+            IsWishList = false,
+            MarketplaceProvider = "eBay",
+            MarketplaceItemId = "item-1"
+        });
+        await database.Context.SaveChangesAsync();
+
+        var result = await service.AddAsync(Card(), user.Id, "note");
+
+        Assert.False(result!.Added);
+        Assert.Equal("You already recorded this listing on another watch.", result.Message);
+    }
+
     private static AdvisorRecommendationCardDto Card() => new()
     {
         Provider = "eBay",

@@ -30,11 +30,40 @@ public class RecommendationWishlistService(AppDbContext context) : IRecommendati
         await wishlistLock.WaitAsync(ct);
         try
         {
-            var existing = await context.Watches
-                .Where(w => w.UserId == userId && w.IsWishList && w.Disposition == null)
+            // Every watch, not just the wish list: the database keeps one row per
+            // user per marketplace listing whatever became of it, so a listing
+            // already recorded on an owned or disposed-of watch has to be reported
+            // rather than inserted a second time.
+            var owned = await context.Watches
+                .Where(w => w.UserId == userId)
+                .Select(w => new ExistingWatch(
+                    w.Id,
+                    w.Brand,
+                    w.Model,
+                    w.Sku,
+                    w.LinkUrl,
+                    w.MarketplaceProvider,
+                    w.MarketplaceItemId,
+                    w.IsWishList,
+                    w.Disposition == null,
+                    w.WishlistPriority))
                 .ToListAsync(ct);
 
-            var duplicate = FindDuplicate(existing, card);
+            var sameListing = owned.FirstOrDefault(w => IsSameListing(w, card));
+            if (sameListing is not null)
+            {
+                return new AdvisorWishlistActionResultDto
+                {
+                    Added = false,
+                    WatchId = sameListing.Id,
+                    Message = sameListing is { IsWishList: true, IsActive: true }
+                        ? "This recommendation is already on your wishlist."
+                        : "You already recorded this listing on another watch."
+                };
+            }
+
+            var wishlist = owned.Where(w => w is { IsWishList: true, IsActive: true }).ToList();
+            var duplicate = FindDuplicate(wishlist, card);
             if (duplicate is not null)
             {
                 return new AdvisorWishlistActionResultDto
@@ -45,7 +74,7 @@ public class RecommendationWishlistService(AppDbContext context) : IRecommendati
                 };
             }
 
-            var watch = ToWishlistWatch(card, userId, note, existing);
+            var watch = ToWishlistWatch(card, userId, note, wishlist);
             context.Watches.Add(watch);
             await context.SaveChangesAsync(ct);
             return new AdvisorWishlistActionResultDto
@@ -61,20 +90,27 @@ public class RecommendationWishlistService(AppDbContext context) : IRecommendati
         }
     }
 
+    /// <summary>The same listing, wherever in the user's watches it landed.</summary>
+    private static bool IsSameListing(ExistingWatch watch, AdvisorRecommendationCardDto card) =>
+        !string.IsNullOrWhiteSpace(card.Provider)
+        && !string.IsNullOrWhiteSpace(card.ProviderItemId)
+        && string.Equals(watch.MarketplaceProvider, card.Provider, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(watch.MarketplaceItemId, card.ProviderItemId, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
-    /// The same watch can arrive as the same listing, as the same link, or as the
-    /// same watch typed in by hand, so all three are checked.
+    /// The same watch can also arrive as the same link, or as the same watch typed
+    /// in by hand, neither of which the listing check above catches.
     /// </summary>
-    private static Watch? FindDuplicate(IEnumerable<Watch> wishlist, AdvisorRecommendationCardDto card)
+    private static ExistingWatch? FindDuplicate(
+        IEnumerable<ExistingWatch> wishlist,
+        AdvisorRecommendationCardDto card)
     {
         var normalizedBrand = Normalize(card.Brand);
         var normalizedModel = Normalize(card.Model);
         var normalizedReference = Normalize(card.ReferenceNumber);
 
         return wishlist.FirstOrDefault(w =>
-            (string.Equals(w.MarketplaceProvider, card.Provider, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(w.MarketplaceItemId, card.ProviderItemId, StringComparison.OrdinalIgnoreCase))
-            || string.Equals(NormalizeUrl(w.LinkUrl), NormalizeUrl(card.ItemUrl), StringComparison.OrdinalIgnoreCase)
+            string.Equals(NormalizeUrl(w.LinkUrl), NormalizeUrl(card.ItemUrl), StringComparison.OrdinalIgnoreCase)
             || (normalizedBrand.Length > 0
                 && normalizedModel.Length > 0
                 && Normalize(w.Brand) == normalizedBrand
@@ -82,18 +118,31 @@ public class RecommendationWishlistService(AppDbContext context) : IRecommendati
                 && (normalizedReference.Length == 0 || Normalize(w.Sku) == normalizedReference)));
     }
 
+    /// <summary>Just the fields duplicate detection and priority assignment read.</summary>
+    private sealed record ExistingWatch(
+        int Id,
+        string Brand,
+        string Model,
+        string? Sku,
+        string? LinkUrl,
+        string? MarketplaceProvider,
+        string? MarketplaceItemId,
+        bool IsWishList,
+        bool IsActive,
+        int? WishlistPriority);
+
     private static Watch ToWishlistWatch(
         AdvisorRecommendationCardDto card,
         int userId,
         string note,
-        IReadOnlyCollection<Watch> existing) => new()
+        IReadOnlyCollection<ExistingWatch> wishlist) => new()
     {
         UserId = userId,
         Brand = TrimTo(card.Brand ?? card.Provider!, 200),
         Model = TrimTo(card.Model ?? card.Title, 200),
         MovementType = MovementType.Unknown,
         IsWishList = true,
-        WishlistPriority = (existing.Max(w => w.WishlistPriority) ?? -1) + 1,
+        WishlistPriority = (wishlist.Max(w => w.WishlistPriority) ?? -1) + 1,
         PurchasePrice = card.TotalPrice ?? card.Price,
         Sku = TrimNullableTo(card.ReferenceNumber, 100),
         LinkUrl = card.ItemUrl,

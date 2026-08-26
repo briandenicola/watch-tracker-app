@@ -303,6 +303,11 @@ public class CollectionReviewService(
         stored.WishlistWatchCount = facts.Wishlist.WatchCount;
         stored.WatchesUpdatedAt = await LatestWatchChangeAsync(userId, ct);
         stored.GeneratedAt = DateTime.UtcNow;
+        // Candidates were found against the gaps the last report identified. A new
+        // report means new gaps, so they are cleared rather than left to mislead.
+        stored.CandidatesJson = null;
+        stored.MarketplaceStatusJson = null;
+        stored.CandidatesGeneratedAt = null;
 
         await context.SaveChangesAsync(ct);
         return stored;
@@ -332,6 +337,7 @@ public class CollectionReviewService(
 
     private static CollectionReviewDto Deserialize(CollectionReview stored) => new()
     {
+        Candidates = CollectionReviewCandidateService.Read(stored),
         Summary = stored.Summary,
         Strengths = DeserializeFindings(stored.StrengthsJson),
         Weaknesses = DeserializeFindings(stored.WeaknessesJson),

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace WatchTracker.Api.DTOs;
 
 /// <summary>
@@ -76,6 +78,42 @@ public class CollectionReviewStateDto
     public CollectionReviewDto? Review { get; set; }
 }
 
+/// <summary>How one marketplace answered when candidates were last generated.</summary>
+public class MarketplaceProviderStatusDto
+{
+    public required string Provider { get; set; }
+    public required string Status { get; set; }
+    public string? Error { get; set; }
+}
+
+public class CollectionReviewCandidatesDto
+{
+    public List<AdvisorRecommendationCardDto> Candidates { get; set; } = [];
+    public List<MarketplaceProviderStatusDto> MarketplaceStatus { get; set; } = [];
+    public DateTime? GeneratedAt { get; set; }
+
+    /// <summary>True when listings were dropped for being older than the freshness window.</summary>
+    public bool DroppedStaleListings { get; set; }
+}
+
+public class GenerateCandidatesDto
+{
+    [Range(1, 10_000_000)]
+    public decimal? Budget { get; set; }
+
+    [StringLength(3, MinimumLength = 3)]
+    public string? Currency { get; set; }
+}
+
+public class CandidateWishlistActionDto
+{
+    [Required, StringLength(50)]
+    public required string Provider { get; set; }
+
+    [Required, StringLength(200)]
+    public required string ProviderItemId { get; set; }
+}
+
 public class CollectionReviewDto
 {
     public string? Summary { get; set; }
@@ -87,4 +125,6 @@ public class CollectionReviewDto
 
     /// <summary>True once watches have been added, removed, or edited since this ran.</summary>
     public bool IsStale { get; set; }
+
+    public CollectionReviewCandidatesDto Candidates { get; set; } = new();
 }

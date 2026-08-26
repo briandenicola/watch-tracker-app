@@ -6,6 +6,8 @@ import type { CollectionReviewState, CollectionSetStats } from '@/types'
 const reviewApi = vi.hoisted(() => ({
   getCollectionReview: vi.fn(),
   generateCollectionReview: vi.fn(),
+  generateCandidates: vi.fn(),
+  addCandidateToWishlist: vi.fn(),
 }))
 
 vi.mock('@/services/review', () => reviewApi)
@@ -66,7 +68,24 @@ const reviewed: CollectionReviewState = {
     },
     generatedAt: '2026-08-26T12:00:00Z',
     isStale: false,
+    candidates: { candidates: [], marketplaceStatus: [], droppedStaleListings: false },
   },
+}
+
+const candidate = {
+  provider: 'eBay',
+  providerItemId: 'tudor-1',
+  title: 'Tudor Black Bay 36 automatic',
+  itemUrl: 'https://example.test/tudor-1',
+  imageUrl: null,
+  price: 2400,
+  shippingPrice: 0,
+  totalPrice: 2400,
+  currency: 'USD',
+  condition: 'Pre-owned',
+  observedAt: '2026-08-26T09:00:00Z',
+  fitScore: 82,
+  reasons: ['Answers the sub-38mm gap.', 'Adds leather band coverage.'],
 }
 
 describe('ReviewPage', () => {
@@ -122,6 +141,74 @@ describe('ReviewPage', () => {
     expect(wrapper.text()).toContain('Set the Ollama URL and model')
     expect(wrapper.find('button').attributes('disabled')).toBeDefined()
     expect(reviewApi.generateCollectionReview).not.toHaveBeenCalled()
+  })
+
+  it('renders a candidate card with its listing facts and the model line', async () => {
+    reviewApi.getCollectionReview.mockResolvedValue(reviewed)
+    reviewApi.generateCandidates.mockResolvedValue({
+      candidates: [candidate],
+      marketplaceStatus: [{ provider: 'eBay', status: 'Success' }],
+      generatedAt: '2026-08-26T12:30:00Z',
+      droppedStaleListings: false,
+    })
+    const wrapper = mount(ReviewPage, {
+      global: { stubs: { RouterLink: { template: '<a><slot /></a>' }, AppIcon: true } },
+    })
+    await flushPromises()
+
+    await wrapper.find('[data-test="find-candidates"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Tudor Black Bay 36 automatic')
+    expect(wrapper.text()).toContain('Answers the sub-38mm gap.')
+    expect(wrapper.text()).toContain('Fit score 82/100')
+    expect(wrapper.text()).toContain('$2,400.00')
+  })
+
+  it('says a marketplace is unconfigured rather than showing an empty list', async () => {
+    reviewApi.getCollectionReview.mockResolvedValue(reviewed)
+    reviewApi.generateCandidates.mockResolvedValue({
+      candidates: [],
+      marketplaceStatus: [{ provider: 'eBay', status: 'NotConfigured' }],
+      generatedAt: '2026-08-26T12:30:00Z',
+      droppedStaleListings: false,
+    })
+    const wrapper = mount(ReviewPage, {
+      global: { stubs: { RouterLink: { template: '<a><slot /></a>' }, AppIcon: true } },
+    })
+    await flushPromises()
+
+    await wrapper.find('[data-test="find-candidates"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('eBay is not set up')
+  })
+
+  it('reports what happened when a candidate is added to the wish list', async () => {
+    reviewApi.getCollectionReview.mockResolvedValue(reviewed)
+    reviewApi.generateCandidates.mockResolvedValue({
+      candidates: [candidate],
+      marketplaceStatus: [{ provider: 'eBay', status: 'Success' }],
+      generatedAt: '2026-08-26T12:30:00Z',
+      droppedStaleListings: false,
+    })
+    reviewApi.addCandidateToWishlist.mockResolvedValue({
+      added: true,
+      watchId: 12,
+      message: 'Added to your wishlist.',
+    })
+    const wrapper = mount(ReviewPage, {
+      global: { stubs: { RouterLink: { template: '<a><slot /></a>' }, AppIcon: true } },
+    })
+    await flushPromises()
+    await wrapper.find('[data-test="find-candidates"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-test="add-candidate"]').trigger('click')
+    await flushPromises()
+
+    expect(reviewApi.addCandidateToWishlist).toHaveBeenCalledWith('eBay', 'tudor-1')
+    expect(wrapper.text()).toContain('Added to your wishlist.')
   })
 
   it('surfaces the server message when a generate is refused', async () => {
