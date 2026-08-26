@@ -154,6 +154,7 @@
         :key="watch.id"
         :to="`/watches/${watch.id}`"
         class="group"
+        data-testid="compact-tile"
         :title="`${watch.brand} ${watch.model}`"
       >
         <div class="aspect-square bg-bg-surface border border-border rounded-lg overflow-hidden group-hover:border-accent/50 transition-colors">
