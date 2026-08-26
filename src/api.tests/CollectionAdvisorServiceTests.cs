@@ -153,6 +153,157 @@ public class CollectionAdvisorServiceTests
         Assert.NotNull(watch.MarketplaceObservedAt);
     }
 
+    [Fact]
+    public async Task Wishlist_duplicate_is_caught_by_marketplace_provider_and_item()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = await AddOwnerAsync(database);
+        var service = CreateService(database, new StubReplyGenerator());
+        var message = await AddRecommendationAsync(database, service, owner.Id);
+        // Same listing, but nothing else about it matches: a different URL, and a
+        // brand and model that would not collide on their own.
+        await AddWishlistWatchAsync(database, owner.Id, w =>
+        {
+            w.Brand = "Tissot";
+            w.Model = "PRX";
+            w.LinkUrl = "https://example.test/somewhere-else";
+            w.MarketplaceProvider = "ebay";
+            w.MarketplaceItemId = "ITEM-1";
+        });
+
+        var result = await service.AddToWishlistAsync(message.Id, owner.Id, Request());
+
+        Assert.False(result!.Added);
+        Assert.Equal("This recommendation is already on your wishlist.", result.Message);
+        Assert.Single(await database.Context.Watches.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Wishlist_duplicate_is_caught_by_normalized_url()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = await AddOwnerAsync(database);
+        var service = CreateService(database, new StubReplyGenerator());
+        var message = await AddRecommendationAsync(database, service, owner.Id);
+        // Only the URL matches, and only once the trailing slash is ignored.
+        await AddWishlistWatchAsync(database, owner.Id, w =>
+        {
+            w.Brand = "Tissot";
+            w.Model = "PRX";
+            w.LinkUrl = "https://example.test/item-1/";
+        });
+
+        var result = await service.AddToWishlistAsync(message.Id, owner.Id, Request());
+
+        Assert.False(result!.Added);
+        Assert.Single(await database.Context.Watches.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Wishlist_duplicate_is_caught_by_brand_model_and_reference()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = await AddOwnerAsync(database);
+        var service = CreateService(database, new StubReplyGenerator());
+        var message = await AddRecommendationAsync(database, service, owner.Id);
+        // Neither the listing nor the URL matches; the same watch was recorded by
+        // hand, spelled differently.
+        await AddWishlistWatchAsync(database, owner.Id, w =>
+        {
+            w.Brand = "hamilton";
+            w.Model = "khaki-field";
+            w.Sku = "h70455533";
+            w.LinkUrl = "https://example.test/somewhere-else";
+        });
+
+        var result = await service.AddToWishlistAsync(message.Id, owner.Id, Request());
+
+        Assert.False(result!.Added);
+        Assert.Single(await database.Context.Watches.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Wishlist_watch_that_differs_on_all_three_paths_is_added()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = await AddOwnerAsync(database);
+        var service = CreateService(database, new StubReplyGenerator());
+        var message = await AddRecommendationAsync(database, service, owner.Id);
+        await AddWishlistWatchAsync(database, owner.Id, w =>
+        {
+            w.Brand = "Tissot";
+            w.Model = "PRX";
+            w.LinkUrl = "https://example.test/somewhere-else";
+            w.WishlistPriority = 4;
+        });
+
+        var result = await service.AddToWishlistAsync(message.Id, owner.Id, Request());
+
+        Assert.True(result!.Added);
+        Assert.Equal("Added to your wishlist.", result.Message);
+        var added = await database.Context.Watches.SingleAsync(w => w.Id == result.WatchId);
+        // Priority continues after the highest one already on the list.
+        Assert.Equal(5, added.WishlistPriority);
+        Assert.Equal("H70455533", added.Sku);
+        Assert.Equal("https://example.test/item-1", added.LinkUrl);
+        Assert.Equal("Added from a Collection Advisor recommendation.", added.Notes);
+    }
+
+    [Fact]
+    public async Task Wishlist_duplicate_detection_ignores_another_users_watch()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = await AddOwnerAsync(database);
+        var stranger = TestDatabase.User("stranger");
+        database.Context.Users.Add(stranger);
+        await database.Context.SaveChangesAsync();
+        var service = CreateService(database, new StubReplyGenerator());
+        var message = await AddRecommendationAsync(database, service, owner.Id);
+        await AddWishlistWatchAsync(database, stranger.Id, w =>
+        {
+            w.MarketplaceProvider = "eBay";
+            w.MarketplaceItemId = "item-1";
+            w.LinkUrl = "https://example.test/item-1";
+        });
+
+        var result = await service.AddToWishlistAsync(message.Id, owner.Id, Request());
+
+        Assert.True(result!.Added);
+    }
+
+    private static AdvisorRecommendationActionDto Request() => new()
+    {
+        Provider = "eBay",
+        ProviderItemId = "item-1"
+    };
+
+    private static async Task<User> AddOwnerAsync(TestDatabase database)
+    {
+        var owner = TestDatabase.User("owner");
+        database.Context.Users.Add(owner);
+        await database.Context.SaveChangesAsync();
+        return owner;
+    }
+
+    private static async Task<Watch> AddWishlistWatchAsync(
+        TestDatabase database,
+        int userId,
+        Action<Watch> customize)
+    {
+        var watch = new Watch
+        {
+            UserId = userId,
+            Brand = "Placeholder",
+            Model = "Placeholder",
+            MovementType = MovementType.Unknown,
+            IsWishList = true
+        };
+        customize(watch);
+        database.Context.Watches.Add(watch);
+        await database.Context.SaveChangesAsync();
+        return watch;
+    }
+
     private static async Task<AdvisorMessage> AddRecommendationAsync(
         TestDatabase database,
         CollectionAdvisorService service,
