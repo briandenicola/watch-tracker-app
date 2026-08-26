@@ -188,6 +188,21 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    // The most expensive call in the app: a whole-collection prompt plus a
+    // model round trip, so the limit is deliberately the tightest here.
+    options.AddPolicy("collection-review", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.User.Identity?.Name
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
     options.AddPolicy("collection-advisor", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -206,6 +221,9 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IWatchService, WatchService>();
 builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>();
 builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>();
+builder.Services.AddHttpClient<ICollectionReviewService, CollectionReviewService>()
+    .ConfigureHttpClient(c => c.Timeout =
+        CollectionReviewService.MaxExecutionTime + TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
 builder.Services.AddScoped<IWatchShareService, WatchShareService>();

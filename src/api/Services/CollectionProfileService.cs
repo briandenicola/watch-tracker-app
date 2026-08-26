@@ -57,6 +57,115 @@ public class CollectionProfileService(AppDbContext context) : ICollectionProfile
         return profile;
     }
 
+    public async Task<CollectionReviewFactsDto> GetReviewFactsAsync(
+        int userId,
+        CancellationToken ct = default)
+    {
+        var active = await context.Watches
+            .AsNoTracking()
+            .Where(w => w.UserId == userId && !w.IsWishList && w.Disposition == null)
+            .OrderBy(w => w.Id)
+            .ToListAsync(ct);
+        var wishlist = await context.Watches
+            .AsNoTracking()
+            .Where(w => w.UserId == userId && w.IsWishList)
+            .OrderBy(w => w.WishlistPriority)
+            .ThenBy(w => w.Id)
+            .ToListAsync(ct);
+        var combined = active.Concat(wishlist).ToList();
+
+        var now = DateTime.UtcNow;
+        var collectionStats = SetStats("Collection", active);
+        var facts = new CollectionReviewFactsDto
+        {
+            Collection = collectionStats,
+            Wishlist = SetStats("Wish list", wishlist),
+            Combined = SetStats("Combined", combined),
+            DataQuality = FindDataQuality(active),
+            WishlistOverlaps = FindWishlistOverlaps(active, wishlist),
+            CollectionWatches = active.Select(ToReviewWatch).ToList(),
+            WishlistWatches = wishlist.Select(ToReviewWatch).ToList(),
+            UnderusedWatchIds = active
+                .Where(w => now - w.CreatedAt >= NewWatchGracePeriod
+                    && (w.TimesWorn == 0 || w.LastWornDate is null || now - w.LastWornDate >= UnderusedAge))
+                .Select(w => w.Id)
+                .ToList()
+        };
+
+        // Each wish list watch is scored against the collection it would join,
+        // so "does this actually fill a gap" is answered by the same scoring the
+        // advisor uses rather than by the model's impression.
+        var collectionProfile = new CollectionProfileDto { Coverage = collectionStats.Coverage };
+        facts.WishlistFit = wishlist
+            .Select(w =>
+            {
+                var score = ScoreCandidate(collectionProfile, new CollectionCandidateProfile
+                {
+                    Brand = w.Brand,
+                    Model = w.Model,
+                    MovementType = w.MovementType,
+                    CaseSizeMm = w.CaseSizeMm,
+                    DialColor = w.DialColor,
+                    BandType = w.BandType,
+                    Price = w.PurchasePrice
+                });
+                return new WishlistFitDto
+                {
+                    WatchId = w.Id,
+                    TotalScore = score.TotalScore,
+                    CollectionFitScore = score.CollectionFitScore,
+                    Reasons = score.Reasons
+                };
+            })
+            .ToList();
+
+        return facts;
+    }
+
+    private static CollectionSetStatsDto SetStats(string label, IReadOnlyCollection<Watch> watches)
+    {
+        var coverage = new List<CollectionCoverageDto>
+        {
+            Coverage("Movement", watches, w => w.MovementType.ToString()),
+            Coverage("Case size", watches, w => CaseSizeBand(w.CaseSizeMm)),
+            Coverage("Dial color", watches, w => Normalize(w.DialColor)),
+            Coverage("Band type", watches, w => Normalize(w.BandType)),
+            Coverage("Purchase price", watches, w => PriceBand(w.PurchasePrice))
+        };
+
+        return new CollectionSetStatsDto
+        {
+            Label = label,
+            WatchCount = watches.Count,
+            DataCompletenessPercent = CalculateCompleteness(watches),
+            Coverage = coverage,
+            Redundancies = FindRedundancies(watches, RedundancyNoun(label)),
+            Gaps = FindGaps(watches, coverage)
+        };
+    }
+
+    private static string RedundancyNoun(string label) => label switch
+    {
+        "Wish list" => "wish list watches",
+        "Combined" => "watches across the collection and wish list",
+        _ => "active watches"
+    };
+
+    private static ReviewWatchDto ToReviewWatch(Watch watch) => new()
+    {
+        Id = watch.Id,
+        Brand = watch.Brand,
+        Model = watch.Model,
+        MovementType = watch.MovementType.ToString(),
+        CaseSizeMm = watch.CaseSizeMm,
+        DialColor = watch.DialColor,
+        BandType = watch.BandType,
+        Price = watch.PurchasePrice,
+        WishlistPriority = watch.IsWishList ? watch.WishlistPriority : null,
+        TimesWorn = watch.IsWishList ? null : watch.TimesWorn,
+        LastWornDate = watch.IsWishList ? null : watch.LastWornDate
+    };
+
     public CandidateFitScoreDto ScoreCandidate(
         CollectionProfileDto profile,
         CollectionCandidateProfile candidate,
@@ -241,7 +350,13 @@ public class CollectionProfileService(AppDbContext context) : ICollectionProfile
         });
     }
 
-    private static List<CollectionInsightDto> FindRedundancies(IReadOnlyCollection<Watch> watches)
+    /// <param name="noun">
+    /// What to call these watches in the reason text, since the same math runs
+    /// over the collection, the wish list, and the two together.
+    /// </param>
+    private static List<CollectionInsightDto> FindRedundancies(
+        IReadOnlyCollection<Watch> watches,
+        string noun = "active watches")
     {
         var redundancies = watches
             .GroupBy(w => $"{Normalize(w.Brand)}|{Normalize(w.Model)}")
@@ -249,7 +364,7 @@ public class CollectionProfileService(AppDbContext context) : ICollectionProfile
             .Select(g => new CollectionInsightDto
             {
                 Summary = "Duplicate brand and model",
-                Reason = $"{g.Count()} active watches have the same normalized brand and model.",
+                Reason = $"{g.Count()} {noun} have the same normalized brand and model.",
                 Confidence = CollectionInsightConfidence.High,
                 WatchIds = g.Select(w => w.Id).ToList(),
                 EvidenceFields = ["Brand", "Model"]
@@ -263,7 +378,7 @@ public class CollectionProfileService(AppDbContext context) : ICollectionProfile
         redundancies.AddRange(traitClusters.Select(g => new CollectionInsightDto
         {
             Summary = "Repeated movement, size, and dial profile",
-            Reason = $"{g.Count()} active watches share the same movement, case-size range, and dial color.",
+            Reason = $"{g.Count()} {noun} share the same movement, case-size range, and dial color.",
             Confidence = CollectionInsightConfidence.Medium,
             WatchIds = g.Select(w => w.Id).ToList(),
             EvidenceFields = ["Movement", "Case size", "Dial color"]
