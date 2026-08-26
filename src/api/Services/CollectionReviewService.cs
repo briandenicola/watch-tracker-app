@@ -20,7 +20,13 @@ public class CollectionReviewService(
     private const int MaxSummaryLength = 600;
     private const int MaxFindingSummaryLength = 160;
     private const int MaxFindingDetailLength = 1200;
-    private static readonly TimeSpan MaxExecutionTime = TimeSpan.FromSeconds(120);
+
+    /// <summary>
+    /// How long a review may take before it is abandoned. The HTTP client is
+    /// given room above this in Program.cs so that this ceiling is what stops a
+    /// slow model, rather than the client's own default cutting in first.
+    /// </summary>
+    public static readonly TimeSpan MaxExecutionTime = TimeSpan.FromSeconds(120);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<CollectionReviewDto?> GetLatestAsync(int userId, CancellationToken ct = default)
