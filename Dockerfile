@@ -1,4 +1,4 @@
-FROM node:22-alpine AS web-build
+FROM node:26-alpine AS web-build
 WORKDIR /web
 COPY src/web/package.json src/web/package-lock.json* ./
 RUN npm ci
