@@ -109,10 +109,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { marked } from 'marked'
 import type { Watch, WatchAnalysisResult } from '@/types'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import { applyAnalysisSuggestions } from '@/services/watches'
+import { renderMarkdown } from '@/utils/markdown'
 
 const props = defineProps<{ watchId: number, watchName: string, result: WatchAnalysisResult }>()
 const emit = defineEmits<{ close: [], applied: [watch: Watch] }>()
@@ -146,10 +146,6 @@ const dialogEl = ref<HTMLElement | null>(null)
 
 const selectedCount = computed(() => rows.value.filter(row => row.selected && row.value.trim()).length)
 const allSelected = computed(() => rows.value.length > 0 && rows.value.every(row => row.selected))
-
-function renderMarkdown(text: string): string {
-  return marked.parse(text, { async: false }) as string
-}
 
 function toggleAll() {
   const next = !allSelected.value

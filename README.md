@@ -58,6 +58,8 @@ When the app launches for the first time, the setup wizard at `/setup` will guid
 | `task run-api`     | Run the .NET API server                  |
 | `task run-web`     | Run the Vite dev server                  |
 | `task build`       | Build both API and frontend              |
+| `task db-update`   | Apply existing EF Core migrations locally |
+| `task db-add-migration NAME=AddFeature` | Create a named EF Core migration |
 | `task build-api`   | Build the .NET API project               |
 | `task build-web`   | Build the Vue frontend                   |
 | `task test-api`    | Run the API test suite                    |
@@ -378,6 +380,7 @@ Admins can manage application-wide settings under **Admin → Settings**, organi
 | `ALLOWED_ORIGINS` | `*` | CORS allowed origins (`*` or semicolon-separated URLs) |
 | `LOG_LEVEL` | `Information` | Initial log level (`Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical`, `None`) |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` | Enable forwarded headers for reverse proxy support |
+| `TRUSTED_PROXY_NETWORKS` | *(empty)* | Semicolon-separated IP/CIDR ranges permitted to supply `X-Forwarded-For` and `X-Forwarded-Proto`; leave empty when the app is directly reachable |
 
 ## Project Structure
 

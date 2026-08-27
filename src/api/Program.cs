@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using WatchTracker.Api.Authentication;
+using WatchTracker.Api.Configuration;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.Services;
 using WatchTracker.Api.Serialization;
@@ -80,13 +81,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Configure forwarded headers for reverse-proxy deployments (nginx, etc.)
+// Only explicitly configured proxy networks may supply client address or scheme.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
-});
+    TrustedProxyNetworks.Configure(
+        options,
+        builder.Configuration["ForwardedHeaders:TrustedNetworks"]));
 
 builder.Services.AddCors(options =>
 {

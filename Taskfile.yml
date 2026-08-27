@@ -8,12 +8,19 @@ tasks:
     cmds: 
     - task --list 
     
-  db:
-    desc: Apply EF Core migrations to the SQLite database
+  db-update:
+    desc: Apply existing EF Core migrations to the local database
     dir: src/api
     cmds:
-    - dotnet ef migrations add Initial --project ./WatchTracker.Api.csproj
     - dotnet ef database update --project ./WatchTracker.Api.csproj
+
+  db-add-migration:
+    desc: Create a named EF Core migration (task db-add-migration NAME=AddFeature)
+    dir: src/api
+    requires:
+      vars: [NAME]
+    cmds:
+      - dotnet ef migrations add {{.NAME}} --project ./WatchTracker.Api.csproj
 
   build-api:
     desc: Build the .NET API project
@@ -64,7 +71,6 @@ tasks:
   build:
     desc: Build both API and web
     deps:
-      - db
       - build-api
       - build-web
 
@@ -102,8 +108,8 @@ tasks:
       - docker stop watch-tracker-app && docker rm watch-tracker-app || true
       - docker run -p 8080:8080 -d
         -e Jwt__Key=${JWT_KEY}
-        -e Jwt__Issuer=Horologium 
-        -e Jwt__Audience=Solis
+        -e Jwt__Issuer=WatchTracker
+        -e Jwt__Audience=WatchTracker
         -v watch-tracker-data:/app/data
         -v watch-tracker-uploads:/app/uploads
         --name watch-tracker-app

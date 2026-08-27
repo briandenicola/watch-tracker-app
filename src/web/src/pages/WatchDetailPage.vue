@@ -289,7 +289,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch as vueWatch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marked } from 'marked'
 import type { AuthResponse, UpdateWatch, UpdateWatchDisposition, Watch, ResaleValueEntry, WatchAnalysisResult } from '@/types'
 import { fieldMeta, type InlineField } from '@/constants/watch'
 import { api } from '@/services/api'
@@ -300,6 +299,7 @@ import ShareWatchModal from '@/components/common/ShareWatchModal.vue'
 import AnalysisReviewModal from '@/components/common/AnalysisReviewModal.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import { dateInputValue, formatCalendarDate, formatInstant } from '@/utils/dateTime'
+import { renderMarkdown } from '@/utils/markdown'
 import {
   getWatch, getWatches, imageUrl, recordWear, deleteWatch, uploadImage, deleteImage, removeBackground,
   analyzeWatch, updateWatch, toUpdatePayload, getResaleHistory, addManualResaleValue,
@@ -308,10 +308,6 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-
-function renderMarkdown(text: string): string {
-  return marked.parse(text, { async: false }) as string
-}
 
 function formatFullDate(dateStr?: string): string | undefined {
   if (!dateStr) return undefined

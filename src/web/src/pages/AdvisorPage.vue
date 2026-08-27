@@ -318,7 +318,6 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { marked } from 'marked'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import {
   addAdvisorRecommendationToWishlist,
@@ -330,6 +329,7 @@ import {
 } from '@/services/advisor'
 import { useAuthStore } from '@/stores/auth'
 import { formatInstant } from '@/utils/dateTime'
+import { renderMarkdown } from '@/utils/markdown'
 import type {
   AdvisorChatState,
   AdvisorFeedbackKind,
@@ -522,34 +522,6 @@ async function addToWishlist(messageId: number, card: AdvisorRecommendationCard)
   } finally {
     pendingActions.value.delete(key)
   }
-}
-
-function renderMarkdown(text: string): string {
-  const raw = marked.parse(text, { async: false }) as string
-  const document = new DOMParser().parseFromString(raw, 'text/html')
-  const allowedTags = new Set([
-    'A', 'BLOCKQUOTE', 'BR', 'CODE', 'EM', 'H1', 'H2', 'H3', 'H4',
-    'HR', 'LI', 'OL', 'P', 'PRE', 'STRONG', 'UL',
-  ])
-
-  for (const element of Array.from(document.body.querySelectorAll('*'))) {
-    if (!allowedTags.has(element.tagName)) {
-      element.replaceWith(document.createTextNode(element.textContent ?? ''))
-      continue
-    }
-
-    const href = element.tagName === 'A' ? element.getAttribute('href') : null
-    for (const attribute of Array.from(element.attributes)) {
-      element.removeAttribute(attribute.name)
-    }
-    if (element.tagName === 'A' && safeExternalUrl(href)) {
-      element.setAttribute('href', href!)
-      element.setAttribute('target', '_blank')
-      element.setAttribute('rel', 'noopener noreferrer')
-    }
-  }
-
-  return document.body.innerHTML
 }
 
 function money(value?: number | null, currency?: string | null): string {

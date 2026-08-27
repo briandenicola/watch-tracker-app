@@ -283,10 +283,10 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { marked } from 'marked'
 import type { SendStyleMessage, StyleChatState, StyleRecommendation } from '@/types'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import { formatInstant } from '@/utils/dateTime'
+import { renderMarkdown } from '@/utils/markdown'
 import {
   forgetStyleRecommendation, getStyleChat, rateStyleRecommendation, sendStyleMessage, startStyleSession,
 } from '@/services/style'
@@ -334,10 +334,6 @@ const guidanceChanged = computed(() => {
 })
 
 const canSend = computed(() => canChat.value && !sending.value && (!!draft.value.trim() || guidanceChanged.value))
-
-function renderMarkdown(text: string): string {
-  return marked.parse(text, { async: false }) as string
-}
 
 function apply(next: StyleChatState) {
   state.value = next
