@@ -234,6 +234,7 @@ builder.Services.AddHttpClient<ICollectionReviewCandidateService, CollectionRevi
         CollectionReviewCandidateService.MaxExecutionTime + TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
+builder.Services.AddScoped<IDataImportService, DataImportService>();
 builder.Services.AddScoped<IWatchShareService, WatchShareService>();
 builder.Services.AddScoped<IWishlistShareService, WishlistShareService>();
 builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();
