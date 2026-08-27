@@ -52,7 +52,7 @@
         </div>
         <RouterLink
           to="/notifications"
-          class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-elevated hover:text-text focus-visible:bg-bg-elevated focus-visible:text-text"
+          class="relative hidden h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-elevated hover:text-text focus-visible:bg-bg-elevated focus-visible:text-text lg:inline-flex"
           :aria-label="notificationLabel"
           title="Notifications"
         >

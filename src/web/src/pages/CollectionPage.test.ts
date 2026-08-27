@@ -101,12 +101,15 @@ describe('collection view mode', () => {
     expect(tiles[0].text()).toContain('Omega')
   })
 
-  it('groups icon-only view and filter controls with the notifications bell', async () => {
+  it('keeps the page-level notifications bell on desktop only', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
     expect(wrapper.get('[role="group"]').attributes('aria-label')).toBe('Collection display controls')
     expect(wrapper.find('button[aria-label="Show filters"]').text()).toBe('')
-    expect(wrapper.get('a[title="Notifications"]').attributes('aria-label')).toBe('2 unread notifications')
+    const notificationsLink = wrapper.get('a[title="Notifications"]')
+    expect(notificationsLink.attributes('aria-label')).toBe('2 unread notifications')
+    expect(notificationsLink.classes()).toContain('hidden')
+    expect(notificationsLink.classes()).toContain('lg:inline-flex')
   })
 })
