@@ -76,6 +76,8 @@ A GitHub Actions workflow (`.github/workflows/docker-publish.yml`) builds and pu
 - **Triggers** — Push to `main` branch and manual dispatch
 - **Tags** — Full commit SHA, short commit SHA, and `latest` (on main)
 - **Caching** — Uses GitHub Actions cache for Docker layer caching
+- **Provenance** — Main-branch images receive a Sigstore-signed SLSA build
+  provenance attestation, stored with the Docker Hub image by digest
 
 ### Required Secrets
 
@@ -83,6 +85,19 @@ A GitHub Actions workflow (`.github/workflows/docker-publish.yml`) builds and pu
 | ------ | ----------- |
 | `DOCKERHUB_USERNAME` | Your Docker Hub username |
 | `DOCKERHUB_TOKEN` | A Docker Hub access token |
+
+The publishing job requires no GitHub Packages permission. Its OIDC and
+attestation permissions are used only to sign and publish provenance after the
+image has been pushed. Verify a published digest with GitHub CLI:
+
+```sh
+gh attestation verify oci://index.docker.io/<dockerhub-user>/watch-tracker-app@sha256:<digest> \
+  --owner briandenicola
+```
+
+Dependabot checks GitHub Actions, npm, NuGet, and Docker base-image dependencies
+weekly. CI blocks known high- and critical-severity npm and NuGet
+vulnerabilities before publishing.
 
 ## Deployment
 
