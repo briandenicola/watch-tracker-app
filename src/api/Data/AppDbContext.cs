@@ -10,6 +10,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WatchImage> WatchImages => Set<WatchImage>();
     public DbSet<WearLog> WearLogs => Set<WearLog>();
     public DbSet<ResaleValueEntry> ResaleValueEntries => Set<ResaleValueEntry>();
+    public DbSet<PriceObservation> PriceObservations => Set<PriceObservation>();
+    public DbSet<PriceAlert> PriceAlerts => Set<PriceAlert>();
     public DbSet<WatchDisposition> WatchDispositions => Set<WatchDisposition>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
@@ -127,12 +129,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(w => w.CurrentResaleValue)
                 .HasColumnType("decimal(18,2)");
 
+            entity.Property(w => w.PriceAlertTarget)
+                .HasColumnType("decimal(18,2)");
+
             entity.HasIndex(w => new { w.UserId, w.WishlistPriority })
                 .IsUnique();
 
             entity.HasIndex(w => new { w.UserId, w.MarketplaceProvider, w.MarketplaceItemId })
                 .IsUnique()
                 .HasFilter("\"MarketplaceProvider\" IS NOT NULL AND \"MarketplaceItemId\" IS NOT NULL");
+
+            entity.HasIndex(w => new { w.IsWishList, w.PriceAlertEnabled, w.PriceCheckedAt });
 
             entity.HasMany(w => w.Images)
                 .WithOne(i => i.Watch)
@@ -147,6 +154,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasMany(w => w.ResaleValueEntries)
                 .WithOne(r => r.Watch)
                 .HasForeignKey(r => r.WatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(w => w.PriceObservations)
+                .WithOne(o => o.Watch)
+                .HasForeignKey(o => o.WatchId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.Property(w => w.RowVersion)
@@ -334,6 +346,58 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasColumnType("decimal(18,2)");
 
             entity.HasIndex(r => new { r.WatchId, r.RecordedAt });
+        });
+
+        modelBuilder.Entity<PriceObservation>(entity =>
+        {
+            entity.Property(o => o.Source).HasMaxLength(100);
+            entity.Property(o => o.ProviderListingId).HasMaxLength(200);
+            entity.Property(o => o.ListingKey).HasMaxLength(64);
+            entity.Property(o => o.ListingUrl).HasMaxLength(2000);
+            entity.Property(o => o.ListingTitle).HasMaxLength(500);
+            entity.Property(o => o.Currency).HasMaxLength(3);
+            entity.Property(o => o.Condition).HasMaxLength(200);
+            entity.Property(o => o.Price).HasColumnType("decimal(18,2)");
+            entity.Property(o => o.Kind).HasConversion<string>();
+            entity.Property(o => o.MatchConfidence).HasConversion<string>();
+
+            entity.HasOne(o => o.User)
+                .WithMany(u => u.PriceObservations)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(o => new { o.WatchId, o.ObservedAt });
+            entity.HasIndex(o => new
+            {
+                o.WatchId,
+                o.Source,
+                o.ListingKey,
+                o.Price,
+                o.ObservedOnUtc
+            }).IsUnique();
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_PriceObservations_Currency", "\"Currency\" = 'USD'");
+                table.HasCheckConstraint("CK_PriceObservations_Price", "\"Price\" > 0");
+            });
+        });
+
+        modelBuilder.Entity<PriceAlert>(entity =>
+        {
+            entity.Property(a => a.Trigger).HasConversion<string>();
+
+            entity.HasOne(a => a.PriceObservation)
+                .WithMany(o => o.Alerts)
+                .HasForeignKey(a => a.PriceObservationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.User)
+                .WithMany(u => u.PriceAlerts)
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(a => new { a.PriceObservationId, a.Trigger }).IsUnique();
+            entity.HasIndex(a => new { a.UserId, a.IsRead, a.CreatedAt });
         });
     }
 }

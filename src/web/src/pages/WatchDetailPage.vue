@@ -53,6 +53,11 @@
         v-if="!watch.isWishList" ref="resalePanel" :history="resaleHistory" :error="resaleError"
         :queued-message="resaleQueuedMsg" :saving="savingManualResale" @add="handleAddManualResale" @remove="handleDeleteResaleEntry"
       />
+      <PriceWatchPanel
+        v-if="watch.isWishList"
+        :watch="watch"
+        @updated="onPriceMonitoringUpdated"
+      />
 
       <section v-if="editMode || watch.notes" class="detail-card">
         <h2 class="detail-heading">Notes</h2>
@@ -79,7 +84,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { CreateResaleValueEntry, ResaleValueEntry, UpdateWatchDisposition, Watch, WatchAnalysisResult } from '@/types'
+import type {
+  CreateResaleValueEntry, PriceMonitoring, ResaleValueEntry, UpdateWatchDisposition, Watch, WatchAnalysisResult,
+} from '@/types'
 import AnalysisReviewModal from '@/components/common/AnalysisReviewModal.vue'
 import DetailRow from '@/components/common/DetailRow.vue'
 import DispositionModal from '@/components/common/DispositionModal.vue'
@@ -88,8 +95,10 @@ import StyleAgentModal from '@/components/common/StyleAgentModal.vue'
 import WatchDetailHeader from '@/components/common/WatchDetailHeader.vue'
 import WatchImageGallery from '@/components/common/WatchImageGallery.vue'
 import WatchResaleHistory from '@/components/common/WatchResaleHistory.vue'
-import { serverMessage, useWatchDetailEditor } from '@/composables/useWatchDetailEditor'
+import PriceWatchPanel from '@/components/common/PriceWatchPanel.vue'
+import { useWatchDetailEditor } from '@/composables/useWatchDetailEditor'
 import { renderMarkdown } from '@/utils/markdown'
+import { serverMessage } from '@/utils/serverMessage'
 import {
   addManualResaleValue, analyzeWatch, clearWatchDisposition, deleteImage, deleteResaleValueEntry, deleteWatch,
   getResaleHistory, getWatch, getWatches, recordWear, refreshResaleValue, removeBackground, setWatchDisposition,
@@ -151,6 +160,10 @@ async function handleWear() {
 
 function onAnalysisApplied(updated: Watch) {
   watch.value = updated
+}
+
+function onPriceMonitoringUpdated(monitoring: PriceMonitoring) {
+  if (watch.value) watch.value = { ...watch.value, ...monitoring }
 }
 
 function openDisposition() {

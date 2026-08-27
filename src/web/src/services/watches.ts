@@ -2,7 +2,8 @@ import { api } from './api'
 import type {
   Watch, CreateWatch, UpdateWatch, WearLog, ResaleValueEntry, CreateResaleValueEntry,
   UpdateWatchDisposition, WatchAnalysisResult, ApplyAnalysisResult,
-  WishlistExtractionResult, RecordWearOptions,
+  WishlistExtractionResult, RecordWearOptions, PriceAlert, PriceMonitoring,
+  PriceObservation, PriceScanResult, UpdatePriceMonitoring,
 } from '@/types'
 
 const BASE_URL = window.location.origin
@@ -193,4 +194,33 @@ export async function deleteResaleValueEntry(entryId: number): Promise<void> {
 export async function refreshResaleValue(watchId: number): Promise<Watch> {
   const { data } = await api.post<Watch>(`/api/watches/${watchId}/resale-value/refresh`)
   return data
+}
+
+export async function updatePriceMonitoring(
+  watchId: number,
+  monitoring: UpdatePriceMonitoring,
+): Promise<PriceMonitoring> {
+  const { data } = await api.put<PriceMonitoring>(`/api/watches/${watchId}/price-monitoring`, monitoring)
+  return data
+}
+
+export async function scanWishlistPrice(watchId: number): Promise<PriceScanResult> {
+  const { data } = await api.post<PriceScanResult>(`/api/watches/${watchId}/price-scan`)
+  return data
+}
+
+export async function getPriceObservations(watchId: number): Promise<PriceObservation[]> {
+  const { data } = await api.get<PriceObservation[]>(`/api/watches/${watchId}/price-observations`)
+  return data
+}
+
+export async function getPriceAlerts(unreadOnly = false): Promise<PriceAlert[]> {
+  const { data } = await api.get<PriceAlert[]>('/api/watches/price-alerts', {
+    params: unreadOnly ? { unreadOnly: true } : undefined,
+  })
+  return data
+}
+
+export async function markPriceAlertRead(alertId: number): Promise<void> {
+  await api.put(`/api/watches/price-alerts/${alertId}/read`)
 }

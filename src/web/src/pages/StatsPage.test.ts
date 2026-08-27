@@ -21,6 +21,7 @@ function watch(overrides: Partial<Watch> & Pick<Watch, 'id' | 'brand' | 'model'>
     timesWorn: 0,
     imageUrls: [],
     isWishList: false,
+    priceAlertEnabled: false,
     isRetired: false,
     createdAt: '2026-08-01T12:00:00Z',
     updatedAt: '2026-08-01T12:00:00Z',

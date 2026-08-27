@@ -45,12 +45,16 @@ public class Watch
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
     public int? WishlistPriority { get; set; }
+    public bool PriceAlertEnabled { get; set; }
+    public decimal? PriceAlertTarget { get; set; }
+    public DateTime? PriceCheckedAt { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; } = null!;
     public ICollection<WatchImage> Images { get; set; } = [];
     public ICollection<WearLog> WearLogs { get; set; } = [];
     public ICollection<ResaleValueEntry> ResaleValueEntries { get; set; } = [];
+    public ICollection<PriceObservation> PriceObservations { get; set; } = [];
     public WatchDisposition? Disposition { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

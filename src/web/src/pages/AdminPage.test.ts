@@ -30,6 +30,7 @@ describe('Admin Ollama settings', () => {
           { key: 'EbayClientId', value: 'client-id' },
           { key: 'EbayClientSecret', value: 'secret' },
           { key: 'ResaleValueRefreshIntervalDays', value: '7' },
+          { key: 'PriceAlertScanIntervalHours', value: '24' },
           { key: 'ApplicationTimeZone', value: 'America/Chicago' },
         ],
       })
@@ -68,13 +69,15 @@ describe('Admin Ollama settings', () => {
     const search = text.indexOf('Web Search Configuration')
     const ebay = text.indexOf('eBay Pricing')
     const resale = text.indexOf('Resale Configuration')
+    const priceMonitoring = text.indexOf('Price Monitoring')
     const prompts = text.indexOf('Prompts')
 
     expect(ollama).toBeGreaterThan(-1)
     expect(search).toBeGreaterThan(ollama)
     expect(ebay).toBeGreaterThan(search)
     expect(resale).toBeGreaterThan(ebay)
-    expect(prompts).toBeGreaterThan(resale)
+    expect(priceMonitoring).toBeGreaterThan(resale)
+    expect(prompts).toBeGreaterThan(priceMonitoring)
 
     const promptSettings = text.slice(prompts)
     const resalePrompt = promptSettings.indexOf('ResaleValuePrompt')

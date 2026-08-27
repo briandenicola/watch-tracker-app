@@ -67,6 +67,9 @@ export interface Watch {
   storageLocation?: string
   isWishList: boolean
   wishlistPriority?: number
+  priceAlertEnabled: boolean
+  priceAlertTarget?: number
+  priceCheckedAt?: string
   disposition?: WatchDisposition
   isRetired: boolean
   retiredAt?: string
@@ -239,6 +242,63 @@ export interface CreateResaleValueEntry {
   value: number
   recordedAt?: string
   notes?: string
+}
+
+export type PriceObservationKind = 'Unknown' | 'New' | 'Preowned'
+export type PriceMatchConfidence = 'Low' | 'Medium' | 'High'
+export type PriceAlertTrigger = 'BelowTarget' | 'NewBest'
+export type PriceScanStatus = 'Found' | 'NotConfigured' | 'Blocked' | 'ProviderError' | 'NoMatch'
+
+export interface PriceMonitoring {
+  priceAlertEnabled: boolean
+  priceAlertTarget?: number
+  priceCheckedAt?: string
+}
+
+export interface UpdatePriceMonitoring {
+  priceAlertEnabled: boolean
+  priceAlertTarget?: number | null
+}
+
+export interface PriceObservation {
+  id: number
+  source: string
+  providerListingId?: string
+  listingUrl: string
+  listingTitle: string
+  price: number
+  currency: string
+  condition?: string
+  kind: PriceObservationKind
+  matchConfidence: PriceMatchConfidence
+  observedAt: string
+}
+
+export interface PriceScanSourceResult {
+  source: string
+  status: PriceScanStatus
+  error?: string
+  listings: PriceObservation[]
+}
+
+export interface PriceScanResult {
+  watchId: number
+  checkedAt: string
+  sources: PriceScanSourceResult[]
+  observationsAdded: number
+  alertsCreated: number
+}
+
+export interface PriceAlert {
+  id: number
+  watchId: number
+  watchBrand: string
+  watchModel: string
+  trigger: PriceAlertTrigger
+  isRead: boolean
+  readAt?: string
+  createdAt: string
+  observation: PriceObservation
 }
 
 export interface ResaleRefreshSummary {

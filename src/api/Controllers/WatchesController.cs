@@ -19,6 +19,8 @@ public class WatchesController(
     IWatchAnalysisService analysisService,
     IWishlistExtractionService wishlistExtractionService,
     IResaleValueRefreshService resaleRefreshService,
+    IWishlistPriceScanner priceScanner,
+    IPriceAlertService priceAlertService,
     IBackgroundTaskQueue taskQueue,
     ILogger<WatchesController> logger) : ControllerBase
 {
@@ -216,6 +218,74 @@ public class WatchesController(
         });
 
         return Accepted(watch);
+    }
+
+    [HttpPut("{id}/price-monitoring")]
+    [ProducesResponseType(typeof(PriceMonitoringDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PriceMonitoringDto>> UpdatePriceMonitoring(
+        int id,
+        UpdatePriceMonitoringDto dto,
+        CancellationToken ct)
+    {
+        try
+        {
+            var monitoring = await priceScanner.UpdateMonitoringAsync(id, UserId, dto, ct);
+            return monitoring is null ? NotFound() : Ok(monitoring);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("{id}/price-scan")]
+    [EnableRateLimiting("price-scan")]
+    [ProducesResponseType(typeof(PriceScanResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult<PriceScanResultDto>> ScanWishlistPrice(int id, CancellationToken ct)
+    {
+        try
+        {
+            var scan = await priceScanner.ScanAsync(id, UserId, ct);
+            return scan is null ? NotFound() : Ok(scan);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}/price-observations")]
+    [ProducesResponseType(typeof(IEnumerable<PriceObservationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<PriceObservationDto>>> GetPriceObservations(
+        int id,
+        CancellationToken ct)
+    {
+        var observations = await priceScanner.GetObservationsAsync(id, UserId, ct);
+        return observations is null ? NotFound() : Ok(observations);
+    }
+
+    [HttpGet("price-alerts")]
+    [ProducesResponseType(typeof(IEnumerable<PriceAlertDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<PriceAlertDto>>> GetPriceAlerts(
+        [FromQuery] bool unreadOnly = false,
+        CancellationToken ct = default)
+    {
+        return Ok(await priceAlertService.GetAlertsAsync(UserId, unreadOnly, ct));
+    }
+
+    [HttpPut("price-alerts/{alertId}/read")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkPriceAlertRead(int alertId, CancellationToken ct)
+    {
+        var marked = await priceAlertService.MarkReadAsync(alertId, UserId, ct);
+        return marked ? NoContent() : NotFound();
     }
 
     [HttpPut("{id}/retire")]

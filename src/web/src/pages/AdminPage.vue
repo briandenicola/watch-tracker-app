@@ -275,6 +275,7 @@ const SETTING_GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Web Search Configuration', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
   { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },
   { label: 'Resale Configuration', keys: ['ResaleValueRefreshIntervalDays'] },
+  { label: 'Price Monitoring', keys: ['PriceAlertScanIntervalHours'] },
   {
     label: 'Prompts',
     keys: [

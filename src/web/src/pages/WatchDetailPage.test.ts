@@ -42,6 +42,7 @@ const currentWatch: Watch = {
   imageUrls: [{ id: 5, url: '/uploads/watch.jpg' }],
   purchasePrice: 500,
   isWishList: false,
+  priceAlertEnabled: false,
   isRetired: false,
   createdAt: '2026-08-26T12:00:00Z',
   updatedAt: '2026-08-26T12:00:00Z',

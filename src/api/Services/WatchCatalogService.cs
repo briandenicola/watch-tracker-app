@@ -96,6 +96,8 @@ public class WatchCatalogService(AppDbContext context) : IWatchCatalogService
             else if (!dto.IsWishList)
             {
                 watch.WishlistPriority = null;
+                watch.PriceAlertEnabled = false;
+                watch.PriceAlertTarget = null;
             }
 
             WatchFieldMapper.Apply(watch, dto);

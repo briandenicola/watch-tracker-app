@@ -200,6 +200,7 @@ Track watches you'd like to buy without cluttering your main collection:
 - **Add to Wish List** — Paste a product-page URL to extract the brand, model/reference, USD target price, store link, and main image with the configured Ollama model. The extracted values fill the normal form for review and editing; nothing is saved until you confirm. A × inside the URL field empties it when you want to try a different page. Manual entry remains available when a store blocks extraction or omits details.
 - **Wish List Gallery** — Toggle the "Wish List" button in the toolbar to view your wish list. Cards show the watch image (click to edit) and the brand/model as a link to the product page.
 - **Edit Wish List Item** — Update details, replace the image, delete the item, or mark it as **Purchased** which redirects to the Add Watch page with the brand and model pre-filled.
+- **Price Watch** — Check a wish-list item now, or opt it into scheduled checks with an optional USD target. The app records only attributable USD search-listing or eBay API sightings, labels their condition and match confidence, and raises in-app alerts only for high-confidence matches that beat the target or an earlier price. It is a best-effort signal, not a complete market sweep; unavailable, blocked, and provider-error sources remain visible as such.
 
 Wish list items are stored in the same database table as watches but are hidden from the main collection by default.
 
@@ -373,6 +374,7 @@ Admins can manage application-wide settings under **Admin → Settings**, organi
 - **Web Search Configuration** — The search provider and its credentials (Brave or SearXNG).
 - **eBay Pricing** — eBay client credentials, used for resale lookups.
 - **Resale Configuration** — How often resale values are refreshed.
+- **Price Monitoring** — The scheduled price-watch interval in hours (1–168). Only opted-in active wish-list items are scanned.
 - **Prompts** — The personas and instructions behind AI analysis, resale valuation, the style agent, the watch
   recommendation and the collection advisor. Tool, grounding, privacy and safety rules remain fixed in code.
 - **Security** — Max failed login attempts and lockout duration.

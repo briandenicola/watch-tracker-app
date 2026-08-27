@@ -17,6 +17,12 @@ vi.mock('vue-router', () => ({
 
 const STORAGE_KEY = 'watch-tracker-preferences'
 
+function mountPage() {
+  return mount(CollectionPage, {
+    global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } },
+  })
+}
+
 function watch(overrides: Partial<Watch> & Pick<Watch, 'id' | 'brand' | 'model'>): Watch {
   return {
     movementType: 'Automatic',
@@ -24,6 +30,7 @@ function watch(overrides: Partial<Watch> & Pick<Watch, 'id' | 'brand' | 'model'>
     timesWorn: 0,
     imageUrls: [],
     isWishList: false,
+    priceAlertEnabled: false,
     isRetired: false,
     createdAt: '2026-08-01T12:00:00Z',
     updatedAt: '2026-08-01T12:00:00Z',
@@ -41,7 +48,7 @@ describe('collection view mode', () => {
   })
 
   it('switches to the compact grid and remembers the choice', async () => {
-    const wrapper = mount(CollectionPage)
+    const wrapper = mountPage()
     await flushPromises()
 
     expect(wrapper.get('[data-testid="view-cards"]').attributes('aria-pressed')).toBe('true')
@@ -72,7 +79,7 @@ describe('collection view mode', () => {
   })
 
   it('applies the active filters to the compact grid', async () => {
-    const wrapper = mount(CollectionPage)
+    const wrapper = mountPage()
     await flushPromises()
     await wrapper.get('[data-testid="view-compact"]').trigger('click')
     await flushPromises()

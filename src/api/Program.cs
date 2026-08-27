@@ -170,6 +170,18 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
+    options.AddPolicy("price-scan", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
     options.AddPolicy("watch-recommendation", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -282,6 +294,14 @@ builder.Services.AddScoped<IMarketplaceSearchClient>(
 builder.Services.AddScoped<IResaleValueEstimator, EbayResaleValueEstimator>();
 builder.Services.AddScoped<IResaleValueRefreshService, ResaleValueRefreshService>();
 builder.Services.AddHostedService<ResaleValueRefreshBackgroundService>();
+builder.Services.AddSingleton<ISiteCatalog, SiteCatalog>();
+builder.Services.AddScoped<PriceAlertService>();
+builder.Services.AddScoped<IPriceAlertService>(services =>
+    services.GetRequiredService<PriceAlertService>());
+builder.Services.AddScoped<IPriceAlertEvaluator>(services =>
+    services.GetRequiredService<PriceAlertService>());
+builder.Services.AddScoped<IWishlistPriceScanner, WishlistPriceScanner>();
+builder.Services.AddHostedService<PriceScanBackgroundService>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();
 

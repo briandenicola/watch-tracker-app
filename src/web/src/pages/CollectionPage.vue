@@ -53,6 +53,7 @@
         </button>
       </div>
     </div>
+    <PriceAlertsPanel v-if="tab === 'wishlist'" />
 
     <!-- Collapsible Filter Panel -->
     <Transition name="filter">
@@ -304,6 +305,7 @@ import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { usePreferences, type SortOption, type ViewMode } from '@/stores/preferences'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
+import PriceAlertsPanel from '@/components/common/PriceAlertsPanel.vue'
 import { formatInstant } from '@/utils/dateTime'
 
 const route = useRoute()

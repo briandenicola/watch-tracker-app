@@ -46,6 +46,9 @@ public class WatchDto
     public string? StorageLocation { get; set; }
     public bool IsWishList { get; set; }
     public int? WishlistPriority { get; set; }
+    public bool PriceAlertEnabled { get; set; }
+    public decimal? PriceAlertTarget { get; set; }
+    public DateTime? PriceCheckedAt { get; set; }
     public WatchDispositionDto? Disposition { get; set; }
     public bool IsRetired => Disposition?.Type == DispositionType.Retired;
     public DateTime? RetiredAt => IsRetired ? Disposition?.DispositionDate : null;

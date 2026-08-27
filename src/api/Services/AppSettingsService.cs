@@ -20,6 +20,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string OllamaModel = "OllamaModel";
         public const string BraveSearchApiKey = "BraveSearchApiKey";
         public const string ResaleValueRefreshIntervalDays = "ResaleValueRefreshIntervalDays";
+        public const string PriceAlertScanIntervalHours = "PriceAlertScanIntervalHours";
         public const string ResaleValuePrompt = "ResaleValuePrompt";
         public const string WebSearchProvider = "WebSearchProvider";
         public const string SearXngUrl = "SearXngUrl";
@@ -42,6 +43,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.OllamaModel] = "",
         [Keys.BraveSearchApiKey] = "",
         [Keys.ResaleValueRefreshIntervalDays] = "7",
+        [Keys.PriceAlertScanIntervalHours] = "24",
         [Keys.ResaleValuePrompt] = "You are a watch resale value expert. Given web search results about a specific watch's secondhand/resale listings, estimate its current fair resale value in USD, assuming good used condition unless the listings suggest otherwise.",
         [Keys.WebSearchProvider] = "Brave",
         [Keys.SearXngUrl] = "",

@@ -13,4 +13,6 @@ public class User
     public DateTime? LockoutEnd { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<Watch> Watches { get; set; } = [];
+    public ICollection<PriceObservation> PriceObservations { get; set; } = [];
+    public ICollection<PriceAlert> PriceAlerts { get; set; } = [];
 }

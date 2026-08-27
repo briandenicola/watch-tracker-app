@@ -83,6 +83,15 @@ public class AdminController(
                 $"'{timeZoneEntry.Value}' is not a recognized IANA timezone.");
         }
 
+        var priceScanIntervalEntry = settings.SingleOrDefault(
+            s => s.Key == AppSettingsService.Keys.PriceAlertScanIntervalHours);
+        if (priceScanIntervalEntry is not null
+            && (!int.TryParse(priceScanIntervalEntry.Value, out var priceScanInterval)
+                || priceScanInterval is < 1 or > 168))
+        {
+            return ValidationProblem("PriceAlertScanIntervalHours must be a whole number from 1 to 168.");
+        }
+
         foreach (var s in settings)
         {
             await appSettings.SetAsync(s.Key, s.Value);

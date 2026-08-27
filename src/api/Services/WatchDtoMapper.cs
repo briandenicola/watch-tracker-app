@@ -48,6 +48,9 @@ internal static class WatchDtoMapper
         StorageLocation = watch.StorageLocation,
         IsWishList = watch.IsWishList,
         WishlistPriority = watch.WishlistPriority,
+        PriceAlertEnabled = watch.PriceAlertEnabled,
+        PriceAlertTarget = watch.PriceAlertTarget,
+        PriceCheckedAt = watch.PriceCheckedAt,
         Disposition = watch.Disposition is null ? null : new WatchDispositionDto
         {
             Type = watch.Disposition.Type,
