@@ -55,6 +55,18 @@ public class PriceMonitoringControllerTests
         Assert.IsType<NotFoundResult>(result);
     }
 
+    [Fact]
+    public async Task Marking_all_alerts_read_uses_the_authenticated_owner()
+    {
+        var alerts = new StubAlerts();
+        var controller = CreateController(new StubScanner(), alerts);
+
+        var result = await controller.MarkAllPriceAlertsRead(CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(7, alerts.MarkAllReadUserId);
+    }
+
     private static WatchesController CreateController(
         IWishlistPriceScanner scanner,
         IPriceAlertService? alerts = null)
@@ -115,6 +127,7 @@ public class PriceMonitoringControllerTests
     private sealed class StubAlerts : IPriceAlertService
     {
         public bool Marked { get; set; }
+        public int? MarkAllReadUserId { get; private set; }
 
         public Task<IReadOnlyList<PriceAlertDto>> GetAlertsAsync(
             int userId,
@@ -124,5 +137,11 @@ public class PriceMonitoringControllerTests
 
         public Task<bool> MarkReadAsync(int alertId, int userId, CancellationToken ct = default) =>
             Task.FromResult(Marked);
+
+        public Task<int> MarkAllReadAsync(int userId, CancellationToken ct = default)
+        {
+            MarkAllReadUserId = userId;
+            return Task.FromResult(0);
+        }
     }
 }

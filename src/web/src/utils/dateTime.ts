@@ -63,6 +63,26 @@ export function instantTimeInput(value?: string) {
   return `${pad(parts.hour)}:${pad(parts.minute)}`
 }
 
+export function relativeTime(value: string | Date, now = new Date()): string {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Recently'
+
+  const seconds = Math.round((date.getTime() - now.getTime()) / 1_000)
+  const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+    ['year', 31_536_000],
+    ['month', 2_592_000],
+    ['day', 86_400],
+    ['hour', 3_600],
+    ['minute', 60],
+    ['second', 1],
+  ]
+  const [unit, size] = units.find(([, unitSize]) => Math.abs(seconds) >= unitSize) ?? units.at(-1)!
+  return new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(
+    Math.round(seconds / size),
+    unit,
+  )
+}
+
 export function zonedDateTimeToUtc(
   dateKey: string,
   time: string,

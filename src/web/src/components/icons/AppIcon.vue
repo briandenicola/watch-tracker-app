@@ -137,6 +137,12 @@
       <line x1="6" y1="6" x2="18" y2="18" />
     </template>
 
+    <!-- Bell -->
+    <template v-else-if="name === 'bell'">
+      <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+      <path d="M10 21h4" />
+    </template>
+
     <!-- Edit -->
     <template v-else-if="name === 'edit'">
       <path d="M12 20h9" />

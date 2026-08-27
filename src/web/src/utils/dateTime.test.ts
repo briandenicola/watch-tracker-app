@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   instantDateKey,
   instantTimeInput,
+  relativeTime,
   setApplicationTimeZone,
   zonedDateTimeToUtc,
 } from './dateTime'
@@ -37,5 +38,10 @@ describe('application timezone date handling', () => {
       '01:30',
       '2025-11-02T07:30:00.000Z',
     )).toBe('2025-11-02T07:30:00.000Z')
+  })
+
+  it('formats notification timestamps relative to a supplied instant', () => {
+    expect(relativeTime('2025-08-19T01:31:00.000Z', new Date('2025-08-19T01:32:00.000Z')))
+      .toBe('1 minute ago')
   })
 })

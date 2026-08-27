@@ -224,3 +224,7 @@ export async function getPriceAlerts(unreadOnly = false): Promise<PriceAlert[]> 
 export async function markPriceAlertRead(alertId: number): Promise<void> {
   await api.put(`/api/watches/price-alerts/${alertId}/read`)
 }
+
+export async function markAllPriceAlertsRead(): Promise<void> {
+  await api.put('/api/watches/price-alerts/read-all')
+}

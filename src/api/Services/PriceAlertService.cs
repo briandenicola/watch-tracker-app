@@ -109,6 +109,18 @@ public class PriceAlertService(AppDbContext context, ILogger<PriceAlertService> 
         return true;
     }
 
+    public Task<int> MarkAllReadAsync(int userId, CancellationToken ct = default)
+    {
+        var readAt = DateTime.UtcNow;
+        return context.PriceAlerts
+            .Where(alert => alert.UserId == userId && !alert.IsRead)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(alert => alert.IsRead, true)
+                    .SetProperty(alert => alert.ReadAt, readAt),
+                ct);
+    }
+
     internal static PriceAlertDto Map(PriceAlert alert) => new()
     {
         Id = alert.Id,

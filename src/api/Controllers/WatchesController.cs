@@ -288,6 +288,14 @@ public class WatchesController(
         return marked ? NoContent() : NotFound();
     }
 
+    [HttpPut("price-alerts/read-all")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> MarkAllPriceAlertsRead(CancellationToken ct)
+    {
+        await priceAlertService.MarkAllReadAsync(UserId, ct);
+        return NoContent();
+    }
+
     [HttpPut("{id}/retire")]
     [ProducesResponseType(typeof(WatchDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

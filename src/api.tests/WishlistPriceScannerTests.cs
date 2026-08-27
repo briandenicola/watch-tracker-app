@@ -258,6 +258,57 @@ public class WishlistPriceScannerTests
         Assert.True((await database.Context.PriceAlerts.SingleAsync()).IsRead);
     }
 
+    [Fact]
+    public async Task Bulk_alert_reads_are_scoped_to_the_owner_and_preserve_existing_read_times()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var ownerWatch = await SeedWatchAsync(database, priceAlertsEnabled: true);
+        var other = TestDatabase.User("other");
+        database.Context.Users.Add(other);
+        await database.Context.SaveChangesAsync();
+        var otherWatch = new Watch { UserId = other.Id, Brand = "Seiko", Model = "Alpinist" };
+        database.Context.Watches.Add(otherWatch);
+        await database.Context.SaveChangesAsync();
+
+        var ownerObservation = PriceObservationFor(ownerWatch);
+        var otherObservation = PriceObservationFor(otherWatch);
+        database.Context.PriceObservations.AddRange(ownerObservation, otherObservation);
+        await database.Context.SaveChangesAsync();
+        var originalReadAt = DateTime.UtcNow.AddDays(-1);
+        var ownerUnread = new PriceAlert
+        {
+            PriceObservationId = ownerObservation.Id,
+            UserId = ownerWatch.UserId,
+            Trigger = PriceAlertTrigger.BelowTarget
+        };
+        var ownerRead = new PriceAlert
+        {
+            PriceObservationId = ownerObservation.Id,
+            UserId = ownerWatch.UserId,
+            Trigger = PriceAlertTrigger.NewBest,
+            IsRead = true,
+            ReadAt = originalReadAt
+        };
+        var otherUnread = new PriceAlert
+        {
+            PriceObservationId = otherObservation.Id,
+            UserId = other.Id,
+            Trigger = PriceAlertTrigger.BelowTarget
+        };
+        database.Context.PriceAlerts.AddRange(ownerUnread, ownerRead, otherUnread);
+        await database.Context.SaveChangesAsync();
+        var service = new PriceAlertService(database.Context, NullLogger<PriceAlertService>.Instance);
+
+        var changed = await service.MarkAllReadAsync(ownerWatch.UserId);
+        database.Context.ChangeTracker.Clear();
+        var alerts = await database.Context.PriceAlerts.AsNoTracking().OrderBy(alert => alert.Id).ToListAsync();
+
+        Assert.Equal(1, changed);
+        Assert.True(alerts.Single(alert => alert.Id == ownerUnread.Id).IsRead);
+        Assert.Equal(originalReadAt, alerts.Single(alert => alert.Id == ownerRead.Id).ReadAt);
+        Assert.False(alerts.Single(alert => alert.Id == otherUnread.Id).IsRead);
+    }
+
     private static WishlistPriceScanner Build(
         TestDatabase database,
         StubSearch search,
@@ -277,6 +328,21 @@ public class WishlistPriceScannerTests
 
     private static WebSearchResultItem Result(string title, string url) =>
         new(title, "", url, DateTime.UtcNow);
+
+    private static PriceObservation PriceObservationFor(Watch watch) => new()
+    {
+        WatchId = watch.Id,
+        UserId = watch.UserId,
+        Source = "Snippet shop",
+        ListingKey = Guid.NewGuid().ToString("N"),
+        ListingUrl = "https://shop.example.test/watch",
+        ListingTitle = $"{watch.Brand} {watch.Model}",
+        Price = 4_000m,
+        Currency = "USD",
+        MatchConfidence = PriceMatchConfidence.High,
+        ObservedAt = DateTime.UtcNow,
+        ObservedOnUtc = DateOnly.FromDateTime(DateTime.UtcNow)
+    };
 
     private static async Task<Watch> SeedWatchAsync(
         TestDatabase database,

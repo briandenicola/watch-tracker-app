@@ -15,4 +15,5 @@ public interface IPriceAlertService
         bool unreadOnly,
         CancellationToken ct = default);
     Task<bool> MarkReadAsync(int alertId, int userId, CancellationToken ct = default);
+    Task<int> MarkAllReadAsync(int userId, CancellationToken ct = default);
 }

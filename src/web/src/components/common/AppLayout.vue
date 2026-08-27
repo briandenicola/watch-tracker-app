@@ -2,9 +2,22 @@
   <div class="layout-shell">
     <!-- Desktop Sidebar -->
     <aside v-if="isDesktop" class="fixed inset-y-0 left-0 w-64 bg-sidebar-bg border-r border-border flex flex-col z-40">
-      <div class="p-6 border-b border-border flex items-center gap-3">
-        <AppIcon name="watch" :size="22" class="text-accent" />
-        <h1 class="font-display text-xl font-semibold text-accent tracking-wide">Watch Tracker</h1>
+      <div class="flex items-center justify-between gap-3 border-b border-border p-6">
+        <div class="flex min-w-0 items-center gap-3">
+          <AppIcon name="watch" :size="22" class="shrink-0 text-accent" />
+          <h1 class="truncate font-display text-xl font-semibold tracking-wide text-accent">Watch Tracker</h1>
+        </div>
+        <RouterLink
+          to="/notifications"
+          class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-elevated hover:text-text focus-visible:bg-bg-elevated focus-visible:text-text"
+          :aria-label="notificationLabel"
+          title="Notifications"
+        >
+          <AppIcon name="bell" :size="20" :stroke-width="1.6" />
+          <span v-if="notifications.unreadCount" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-nav-bg bg-accent px-0.5 text-[10px] font-bold leading-none text-bg" aria-hidden="true">
+            {{ notifications.unreadCount > 99 ? '99+' : notifications.unreadCount }}
+          </span>
+        </RouterLink>
       </div>
       <nav class="flex-1 py-4 overflow-y-auto">
         <RouterLink
@@ -38,17 +51,30 @@
 
     <!-- Mobile Header -->
     <header v-if="!isDesktop" class="mobile-header">
-      <div class="flex items-center justify-between px-4 h-12">
-        <button @click="sidebarOpen = true" class="p-2 -ml-2 text-text-secondary hover:text-text">
+      <div class="grid h-12 grid-cols-[1fr_auto_1fr] items-center px-4">
+        <button @click="sidebarOpen = true" class="min-h-11 min-w-11 -ml-2 text-text-secondary hover:text-text" aria-label="Open navigation">
           <AppIcon name="menu" :size="22" :stroke-width="1.5" />
         </button>
         <div class="flex items-center gap-2">
           <AppIcon name="watch" :size="18" class="text-accent" />
           <h1 class="font-display text-lg font-semibold text-accent tracking-wide">Watch Tracker</h1>
         </div>
-        <button @click="cycleTheme" class="p-2 -mr-2 text-text-muted hover:text-text">
-          <AppIcon :name="theme.getEffectiveTheme() === 'dark' ? 'moon' : 'sun'" :size="18" />
-        </button>
+        <div class="flex justify-end gap-1">
+          <RouterLink
+            to="/notifications"
+            class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-elevated hover:text-text focus-visible:bg-bg-elevated focus-visible:text-text"
+            :aria-label="notificationLabel"
+            title="Notifications"
+          >
+            <AppIcon name="bell" :size="19" :stroke-width="1.6" />
+            <span v-if="notifications.unreadCount" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-nav-bg bg-accent px-0.5 text-[10px] font-bold leading-none text-bg" aria-hidden="true">
+              {{ notifications.unreadCount > 99 ? '99+' : notifications.unreadCount }}
+            </span>
+          </RouterLink>
+          <button @click="cycleTheme" class="min-h-11 min-w-11 -mr-2 text-text-muted hover:text-text" aria-label="Change theme">
+            <AppIcon :name="theme.getEffectiveTheme() === 'dark' ? 'moon' : 'sun'" :size="18" />
+          </button>
+        </div>
       </div>
     </header>
 
@@ -154,17 +180,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/stores/theme'
 import { useApplicationSettings } from '@/stores/application'
+import { useNotificationsStore } from '@/stores/notifications'
 import AppIcon from '@/components/icons/AppIcon.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
 const theme = useTheme()
 const applicationSettings = useApplicationSettings()
+const notifications = useNotificationsStore()
 const applicationSettingsReady = applicationSettings.ready
 const sidebarOpen = ref(false)
 const windowWidth = ref(window.innerWidth)
@@ -174,6 +202,10 @@ const isDesktop = computed(() => windowWidth.value >= 1024)
 
 function onResize() {
   windowWidth.value = window.innerWidth
+}
+
+function refreshNotifications() {
+  void notifications.refreshUnreadCount()
 }
 
 // Detect virtual keyboard via Visual Viewport API
@@ -188,16 +220,28 @@ function onViewportResize() {
 
 onMounted(() => {
   void applicationSettings.load()
+  refreshNotifications()
   window.addEventListener('resize', onResize)
+  window.addEventListener('focus', refreshNotifications)
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', onViewportResize)
   }
 })
 onUnmounted(() => {
   window.removeEventListener('resize', onResize)
+  window.removeEventListener('focus', refreshNotifications)
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', onViewportResize)
   }
+})
+
+watch(() => route.path, (path) => {
+  if (path !== '/notifications') refreshNotifications()
+})
+
+watch(() => auth.isAuthenticated, (isAuthenticated) => {
+  if (isAuthenticated) refreshNotifications()
+  else notifications.setUnreadCount(0)
 })
 
 function cycleTheme() {
@@ -217,6 +261,10 @@ const navItems = computed(() => [
   { to: '/settings', icon: 'settings', label: 'Settings' },
   ...(auth.isAdmin ? [{ to: '/admin', icon: 'admin', label: 'Admin' }] : []),
 ])
+
+const notificationLabel = computed(() => notifications.unreadCount
+  ? `${notifications.unreadCount} unread notifications`
+  : 'Notifications')
 
 const bottomTabs = [
   { to: '/', icon: 'collection', label: 'Home' },
