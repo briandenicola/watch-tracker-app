@@ -27,8 +27,12 @@ WORKDIR /app
 COPY --from=api-build /app/publish .
 COPY --from=web-build /web/dist ./wwwroot
 COPY --from=model-download /models ./models
-RUN mkdir -p /app/uploads /app/data
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    mkdir -p /app/uploads /app/data && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 VOLUME ["/app/uploads", "/app/data"]
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl --fail --silent http://localhost:8080/health/ready || exit 1
 ENTRYPOINT ["dotnet", "WatchTracker.Api.dll"]

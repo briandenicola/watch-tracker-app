@@ -134,7 +134,11 @@ The application will be available on `http://localhost:8080`. On first launch, t
 
 ### Deploying Behind a Reverse Proxy
 
-The .NET backend handles `X-Forwarded-For` and `X-Forwarded-Proto` headers automatically. The standalone web container (`src/web/Dockerfile`) uses a Node.js server that proxies `/api/` and `/uploads/` to the backend — no nginx required.
+The production image is a single container: it serves the Vue SPA and the API,
+so no separate web container is needed. When you deploy behind a reverse proxy,
+set `TRUSTED_PROXY_NETWORKS` to the proxy's IP/CIDR range so the API will accept
+its `X-Forwarded-For` and `X-Forwarded-Proto` headers. Leave it empty when
+clients connect to the app directly.
 
 Set `AllowedOrigins` to your public domain(s) or `*` if the proxy is trusted:
 
@@ -146,21 +150,8 @@ Set `AllowedOrigins` to your public domain(s) or `*` if the proxy is trusted:
 -e AllowedOrigins="https://watches.example.com;https://api.example.com"
 ```
 
-The web container accepts an `API_URL` environment variable (default `http://localhost:8080`) to locate the backend:
-
-```yaml
-services:
-  web:
-    build: src/web
-    ports:
-      - "3000:3000"
-    environment:
-      - API_URL=http://api:8080
-      - PORT=3000
-  api:
-    build: src/api
-    # ...
-```
+See [`docs/deployment.md`](docs/deployment.md) for deployment, health-check,
+backup, and migration recovery steps.
 
 ## Features
 

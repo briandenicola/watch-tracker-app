@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using WatchTracker.Api.Authentication;
 using WatchTracker.Api.Configuration;
 using WatchTracker.Api.Data;
+using WatchTracker.Api.Diagnostics;
 using WatchTracker.Api.Services;
 using WatchTracker.Api.Serialization;
 
@@ -30,6 +31,10 @@ builder.Services.AddControllers()
         o.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
     });
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
@@ -279,6 +284,7 @@ var app = builder.Build();
 
 // Must be first middleware for correct scheme/host resolution behind proxies
 app.UseForwardedHeaders();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
@@ -304,6 +310,14 @@ app.UseStaticFiles();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
 
 // A share link answers with JSON when asked, so the same URL works for a person
 // and for a script: /s/<token>?format=json. Anything else falls through to the
