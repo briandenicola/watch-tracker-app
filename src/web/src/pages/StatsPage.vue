@@ -101,7 +101,13 @@
         <div v-if="valueTimeline.length === 0" class="text-sm text-text-muted">Add purchase prices to see value trends</div>
         <div v-else class="space-y-3">
           <div class="h-48 rounded-lg bg-bg-surface border border-border p-3">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="w-full h-full overflow-visible">
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              class="w-full h-full overflow-visible"
+              role="img"
+              :aria-label="`Collection value trend ending at ${formatCurrency(totalCollectionValue)}`"
+            >
               <polyline
                 :points="valueTimelinePoints"
                 fill="none"
@@ -142,7 +148,7 @@
             >
               <span class="text-sm font-medium text-accent w-5 text-right">{{ i + 1 }}.</span>
               <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
-                <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+                <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" :alt="`${w.brand} ${w.model}`" class="w-full h-full object-contain" />
                 <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
               </div>
               <div class="flex-1 min-w-0">
@@ -188,7 +194,7 @@
             >
               <span class="text-sm font-medium text-accent w-5 text-right">{{ i + 1 }}.</span>
               <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
-                <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+                <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" :alt="`${w.brand} ${w.model}`" class="w-full h-full object-contain" />
                 <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
               </div>
               <div class="flex-1 min-w-0">
@@ -213,7 +219,7 @@
             >
               <span class="text-sm font-medium text-accent w-5 text-right">{{ i + 1 }}.</span>
               <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
-                <img v-if="item.watch.imageUrls.length" :src="imageUrl(item.watch.imageUrls[0].url)" class="w-full h-full object-contain" />
+                <img v-if="item.watch.imageUrls.length" :src="imageUrl(item.watch.imageUrls[0].url)" :alt="`${item.watch.brand} ${item.watch.model}`" class="w-full h-full object-contain" />
                 <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
               </div>
               <div class="flex-1 min-w-0">
@@ -240,7 +246,7 @@
             class="flex items-center gap-3 group"
           >
             <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
-              <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+              <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" :alt="`${w.brand} ${w.model}`" class="w-full h-full object-contain" />
               <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
             </div>
             <div class="flex-1 min-w-0">
@@ -336,6 +342,7 @@
               <img
                 v-if="item.watch.imageUrls.length"
                 :src="imageUrl(item.watch.imageUrls[0].url)"
+                :alt="`${item.watch.brand} ${item.watch.model}`"
                 class="w-full h-full object-contain"
               />
               <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
@@ -391,7 +398,7 @@
           >
             <span class="text-sm font-medium text-accent w-5 text-right">{{ i + 1 }}.</span>
             <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
-              <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+              <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" :alt="`${w.brand} ${w.model}`" class="w-full h-full object-contain" />
               <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
             </div>
             <div class="flex-1 min-w-0">
@@ -415,7 +422,7 @@
             class="flex items-center gap-3 group"
           >
             <div class="w-10 h-10 rounded-lg bg-bg-surface overflow-hidden flex-shrink-0">
-              <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" class="w-full h-full object-contain" />
+              <img v-if="w.imageUrls.length" :src="imageUrl(w.imageUrls[0].url)" :alt="`${w.brand} ${w.model}`" class="w-full h-full object-contain" />
               <span v-else class="flex items-center justify-center w-full h-full text-text-muted text-lg">⌚</span>
             </div>
             <div class="flex-1 min-w-0">
@@ -495,8 +502,9 @@ const avgCostPerWear = computed(() => {
   const watchesWithWearCost = lifetimePricedWatches.value.filter(w => w.timesWorn > 0)
   if (watchesWithWearCost.length === 0) return 0
 
-  const total = watchesWithWearCost.reduce((sum, w) => sum + costPerWear(w), 0)
-  return total / watchesWithWearCost.length
+  const totalCost = watchesWithWearCost.reduce((sum, w) => sum + (w.purchasePrice ?? 0), 0)
+  const totalWears = watchesWithWearCost.reduce((sum, w) => sum + w.timesWorn, 0)
+  return totalCost / totalWears
 })
 
 const mostWorn = computed(() =>

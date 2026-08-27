@@ -9,7 +9,7 @@ public class ResaleValueRefreshService(
     AppDbContext context,
     IAppSettingsService appSettings,
     IEnumerable<IResaleValueEstimator> estimators,
-    IWatchService watchService,
+    IWatchCatalogService watchCatalogService,
     ILogger<ResaleValueRefreshService> logger) : IResaleValueRefreshService
 {
     private const int MinRefreshIntervalDays = 7;
@@ -25,7 +25,7 @@ public class ResaleValueRefreshService(
         if (!succeeded)
             throw new InvalidOperationException(error ?? "No resale value source is configured or returned a result.");
 
-        return await watchService.GetByIdAsync(watchId, userId, ct);
+        return await watchCatalogService.GetByIdAsync(watchId, userId, ct);
     }
 
     public async Task<int> RefreshDueWatchesAsync(CancellationToken ct = default)

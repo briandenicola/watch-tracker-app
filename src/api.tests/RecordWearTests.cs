@@ -11,7 +11,7 @@ public class RecordWearTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var (user, watch) = await AddWatchAsync(database);
-        var service = new WatchService(database.Context);
+        var service = new WatchWearLogService(database.Context);
         var before = DateTime.UtcNow;
 
         var result = await service.RecordWearAsync(watch.Id, user.Id);
@@ -29,7 +29,7 @@ public class RecordWearTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var (user, watch) = await AddWatchAsync(database);
-        var service = new WatchService(database.Context);
+        var service = new WatchWearLogService(database.Context);
         var worn = new DateTimeOffset(2026, 3, 14, 17, 0, 0, TimeSpan.Zero);
 
         var result = await service.RecordWearAsync(
@@ -50,7 +50,7 @@ public class RecordWearTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var (user, watch) = await AddWatchAsync(database);
-        var service = new WatchService(database.Context);
+        var service = new WatchWearLogService(database.Context);
 
         // Worn today, then a forgotten wear from last spring is added after.
         await service.RecordWearAsync(watch.Id, user.Id);
@@ -72,7 +72,7 @@ public class RecordWearTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var (user, watch) = await AddWatchAsync(database);
-        var service = new WatchService(database.Context);
+        var service = new WatchWearLogService(database.Context);
         var older = new DateTimeOffset(2026, 1, 2, 9, 0, 0, TimeSpan.Zero);
         var newer = new DateTimeOffset(2026, 5, 6, 9, 0, 0, TimeSpan.Zero);
 
@@ -88,7 +88,7 @@ public class RecordWearTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var (user, watch) = await AddWatchAsync(database);
-        var service = new WatchService(database.Context);
+        var service = new WatchWearLogService(database.Context);
         var started = new DateTimeOffset(2026, 3, 14, 13, 30, 0, TimeSpan.Zero);
         var ended = new DateTimeOffset(2026, 3, 14, 21, 15, 0, TimeSpan.Zero);
 
@@ -109,7 +109,7 @@ public class RecordWearTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var (user, watch) = await AddWatchAsync(database, isWishList: true);
-        var service = new WatchService(database.Context);
+        var service = new WatchWearLogService(database.Context);
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.RecordWearAsync(watch.Id, user.Id));
@@ -126,7 +126,7 @@ public class RecordWearTests
         var stranger = TestDatabase.User("stranger");
         database.Context.Add(stranger);
         await database.Context.SaveChangesAsync();
-        var service = new WatchService(database.Context);
+        var service = new WatchWearLogService(database.Context);
 
         var result = await service.RecordWearAsync(watch.Id, stranger.Id);
 

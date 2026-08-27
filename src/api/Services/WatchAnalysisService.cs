@@ -14,7 +14,7 @@ namespace WatchTracker.Api.Services;
 public class WatchAnalysisService(
     AppDbContext context,
     IAppSettingsService appSettings,
-    IWatchService watchService,
+    IWatchCatalogService watchCatalogService,
     IProductPageReader pageReader,
     HttpClient httpClient,
     IWebHostEnvironment env,
@@ -145,7 +145,7 @@ public class WatchAnalysisService(
                 watchId, userId, string.Join(", ", applied));
         }
 
-        var updated = await watchService.GetByIdAsync(watchId, userId, ct);
+        var updated = await watchCatalogService.GetByIdAsync(watchId, userId, ct);
         if (updated is null) return null;
 
         return new ApplyAnalysisResultDto

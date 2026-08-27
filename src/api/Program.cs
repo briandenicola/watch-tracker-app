@@ -222,7 +222,11 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<IWatchService, WatchService>();
+builder.Services.AddScoped<IWatchCatalogService, WatchCatalogService>();
+builder.Services.AddScoped<IWatchWearLogService, WatchWearLogService>();
+builder.Services.AddScoped<IWatchDispositionService, WatchDispositionService>();
+builder.Services.AddScoped<IWishlistService, WishlistService>();
+builder.Services.AddScoped<IResaleValueService, ResaleValueService>();
 builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>();
 builder.Services.AddScoped<IRecommendationWishlistService, RecommendationWishlistService>();
 builder.Services.AddScoped<ICollectionAdvisorService, CollectionAdvisorService>();

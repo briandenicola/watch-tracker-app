@@ -11,7 +11,11 @@ namespace WatchTracker.Api.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 public class WatchesController(
-    IWatchService watchService,
+    IWatchCatalogService watchCatalogService,
+    IWatchWearLogService wearLogService,
+    IWatchDispositionService dispositionService,
+    IWishlistService wishlistService,
+    IResaleValueService resaleValueService,
     IWatchAnalysisService analysisService,
     IWishlistExtractionService wishlistExtractionService,
     IResaleValueRefreshService resaleRefreshService,
@@ -28,7 +32,7 @@ public class WatchesController(
         [FromQuery] bool includeRetired = false,
         CancellationToken ct = default)
     {
-        var watches = await watchService.GetAllAsync(UserId, includeDisposed || includeRetired, ct);
+        var watches = await watchCatalogService.GetAllAsync(UserId, includeDisposed || includeRetired, ct);
         return Ok(watches);
     }
 
@@ -37,7 +41,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> GetById(int id, CancellationToken ct)
     {
-        var watch = await watchService.GetByIdAsync(id, UserId, ct);
+        var watch = await watchCatalogService.GetByIdAsync(id, UserId, ct);
         return watch is null ? NotFound() : Ok(watch);
     }
 
@@ -45,7 +49,7 @@ public class WatchesController(
     [ProducesResponseType(typeof(WatchDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<WatchDto>> Create(CreateWatchDto dto, CancellationToken ct)
     {
-        var watch = await watchService.CreateAsync(dto, UserId, ct);
+        var watch = await watchCatalogService.CreateAsync(dto, UserId, ct);
         return CreatedAtAction(nameof(GetById), new { id = watch.Id }, watch);
     }
 
@@ -77,7 +81,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> Update(int id, UpdateWatchDto dto, CancellationToken ct)
     {
-        var watch = await watchService.UpdateAsync(id, dto, UserId, ct);
+        var watch = await watchCatalogService.UpdateAsync(id, dto, UserId, ct);
         return watch is null ? NotFound() : Ok(watch);
     }
 
@@ -86,7 +90,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var result = await watchService.DeleteAsync(id, UserId, ct);
+        var result = await watchCatalogService.DeleteAsync(id, UserId, ct);
         return result ? NoContent() : NotFound();
     }
 
@@ -127,7 +131,7 @@ public class WatchesController(
     {
         try
         {
-            var watch = await watchService.RecordWearAsync(id, UserId, dto, ct);
+            var watch = await wearLogService.RecordWearAsync(id, UserId, dto, ct);
             return watch is null ? NotFound() : Ok(watch);
         }
         catch (InvalidOperationException ex)
@@ -140,7 +144,7 @@ public class WatchesController(
     [ProducesResponseType(typeof(IEnumerable<WearLogDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<WearLogDto>>> GetWearLogs(CancellationToken ct)
     {
-        var logs = await watchService.GetWearLogsAsync(UserId, ct);
+        var logs = await wearLogService.GetWearLogsAsync(UserId, ct);
         return Ok(logs);
     }
 
@@ -149,7 +153,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteWearLog(int logId, CancellationToken ct)
     {
-        var deleted = await watchService.DeleteWearLogAsync(logId, UserId, ct);
+        var deleted = await wearLogService.DeleteWearLogAsync(logId, UserId, ct);
         return deleted ? NoContent() : NotFound();
     }
 
@@ -158,7 +162,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateWearLogDate(int logId, [FromBody] UpdateWearLogDateDto dto, CancellationToken ct)
     {
-        var updated = await watchService.UpdateWearLogAsync(logId, UserId, dto, ct);
+        var updated = await wearLogService.UpdateWearLogAsync(logId, UserId, dto, ct);
         return updated ? NoContent() : NotFound();
     }
 
@@ -166,7 +170,7 @@ public class WatchesController(
     [ProducesResponseType(typeof(IEnumerable<ResaleValueEntryDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ResaleValueEntryDto>>> GetResaleHistory(int id, CancellationToken ct)
     {
-        var history = await watchService.GetResaleHistoryAsync(id, UserId, ct);
+        var history = await resaleValueService.GetHistoryAsync(id, UserId, ct);
         return Ok(history);
     }
 
@@ -175,7 +179,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> AddManualResaleValue(int id, CreateResaleValueEntryDto dto, CancellationToken ct)
     {
-        var watch = await watchService.AddManualResaleValueAsync(id, UserId, dto, ct);
+        var watch = await resaleValueService.AddManualAsync(id, UserId, dto, ct);
         return watch is null ? NotFound() : Ok(watch);
     }
 
@@ -184,7 +188,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteResaleValueEntry(int entryId, CancellationToken ct)
     {
-        var deleted = await watchService.DeleteResaleValueEntryAsync(entryId, UserId, ct);
+        var deleted = await resaleValueService.DeleteEntryAsync(entryId, UserId, ct);
         return deleted ? NoContent() : NotFound();
     }
 
@@ -194,7 +198,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> RefreshResaleValue(int id, CancellationToken ct)
     {
-        var watch = await watchService.GetByIdAsync(id, UserId, ct);
+        var watch = await watchCatalogService.GetByIdAsync(id, UserId, ct);
         if (watch is null) return NotFound();
 
         var userId = UserId;
@@ -221,7 +225,7 @@ public class WatchesController(
     {
         try
         {
-            var watch = await watchService.RetireAsync(id, UserId, ct);
+            var watch = await dispositionService.RetireAsync(id, UserId, ct);
             return watch is null ? NotFound() : Ok(watch);
         }
         catch (InvalidOperationException ex)
@@ -235,7 +239,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> Unretire(int id, CancellationToken ct)
     {
-        var watch = await watchService.UnretireAsync(id, UserId, ct);
+        var watch = await dispositionService.UnretireAsync(id, UserId, ct);
         return watch is null ? NotFound() : Ok(watch);
     }
 
@@ -250,7 +254,7 @@ public class WatchesController(
     {
         try
         {
-            var watch = await watchService.SetDispositionAsync(id, UserId, dto, ct);
+            var watch = await dispositionService.SetDispositionAsync(id, UserId, dto, ct);
             if (watch is not null)
                 logger.LogInformation(
                     "Watch {WatchId} disposition set to {DispositionType} by user {UserId}",
@@ -270,7 +274,7 @@ public class WatchesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WatchDto>> ClearDisposition(int id, CancellationToken ct)
     {
-        var watch = await watchService.ClearDispositionAsync(id, UserId, ct);
+        var watch = await dispositionService.ClearDispositionAsync(id, UserId, ct);
         if (watch is not null)
             logger.LogInformation("Watch {WatchId} disposition cleared by user {UserId}", id, UserId);
         return watch is null ? NotFound() : Ok(watch);
@@ -283,7 +287,7 @@ public class WatchesController(
     {
         try
         {
-            await watchService.ReorderWishlistAsync(UserId, dto.WatchIds, ct);
+            await wishlistService.ReorderAsync(UserId, dto.WatchIds, ct);
             return NoContent();
         }
         catch (InvalidOperationException ex)
