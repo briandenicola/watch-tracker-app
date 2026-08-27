@@ -2,22 +2,11 @@
   <div class="layout-shell">
     <!-- Desktop Sidebar -->
     <aside v-if="isDesktop" class="fixed inset-y-0 left-0 w-64 bg-sidebar-bg border-r border-border flex flex-col z-40">
-      <div class="flex items-center justify-between gap-3 border-b border-border p-6">
+      <div class="flex items-center gap-3 border-b border-border p-6">
         <div class="flex min-w-0 items-center gap-3">
           <AppIcon name="watch" :size="22" class="shrink-0 text-accent" />
           <h1 class="truncate font-display text-xl font-semibold tracking-wide text-accent">Watch Tracker</h1>
         </div>
-        <RouterLink
-          to="/notifications"
-          class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-elevated hover:text-text focus-visible:bg-bg-elevated focus-visible:text-text"
-          :aria-label="notificationLabel"
-          title="Notifications"
-        >
-          <AppIcon name="bell" :size="20" :stroke-width="1.6" />
-          <span v-if="notifications.unreadCount" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-nav-bg bg-accent px-0.5 text-[10px] font-bold leading-none text-bg" aria-hidden="true">
-            {{ notifications.unreadCount > 99 ? '99+' : notifications.unreadCount }}
-          </span>
-        </RouterLink>
       </div>
       <nav class="flex-1 py-4 overflow-y-auto">
         <RouterLink
@@ -59,7 +48,7 @@
           <AppIcon name="watch" :size="18" class="text-accent" />
           <h1 class="font-display text-lg font-semibold text-accent tracking-wide">Watch Tracker</h1>
         </div>
-        <div class="flex justify-end gap-1">
+        <div class="flex justify-end">
           <RouterLink
             to="/notifications"
             class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-elevated hover:text-text focus-visible:bg-bg-elevated focus-visible:text-text"
@@ -71,9 +60,6 @@
               {{ notifications.unreadCount > 99 ? '99+' : notifications.unreadCount }}
             </span>
           </RouterLink>
-          <button @click="cycleTheme" class="min-h-11 min-w-11 -mr-2 text-text-muted hover:text-text" aria-label="Change theme">
-            <AppIcon :name="theme.getEffectiveTheme() === 'dark' ? 'moon' : 'sun'" :size="18" />
-          </button>
         </div>
       </div>
     </header>

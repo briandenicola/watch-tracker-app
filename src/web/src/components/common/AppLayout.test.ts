@@ -53,22 +53,22 @@ describe('AppLayout notifications link', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth })
   })
 
-  it('keeps mobile navigation, branding, and theme controls alongside the notification badge', () => {
+  it('keeps the mobile notification badge right-aligned without a theme control', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 })
     const wrapper = mountLayout()
 
     expect(wrapper.get('h1').text()).toBe('Watch Tracker')
     expect(wrapper.find('button[aria-label="Open navigation"]').exists()).toBe(true)
-    expect(wrapper.find('button[aria-label="Change theme"]').exists()).toBe(true)
+    expect(wrapper.find('button[aria-label="Change theme"]').exists()).toBe(false)
     expect(wrapper.get('a[href="/notifications"]').attributes('aria-label')).toBe('2 unread notifications')
     expect(wrapper.get('a[href="/notifications"]').text()).toContain('2')
     expect(notifications.refreshUnreadCount).toHaveBeenCalledTimes(1)
   })
 
-  it('shows a notifications link in the desktop sidebar header', () => {
+  it('keeps notifications out of the desktop sidebar header', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
     const wrapper = mountLayout()
 
-    expect(wrapper.get('a[href="/notifications"]').attributes('aria-label')).toBe('2 unread notifications')
+    expect(wrapper.find('a[href="/notifications"]').exists()).toBe(false)
   })
 })

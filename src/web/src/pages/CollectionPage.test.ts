@@ -8,8 +8,12 @@ const watchApi = vi.hoisted(() => ({
   imageUrl: (path: string) => path,
   reorderWishlist: vi.fn(),
 }))
+const notifications = vi.hoisted(() => ({
+  unreadCount: 2,
+}))
 
 vi.mock('@/services/watches', () => watchApi)
+vi.mock('@/stores/notifications', () => ({ useNotificationsStore: () => notifications }))
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
   RouterLink: { template: '<a><slot /></a>' },
@@ -84,8 +88,7 @@ describe('collection view mode', () => {
     await wrapper.get('[data-testid="view-compact"]').trigger('click')
     await flushPromises()
 
-    const filterToggle = wrapper.findAll('button').find(button => button.text() === '2')
-    if (!filterToggle) throw new Error('Filter toggle not found')
+    const filterToggle = wrapper.get('button[aria-label="Show filters"]')
     await filterToggle.trigger('click')
 
     const brandFilter = wrapper.findAll('select')
@@ -96,5 +99,14 @@ describe('collection view mode', () => {
     const tiles = wrapper.findAll('[data-testid="compact-tile"]')
     expect(tiles).toHaveLength(1)
     expect(tiles[0].text()).toContain('Omega')
+  })
+
+  it('groups icon-only view and filter controls with the notifications bell', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.get('[role="group"]').attributes('aria-label')).toBe('Collection display controls')
+    expect(wrapper.find('button[aria-label="Show filters"]').text()).toBe('')
+    expect(wrapper.get('a[title="Notifications"]').attributes('aria-label')).toBe('2 unread notifications')
   })
 })

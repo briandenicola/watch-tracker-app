@@ -23,8 +23,7 @@
       </div>
 
       <div class="flex items-center gap-1">
-        <!-- View toggle -->
-        <div class="flex gap-1 bg-bg-surface border border-border rounded-lg p-1" role="group" aria-label="View mode">
+        <div class="flex gap-1 bg-bg-surface border border-border rounded-lg p-1" role="group" aria-label="Collection display controls">
           <button
             v-for="mode in viewModes"
             :key="mode.value"
@@ -38,19 +37,30 @@
           >
             <AppIcon :name="mode.icon" :size="16" :stroke-width="1.75" />
           </button>
+          <button
+            type="button"
+            class="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:text-text"
+            :class="{ '!bg-accent !text-bg': showFilters || hasActiveFilters }"
+            :aria-label="showFilters ? 'Hide filters' : 'Show filters'"
+            :aria-expanded="showFilters"
+            @click="showFilters = !showFilters"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2" />
+            </svg>
+          </button>
         </div>
-
-        <!-- Filter toggle + count -->
-        <button
-          @click="showFilters = !showFilters"
-          class="flex items-center gap-2 px-3 py-2 text-sm text-text-muted hover:text-text transition-colors"
-          :class="{ '!text-accent': hasActiveFilters }"
+        <RouterLink
+          to="/notifications"
+          class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-elevated hover:text-text focus-visible:bg-bg-elevated focus-visible:text-text"
+          :aria-label="notificationLabel"
+          title="Notifications"
         >
-          <span>{{ filteredWatches.length }}</span>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2" />
-          </svg>
-        </button>
+          <AppIcon name="bell" :size="20" :stroke-width="1.6" />
+          <span v-if="notifications.unreadCount" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-bg bg-accent px-0.5 text-[10px] font-bold leading-none text-bg" aria-hidden="true">
+            {{ notifications.unreadCount > 99 ? '99+' : notifications.unreadCount }}
+          </span>
+        </RouterLink>
       </div>
     </div>
     <!-- Collapsible Filter Panel -->
@@ -301,12 +311,17 @@ import type { Watch } from '@/types'
 import { getWatches, imageUrl, reorderWishlist } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { usePreferences, type SortOption, type ViewMode } from '@/stores/preferences'
+import { useNotificationsStore } from '@/stores/notifications'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import { formatInstant } from '@/utils/dateTime'
 
 const route = useRoute()
 const { prefs, setCollectionViewMode } = usePreferences()
+const notifications = useNotificationsStore()
+const notificationLabel = computed(() => notifications.unreadCount
+  ? `${notifications.unreadCount} unread notifications`
+  : 'Notifications')
 
 const allWatches = ref<Watch[]>([])
 const loading = ref(true)
