@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
@@ -21,7 +21,7 @@ public class StyleAgentService(
     AppDbContext context,
     IAppSettingsService appSettings,
     HttpClient httpClient,
-    IWebHostEnvironment env,
+    IUploadStorage storage,
     ILogger<StyleAgentService> logger) : IStyleAgentService
 {
     /// Turns of the running conversation replayed to the model.
@@ -282,8 +282,7 @@ public class StyleAgentService(
             .FirstOrDefaultAsync(ct);
         if (image is null) return null;
 
-        var path = Path.Combine(env.ContentRootPath, "uploads", image.FileName);
-        if (!File.Exists(path)) return null;
+        if (!storage.TryGetFilePath(image.FileName, out var path)) return null;
 
         try
         {

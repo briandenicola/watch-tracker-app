@@ -17,7 +17,7 @@ public class WatchAnalysisService(
     IWatchCatalogService watchCatalogService,
     IProductPageReader pageReader,
     HttpClient httpClient,
-    IWebHostEnvironment env,
+    IUploadStorage storage,
     ILogger<WatchAnalysisService> logger) : IWatchAnalysisService
 {
     private const int MaxImageEdge = 1024;
@@ -33,8 +33,7 @@ public class WatchAnalysisService(
         var image = watch.Images.OrderBy(i => i.SortOrder).FirstOrDefault()
             ?? throw new InvalidOperationException("No images to analyze.");
 
-        var filePath = Path.Combine(env.ContentRootPath, "uploads", image.FileName);
-        if (!File.Exists(filePath))
+        if (!storage.TryGetFilePath(image.FileName, out var filePath))
             throw new InvalidOperationException("Image file not found.");
 
         var base64 = await PrepareImageAsync(filePath, watchId, ct);
