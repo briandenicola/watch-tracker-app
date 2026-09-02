@@ -6,7 +6,7 @@ using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
-public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IHttpClientFactory httpClientFactory, IBackgroundRemovalService bgRemoval) : IWatchImageService
+public class WatchImageService(AppDbContext context, IUploadStorage storage, IHttpClientFactory httpClientFactory, IBackgroundRemovalService bgRemoval) : IWatchImageService
 {
     private const int MaxRemoteImageBytes = 10 * 1024 * 1024;
     private const int MaxRedirects = 3;
@@ -27,8 +27,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId, ct)
             ?? throw new InvalidOperationException("Watch not found.");
 
-        var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
-        Directory.CreateDirectory(uploadsDir);
+        var userDir = storage.EnsureUserDirectory(userId);
 
         var maxSort = watch.Images.Count > 0 ? watch.Images.Max(i => i.SortOrder) : -1;
         var result = new List<WatchImageDto>();
@@ -50,7 +49,8 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
 
             var ext = MimeToExt.GetValueOrDefault(detectedType, Path.GetExtension(file.FileName));
             var fileName = $"{Guid.NewGuid()}{ext}";
-            var filePath = Path.Combine(uploadsDir, fileName);
+            var storedName = storage.StoredName(userId, fileName);
+            var filePath = Path.Combine(userDir, fileName);
 
             await using var stream = new FileStream(filePath, FileMode.Create);
             await peekStream.CopyToAsync(stream);
@@ -58,7 +58,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             var image = new WatchImage
             {
                 WatchId = watchId,
-                FileName = fileName,
+                FileName = storedName,
                 ContentType = detectedType,
                 SortOrder = ++maxSort
             };
@@ -66,7 +66,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             context.WatchImages.Add(image);
             await context.SaveChangesAsync(ct);
 
-            result.Add(new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" });
+            result.Add(new WatchImageDto { Id = image.Id, Url = $"/uploads/{storedName}" });
         }
 
         return result;
@@ -98,9 +98,8 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
 
         var ext = MimeToExt.GetValueOrDefault(contentType, ".jpg");
         var fileName = $"{Guid.NewGuid()}{ext}";
-        var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
-        Directory.CreateDirectory(uploadsDir);
-        var filePath = Path.Combine(uploadsDir, fileName);
+        var storedName = storage.StoredName(userId, fileName);
+        var filePath = Path.Combine(storage.EnsureUserDirectory(userId), fileName);
 
         await File.WriteAllBytesAsync(filePath, bytes, ct);
         try
@@ -109,7 +108,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             var image = new WatchImage
             {
                 WatchId = watchId,
-                FileName = fileName,
+                FileName = storedName,
                 ContentType = contentType,
                 SortOrder = ++maxSort,
             };
@@ -117,7 +116,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             context.WatchImages.Add(image);
             await context.SaveChangesAsync(ct);
 
-            return new WatchImageDto { Id = image.Id, Url = $"/uploads/{fileName}" };
+            return new WatchImageDto { Id = image.Id, Url = $"/uploads/{storedName}" };
         }
         catch
         {
@@ -231,8 +230,7 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
 
         if (image is null) return false;
 
-        var filePath = Path.Combine(env.ContentRootPath, "uploads", image.FileName);
-        if (File.Exists(filePath))
+        if (storage.TryGetFilePath(image.FileName, out var filePath))
             File.Delete(filePath);
 
         context.WatchImages.Remove(image);
@@ -271,26 +269,28 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
 
         if (image is null) return null;
 
-        var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
-        var inputPath = Path.Combine(uploadsDir, image.FileName);
-
-        if (!File.Exists(inputPath))
+        if (!storage.TryGetFilePath(image.FileName, out var inputPath))
             throw new FileNotFoundException("Source image file not found on disk.");
 
         var newFileName = await bgRemoval.RemoveBackgroundAsync(inputPath, cancellationToken);
-        var newFilePath = Path.Combine(uploadsDir, newFileName);
+        var newStoredName = storage.StoredName(userId, newFileName);
+        var newFilePath = Path.Combine(storage.EnsureUserDirectory(userId), newFileName);
+
+        // The cut-out lands next to its source, which for an image still at the
+        // uploads root is not the owner's directory.
+        var producedPath = Path.Combine(Path.GetDirectoryName(inputPath)!, newFileName);
+        if (!string.Equals(producedPath, newFilePath, StringComparison.Ordinal))
+            File.Move(producedPath, newFilePath, overwrite: true);
 
         try
         {
-            var oldFileName = image.FileName;
-            image.FileName = newFileName;
+            image.FileName = newStoredName;
             image.ContentType = "image/png";
             await context.SaveChangesAsync(cancellationToken);
 
             // Only delete old file after DB update succeeds
-            var oldFilePath = Path.Combine(uploadsDir, oldFileName);
-            if (File.Exists(oldFilePath))
-                File.Delete(oldFilePath);
+            if (File.Exists(inputPath))
+                File.Delete(inputPath);
         }
         catch
         {
@@ -300,6 +300,6 @@ public class WatchImageService(AppDbContext context, IWebHostEnvironment env, IH
             throw;
         }
 
-        return new WatchImageDto { Id = image.Id, Url = $"/uploads/{newFileName}" };
+        return new WatchImageDto { Id = image.Id, Url = $"/uploads/{newStoredName}" };
     }
 }

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 using WatchTracker.Api.Models;
@@ -80,7 +80,7 @@ public class WatchImageServiceTests
             var client = new HttpClient(new ResponseHandler(response));
             Service = new WatchImageService(
                 database.Context,
-                environment,
+                new UploadStorage(environment),
                 new StubHttpClientFactory(client),
                 new StubBackgroundRemoval());
         }

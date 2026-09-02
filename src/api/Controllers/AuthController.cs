@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -10,7 +10,7 @@ namespace WatchTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IAuthService authService, IOidcService oidcService) : ControllerBase
+public class AuthController(IAuthService authService, IOidcService oidcService, IUploadStorage uploadStorage) : ControllerBase
 {
     [HttpPost("register")]
     [EnableRateLimiting("auth")]
@@ -101,18 +101,18 @@ public class AuthController(IAuthService authService, IOidcService oidcService) 
     public async Task<ActionResult<object>> UploadProfileImage([FromForm] IFormFile file)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-        Directory.CreateDirectory(uploadsDir);
+        var userDir = uploadStorage.EnsureUserDirectory(userId);
 
         var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
         var fileName = $"profile-{userId}{ext}";
-        var filePath = Path.Combine(uploadsDir, fileName);
+        var storedName = uploadStorage.StoredName(userId, fileName);
+        var filePath = Path.Combine(userDir, fileName);
 
         await using var stream = new FileStream(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
 
-        await authService.SetProfileImageAsync(userId, fileName);
-        return Ok(new { profileImage = $"/uploads/{fileName}" });
+        await authService.SetProfileImageAsync(userId, storedName);
+        return Ok(new { profileImage = $"/uploads/{storedName}" });
     }
 
     [Authorize]
@@ -122,11 +122,8 @@ public class AuthController(IAuthService authService, IOidcService oidcService) 
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var deleted = await authService.DeleteProfileImageAsync(userId);
-        if (deleted is not null)
-        {
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", deleted);
-            if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
-        }
+        if (deleted is not null && uploadStorage.TryGetFilePath(deleted, out var filePath))
+            System.IO.File.Delete(filePath);
         return NoContent();
     }
 

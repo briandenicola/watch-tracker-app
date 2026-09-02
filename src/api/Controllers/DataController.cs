@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO.Compression;
 using System.Security.Claims;
 using System.Text;
@@ -15,7 +15,7 @@ namespace WatchTracker.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class DataController(AppDbContext context, IWebHostEnvironment env, IDataImportService dataImportService) : ControllerBase
+public class DataController(AppDbContext context, IUploadStorage uploadStorage, IDataImportService dataImportService) : ControllerBase
 {
     private int UserId => int.Parse(
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -42,7 +42,7 @@ public class DataController(AppDbContext context, IWebHostEnvironment env, IData
 
             foreach (var w in watches)
             {
-                var imageFileNames = string.Join(";", w.Images.Select(i => i.FileName));
+                var imageFileNames = string.Join(";", w.Images.Select(i => Path.GetFileName(i.FileName)));
                 var wearDates = string.Join(";", w.WearLogs.OrderByDescending(wl => wl.WornDate).Select(wl => wl.WornDate.ToString("yyyy-MM-dd")));
                 var wearLogs = string.Join(";", w.WearLogs.OrderByDescending(wl => wl.WornDate).Select(FormatWearLogExport));
 
@@ -110,16 +110,15 @@ public class DataController(AppDbContext context, IWebHostEnvironment env, IData
                 await writer.WriteAsync(csv.ToString());
             }
 
-            // Add images
-            var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
+            // Add images. The archive keeps the bare file name so exports stay
+            // portable between accounts, where the owner's directory would not be.
             foreach (var w in watches)
             {
                 foreach (var img in w.Images)
                 {
-                    var filePath = Path.Combine(uploadsDir, img.FileName);
-                    if (!System.IO.File.Exists(filePath)) continue;
+                    if (!uploadStorage.TryGetFilePath(img.FileName, out var filePath)) continue;
 
-                    var entry = archive.CreateEntry($"images/{img.FileName}");
+                    var entry = archive.CreateEntry($"images/{Path.GetFileName(img.FileName)}");
                     await using var entryStream = entry.Open();
                     await using var fileStream = System.IO.File.OpenRead(filePath);
                     await fileStream.CopyToAsync(entryStream);

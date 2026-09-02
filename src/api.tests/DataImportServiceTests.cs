@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Hosting;
@@ -105,7 +105,7 @@ ExportId,Brand,Model,Images
         using var fixture = new ImportFixture(database);
         Directory.CreateDirectory(fixture.UploadsPath);
         await File.WriteAllBytesAsync(Path.Combine(fixture.UploadsPath, "watch.jpg"), "image-bytes"u8.ToArray());
-        var controller = new DataController(database.Context, fixture.Environment, fixture.Service)
+        var controller = new DataController(database.Context, new UploadStorage(fixture.Environment), fixture.Service)
         {
             ControllerContext = new ControllerContext
             {
@@ -161,7 +161,7 @@ ExportId,Brand,Model,Images
         public ImportFixture(TestDatabase database)
         {
             Directory.CreateDirectory(rootPath);
-            Service = new DataImportService(database.Context, new StubEnvironment(rootPath));
+            Service = new DataImportService(database.Context, new UploadStorage(new StubEnvironment(rootPath)));
         }
 
         public DataImportService Service { get; }

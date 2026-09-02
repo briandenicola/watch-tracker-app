@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO.Compression;
 using System.Text;
@@ -10,7 +10,7 @@ using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
-public class DataImportService(AppDbContext context, IWebHostEnvironment env) : IDataImportService
+public class DataImportService(AppDbContext context, IUploadStorage storage) : IDataImportService
 {
     public async Task<DataImportOutcome> ImportAsync(
         int userId,
@@ -20,8 +20,7 @@ public class DataImportService(AppDbContext context, IWebHostEnvironment env) : 
         if (file.Length == 0 || !file.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             return DataImportOutcome.Failure("Please upload a .zip file.");
 
-        var uploadsDir = Path.Combine(env.ContentRootPath, "uploads");
-        Directory.CreateDirectory(uploadsDir);
+        var userDir = storage.EnsureUserDirectory(userId);
 
         int watchesImported = 0;
         int imagesImported = 0;
@@ -69,10 +68,10 @@ public class DataImportService(AppDbContext context, IWebHostEnvironment env) : 
                 continue;
 
             var newFileName = $"{Guid.NewGuid()}{ext}";
-            var destPath = Path.Combine(uploadsDir, newFileName);
+            var destPath = Path.Combine(userDir, newFileName);
 
-            // Verify the resolved path is still within uploads directory
-            if (!Path.GetFullPath(destPath).StartsWith(Path.GetFullPath(uploadsDir), StringComparison.OrdinalIgnoreCase))
+            // Verify the resolved path is still within the user's uploads directory
+            if (!Path.GetFullPath(destPath).StartsWith(Path.GetFullPath(userDir), StringComparison.OrdinalIgnoreCase))
                 continue;
 
             await using var entryStream = imgEntry.Open();
@@ -80,7 +79,7 @@ public class DataImportService(AppDbContext context, IWebHostEnvironment env) : 
             await entryStream.CopyToAsync(fileStream);
 
             // Track the rename so we can map old -> new
-            imageRenames[destFileName] = newFileName;
+            imageRenames[destFileName] = storage.StoredName(userId, newFileName);
             imagesImported++;
         }
 

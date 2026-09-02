@@ -4,6 +4,17 @@ The container persists its SQLite database in `/app/data` and uploaded images
 in `/app/uploads`. Back up both volumes before deploying any version that
 contains an EF Core migration.
 
+## Upload layout
+
+Uploads are stored per owner in `/app/uploads/{userId}/`, and the database
+records that path (`{userId}/{fileName}`) for watch images and profile images.
+On startup the API moves any file still sitting directly in `/app/uploads` into
+its owner's subdirectory and rewrites the stored name, so the first start after
+upgrading rearranges the volume. Back up the uploads volume before that start:
+rolling back to an image that predates the per-user layout leaves the moved
+files unreachable, because the older code only looks in the uploads root. A
+file the migration cannot find on disk is logged and left alone.
+
 ## Deploying
 
 1. Set `JWT_KEY` to a random value of at least 32 bytes.

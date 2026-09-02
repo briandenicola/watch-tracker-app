@@ -249,6 +249,8 @@ builder.Services.AddHttpClient<ICollectionReviewCandidateService, CollectionRevi
     .ConfigureHttpClient(c => c.Timeout =
         CollectionReviewCandidateService.MaxExecutionTime + TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IAdvisorToolService, AdvisorToolService>();
+builder.Services.AddSingleton<IUploadStorage, UploadStorage>();
+builder.Services.AddScoped<UploadLayoutMigrator>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
 builder.Services.AddScoped<IDataImportService, DataImportService>();
 builder.Services.AddScoped<IWatchShareService, WatchShareService>();
@@ -320,7 +322,9 @@ app.UseCors();
 app.UseAuthentication();
 app.UseRateLimiter();
 
-var uploadsDir = Path.Combine(app.Environment.ContentRootPath, "uploads");
+// Uploads live in per-user subdirectories under this root; the file provider
+// serves them at /uploads/{userId}/{fileName}.
+var uploadsDir = app.Services.GetRequiredService<IUploadStorage>().RootPath;
 Directory.CreateDirectory(uploadsDir);
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -408,6 +412,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+
+    // Relocate uploads written before images were stored per user
+    await scope.ServiceProvider.GetRequiredService<UploadLayoutMigrator>().MigrateAsync();
 
     // Seed runtime log level from database setting
     var settingsService = scope.ServiceProvider.GetRequiredService<IAppSettingsService>();

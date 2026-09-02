@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
@@ -45,7 +45,7 @@ public class WatchAnalysisServiceTests
             new WatchCatalogService(database.Context),
             new StubPageReader(),
             new HttpClient(handler),
-            fixture.Environment,
+            new UploadStorage(fixture.Environment),
             NullLogger<WatchAnalysisService>.Instance);
 
         var result = await service.AnalyzeAsync(watch.Id, user.Id);
