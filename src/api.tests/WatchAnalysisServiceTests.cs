@@ -42,7 +42,10 @@ public class WatchAnalysisServiceTests
         var service = new WatchAnalysisService(
             database.Context,
             new StubSettings(),
-            new WatchCatalogService(database.Context),
+            new WatchCatalogService(
+                database.Context,
+                new UploadStorage(fixture.Environment),
+                NullLogger<WatchCatalogService>.Instance),
             new StubPageReader(),
             new HttpClient(handler),
             new UploadStorage(fixture.Environment),
