@@ -1,11 +1,14 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
 
 namespace WatchTracker.Api.Services;
 
-public class WatchCatalogService(AppDbContext context) : IWatchCatalogService
+public class WatchCatalogService(
+    AppDbContext context,
+    IUploadStorage storage,
+    ILogger<WatchCatalogService> logger) : IWatchCatalogService
 {
     public async Task<IEnumerable<WatchDto>> GetAllAsync(int userId, bool includeDisposed = false, CancellationToken ct = default)
     {
@@ -114,11 +117,37 @@ public class WatchCatalogService(AppDbContext context) : IWatchCatalogService
     public async Task<bool> DeleteAsync(int id, int userId, CancellationToken ct = default)
     {
         var watch = await context.Watches
+            .Include(w => w.Images)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
         if (watch is null) return false;
 
+        // Read the names before the cascade takes the rows that point at them.
+        var fileNames = watch.Images.Select(i => i.FileName).ToList();
+
         context.Watches.Remove(watch);
         await context.SaveChangesAsync(ct);
+
+        // Files go only once the delete has committed. A file removed ahead of a
+        // failed save would leave a live row pointing at nothing, which is worse
+        // than the leftover file this is here to prevent.
+        foreach (var fileName in fileNames)
+        {
+            if (!storage.TryGetFilePath(fileName, out var path)) continue;
+
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogError(
+                    ex,
+                    "Could not delete image file {FileName} belonging to deleted watch {WatchId}.",
+                    fileName,
+                    id);
+            }
+        }
+
         return true;
     }
 }
