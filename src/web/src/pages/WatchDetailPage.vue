@@ -1,6 +1,6 @@
 <template>
   <div>
-    <RouterLink :to="watch?.isWishList ? '/?tab=wishlist' : watch?.disposition ? '/retired' : '/'" class="mb-4 inline-block text-sm text-accent hover:underline">← Back</RouterLink>
+    <RouterLink v-if="!watch || jsonView" :to="backTarget" class="mb-4 inline-block text-sm text-accent hover:underline">← Back</RouterLink>
     <div v-if="loading" class="flex justify-center py-20"><div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" /></div>
     <div v-else-if="watch && jsonView" class="mx-auto max-w-5xl">
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -11,7 +11,7 @@
     </div>
     <div v-else-if="watch" class="mx-auto max-w-5xl">
       <WatchDetailHeader
-        :watch="watch" :edit-mode="editMode" :saving-edits="savingEdits" :edit-session-error="editSessionError"
+        :watch="watch" :back-to="backTarget" :edit-mode="editMode" :saving-edits="savingEdits" :edit-session-error="editSessionError"
         :wear-loading="wearLoading" :uploading="uploading" :analyzing="analyzing" :purchasing="purchasing"
         :refreshing-resale="refreshingResale" :analysis-error="analysisError"
         @edit="beginEdit" @save-edits="saveEdits" @discard-edits="discardEdits" @wear="handleWear"
@@ -109,6 +109,7 @@ const route = useRoute()
 const router = useRouter()
 const watch = ref<Watch | null>(null)
 const loading = ref(true)
+const backTarget = computed(() => (watch.value?.isWishList ? '/?tab=wishlist' : watch.value?.disposition ? '/retired' : '/'))
 const jsonView = computed(() => String(route.query.format ?? '').toLowerCase() === 'json')
 const watchJson = computed(() => (watch.value ? JSON.stringify(watch.value, null, 2) : ''))
 const {
