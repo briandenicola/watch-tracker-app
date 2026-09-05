@@ -1,6 +1,6 @@
 <template>
   <header class="mb-5">
-    <div class="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+    <div class="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
       <RouterLink :to="backTo" class="justify-self-start text-sm text-accent hover:underline">← Back</RouterLink>
       <p class="collection-label"><span>{{ watch.isWishList ? 'Wish List' : watch.disposition ? dispositionLabel(watch) : 'Collection' }}</span></p>
       <span aria-hidden="true"></span>
