@@ -9,16 +9,17 @@ public class CatalogMarketplaceSearchClientTests
     public async Task Search_returns_usd_listings_from_approved_vendor_snippets()
     {
         var observedAt = DateTime.UtcNow;
+        var search = new StubWebSearch(new WebSearchResult(
+            WebSearchStatus.Success,
+            [
+                new WebSearchResultItem(
+                    "Tudor Black Bay 36 - Pre-Owned",
+                    "Available for $1,950 USD",
+                    "https://shop.example.test/tudor-black-bay-36",
+                    observedAt)
+            ]));
         var client = CreateClient(
-            new StubWebSearch(new WebSearchResult(
-                WebSearchStatus.Success,
-                [
-                    new WebSearchResultItem(
-                        "Tudor Black Bay 36 - Pre-Owned",
-                        "Available for $1,950 USD",
-                        "https://shop.example.test/tudor-black-bay-36",
-                        observedAt)
-                ])));
+            search);
 
         var result = await client.SearchAsync("Tudor Black Bay 36 watch");
 
@@ -31,6 +32,7 @@ public class CatalogMarketplaceSearchClientTests
         Assert.Equal(observedAt, listing.ObservedAt);
         Assert.Null(listing.TotalPrice);
         Assert.Equal(16, listing.ProviderItemId.Length);
+        Assert.Contains("site:shop.example.test", search.LastQuery);
     }
 
     [Fact]
@@ -117,11 +119,15 @@ public class CatalogMarketplaceSearchClientTests
     private sealed class StubWebSearch(WebSearchResult result) : IWebSearchClient
     {
         public string ProviderName => "Brave";
+        public string? LastQuery { get; private set; }
 
         public Task<WebSearchResult> SearchAsync(
             string query,
-            CancellationToken ct = default) =>
-            Task.FromResult(result);
+            CancellationToken ct = default)
+        {
+            LastQuery = query;
+            return Task.FromResult(result);
+        }
     }
 
     private sealed class StubCatalog : ISiteCatalog
@@ -135,8 +141,12 @@ public class CatalogMarketplaceSearchClientTests
     private sealed class StubSettings : IAppSettingsService
     {
         public Task<string> GetAsync(string key, string defaultValue = "") =>
-            Task.FromResult(
-                key == AppSettingsService.Keys.WebSearchProvider ? "Brave" : defaultValue);
+            Task.FromResult(key switch
+            {
+                AppSettingsService.Keys.WebSearchProvider => "Brave",
+                AppSettingsService.Keys.MarketplaceVendor => "Snippet shop",
+                _ => defaultValue
+            });
 
         public Task<int> GetIntAsync(string key, int defaultValue) => Task.FromResult(defaultValue);
         public Task SetAsync(string key, string value) => Task.CompletedTask;

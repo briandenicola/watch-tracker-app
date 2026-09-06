@@ -23,6 +23,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string PriceAlertScanIntervalHours = "PriceAlertScanIntervalHours";
         public const string ResaleValuePrompt = "ResaleValuePrompt";
         public const string WebSearchProvider = "WebSearchProvider";
+        public const string MarketplaceVendor = "MarketplaceVendor";
         public const string SearXngUrl = "SearXngUrl";
         public const string EbayClientId = "EbayClientId";
         public const string EbayClientSecret = "EbayClientSecret";
@@ -46,6 +47,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.PriceAlertScanIntervalHours] = "24",
         [Keys.ResaleValuePrompt] = "You are a watch resale value expert. Given web search results about a specific watch's secondhand/resale listings, estimate its current fair resale value in USD, assuming good used condition unless the listings suggest otherwise.",
         [Keys.WebSearchProvider] = "Brave",
+        [Keys.MarketplaceVendor] = "Chrono24",
         [Keys.SearXngUrl] = "",
         [Keys.EbayClientId] = "",
         [Keys.EbayClientSecret] = "",

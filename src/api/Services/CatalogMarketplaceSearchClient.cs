@@ -42,19 +42,24 @@ public class CatalogMarketplaceSearchClient(
                 "No web search provider is registered.");
         }
 
-        var sites = siteCatalog.Sites.Where(site => !site.IsBlocked).ToList();
-        if (sites.Count == 0)
+        var configuredVendor = await appSettings.GetAsync(
+            AppSettingsService.Keys.MarketplaceVendor,
+            "Chrono24");
+        var site = siteCatalog.Sites.FirstOrDefault(candidate =>
+            !candidate.IsBlocked
+            && candidate.Name.Equals(configuredVendor, StringComparison.OrdinalIgnoreCase));
+        if (site is null)
         {
             return new MarketplaceSearchResult(
                 MarketplaceSearchStatus.NotConfigured,
                 [],
-                "No vendor sites are enabled for marketplace search.");
+                $"Marketplace vendor \"{configuredVendor}\" is not enabled.");
         }
 
         WebSearchResult result;
         try
         {
-            result = await client.SearchAsync($"{query} watch price", ct);
+            result = await client.SearchAsync($"{query} watch price site:{site.Domain}", ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -84,8 +89,7 @@ public class CatalogMarketplaceSearchClient(
         var listings = new Dictionary<string, MarketplaceListingItem>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in result.Items)
         {
-            var site = sites.FirstOrDefault(candidate => IsListingOnSite(item.Url, candidate.Domain));
-            if (site is null
+            if (!IsListingOnSite(item.Url, site.Domain)
                 || !TryReadUsdPrice($"{item.Title} {item.Description}", out var price)
                 || !Uri.TryCreate(item.Url, UriKind.Absolute, out var uri)
                 || uri.Scheme is not ("http" or "https"))
@@ -115,7 +119,8 @@ public class CatalogMarketplaceSearchClient(
         }
 
         logger.LogInformation(
-            "Vendor marketplace search completed through {WebSearchProvider}: {ListingCount} listings parsed from approved sites.",
+            "Marketplace search for {MarketplaceVendor} completed through {WebSearchProvider}: {ListingCount} listings parsed.",
+            site.Name,
             client.ProviderName,
             listings.Count);
 

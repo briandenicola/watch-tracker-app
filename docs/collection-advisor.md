@@ -12,6 +12,7 @@ Configure these values under **Admin > Settings**:
 | `OllamaModel` | Yes | Model used for structured advisor actions. |
 | `CollectionAdvisorPrompt` | Yes | Editable advisor persona. Fixed tool and safety rules are appended in code. |
 | `WebSearchProvider` | For web research | Selects Brave or SearXNG. |
+| `MarketplaceVendor` | For marketplace results | Selects one approved vendor to search; defaults to Chrono24. |
 | `BraveSearchApiKey` | For Brave | Credential sent only to Brave Search. It is never included in prompts or diagnostics. |
 | `SearXngUrl` | For SearXNG | Base URL of a SearXNG instance. |
 | `WebSearchProvider` plus its settings | For vendor marketplace results | Searches the approved vendor catalog through Brave or SearXNG snippets. |
@@ -36,7 +37,7 @@ The advisor remains available for collection-only questions when an optional sea
 | Provider/tool | Evidence type | Important limitation |
 | --- | --- | --- |
 | Collection profile | Recorded collection and wishlist data | Results are only as complete as the user's watch metadata. |
-| Approved vendor catalog | Current listing snippets from Ashford, WatchMaxx, Bob's Watches, Jomashop, and Chrono24 | Snippet prices can omit shipping, condition, or availability details. |
+| Selected approved vendor | Current listing snippets from the configured vendor; Chrono24 is the default | One search-engine request is made per marketplace query. Snippets can omit shipping, condition, or availability details. |
 | eBay Browse | Active fixed-price listings | Optional; asking prices are not completed sales and listings may change or expire. |
 | Brave Search | Current web snippets and source URLs | Snippets can be incomplete and must be verified at the cited source. |
 | SearXNG | Current web snippets and source URLs | Coverage and freshness depend on the configured instance. |

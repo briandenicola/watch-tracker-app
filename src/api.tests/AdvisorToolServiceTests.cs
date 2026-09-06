@@ -128,6 +128,33 @@ public class AdvisorToolServiceTests
     }
 
     [Fact]
+    public async Task Optional_unconfigured_provider_does_not_mask_a_healthy_marketplace()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = TestDatabase.User("owner");
+        database.Context.Users.Add(user);
+        await database.Context.SaveChangesAsync();
+        var profileService = new CollectionProfileService(database.Context);
+        var profile = await profileService.GetProfileAsync(user.Id);
+        var service = new AdvisorToolService(
+            database.Context,
+            profileService,
+            [new StubMarketplaceClient(), new UnconfiguredMarketplaceClient()],
+            [],
+            new StubSettings());
+
+        var result = await service.ExecuteAsync(
+            "marketplace_search",
+            JsonSerializer.SerializeToElement(new { query = "example watch" }),
+            new AdvisorToolContext(user.Id, profile));
+
+        Assert.Equal("completed", result.Activity.Status);
+        Assert.Null(result.Activity.Message);
+        Assert.Contains("\"provider\":\"OptionalMarket\"", result.OutputJson);
+        Assert.Contains("\"status\":\"NotConfigured\"", result.OutputJson);
+    }
+
+    [Fact]
     public async Task Marketplace_currency_filter_applies_without_a_budget()
     {
         await using var database = await TestDatabase.CreateAsync();
@@ -291,6 +318,19 @@ public class AdvisorToolServiceTests
                 MarketplaceSearchStatus.ProviderError,
                 [],
                 "provider unavailable"));
+    }
+
+    private sealed class UnconfiguredMarketplaceClient : IMarketplaceSearchClient
+    {
+        public string ProviderName => "OptionalMarket";
+
+        public Task<MarketplaceSearchResult> SearchAsync(
+            string query,
+            CancellationToken ct = default) =>
+            Task.FromResult(new MarketplaceSearchResult(
+                MarketplaceSearchStatus.NotConfigured,
+                [],
+                "optional provider is not configured"));
     }
 
     private sealed class StubSettings : IAppSettingsService

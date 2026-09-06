@@ -82,6 +82,17 @@
                     <option value="Brave">Brave</option>
                     <option value="SearXNG">SearXNG</option>
                   </select>
+                  <select
+                    v-else-if="setting.key === 'MarketplaceVendor'"
+                    v-model="setting.value"
+                    class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
+                  >
+                    <option value="Chrono24">Chrono24</option>
+                    <option value="Jomashop">Jomashop</option>
+                    <option value="WatchMaxx">WatchMaxx</option>
+                    <option value="Bob's Watches">Bob's Watches</option>
+                    <option value="Ashford">Ashford</option>
+                  </select>
                   <template v-else-if="setting.key === 'ApplicationTimeZone'">
                     <input
                       v-model="setting.value"
@@ -272,7 +283,7 @@ const SETTING_GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Regional Settings', keys: ['ApplicationTimeZone'] },
   { label: 'Sharing', keys: ['ShareLinkBaseUrl'] },
   { label: 'Ollama Configuration', keys: ['OllamaUrl', 'OllamaModel'] },
-  { label: 'Web Search Configuration', keys: ['WebSearchProvider', 'BraveSearchApiKey', 'SearXngUrl'] },
+  { label: 'Web Search Configuration', keys: ['WebSearchProvider', 'MarketplaceVendor', 'BraveSearchApiKey', 'SearXngUrl'] },
   { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },
   { label: 'Resale Configuration', keys: ['ResaleValueRefreshIntervalDays'] },
   { label: 'Price Monitoring', keys: ['PriceAlertScanIntervalHours'] },

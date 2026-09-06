@@ -460,8 +460,15 @@ public class AdvisorToolService(
             .ToList();
         if (elements.Count == 0)
             return new ToolExecution(data, "unavailable", "No marketplace provider is registered.");
+        var hasConfiguredProvider = elements.Any(element =>
+            element.GetProperty("status").GetString() == "Success");
         var warnings = elements
-            .Where(element => element.GetProperty("status").GetString() != "Success")
+            .Where(element =>
+            {
+                var status = element.GetProperty("status").GetString();
+                return status == "ProviderError"
+                    || (!hasConfiguredProvider && status != "Success");
+            })
             .Select(element =>
                 $"{element.GetProperty("provider").GetString()}: " +
                 $"{element.GetProperty("error").GetString() ?? element.GetProperty("status").GetString()}")

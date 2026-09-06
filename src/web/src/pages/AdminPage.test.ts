@@ -26,6 +26,7 @@ describe('Admin Ollama settings', () => {
           { key: 'CollectionAdvisorPrompt', value: 'Advise the collector.' },
           { key: 'ResaleValuePrompt', value: 'Estimate resale value.' },
           { key: 'WebSearchProvider', value: 'SearXNG' },
+          { key: 'MarketplaceVendor', value: 'Chrono24' },
           { key: 'SearXngUrl', value: 'http://search.test' },
           { key: 'EbayClientId', value: 'client-id' },
           { key: 'EbayClientSecret', value: 'secret' },
