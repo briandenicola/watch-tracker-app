@@ -111,17 +111,14 @@ public class AdvisorReplyGenerator(
                 if (!action.Type.Equals("tool", StringComparison.OrdinalIgnoreCase)
                     || string.IsNullOrWhiteSpace(action.Tool))
                 {
-                    logger.LogWarning(
-                        "The collection advisor returned an unsupported action type {ActionType} with tool {Tool}.",
-                        LogText.Token(action.Type),
-                        LogText.Token(action.Tool));
+                    // The action type and tool are model-supplied text, so only the
+                    // Debug line above names them.
+                    logger.LogWarning("The collection advisor returned an unsupported action.");
                     throw new InvalidOperationException("The collection advisor returned an unsupported action.");
                 }
                 if (!ApprovedTools.Contains(action.Tool))
                 {
-                    logger.LogWarning(
-                        "The collection advisor requested the unapproved tool {Tool}.",
-                        LogText.Token(action.Tool));
+                    logger.LogWarning("The collection advisor requested a tool that is not on the approved list.");
                     throw new InvalidOperationException(
                         "The collection advisor requested an unsupported tool.");
                 }
@@ -620,8 +617,10 @@ public class AdvisorReplyGenerator(
         (string, string) Generic(string unrecognized)
         {
             logger.LogWarning(
-                "The collection advisor asked to clarify the unrecognized constraint {Constraint}; "
-                + "a generic clarification was sent instead.",
+                "The collection advisor asked to clarify an unrecognized constraint; "
+                + "a generic clarification was sent instead.");
+            logger.LogDebug(
+                "The unrecognized clarification constraint was {Constraint}.",
                 LogText.Token(unrecognized));
             return (
                 "I need one more detail before I can recommend anything. What is your budget and "

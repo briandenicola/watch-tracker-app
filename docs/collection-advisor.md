@@ -55,14 +55,13 @@ Structured logs record, at `Information` and `Warning`:
 - request outcome, elapsed milliseconds, and tool-call count;
 - tool name, status, and elapsed milliseconds;
 - safe failure category (`grounding_validation`, `tool_execution`, `model_provider`, `safety_limit`, or `invalid_model_output`);
-- the action type, tool name, or clarification constraint the model asked for, reduced to a bounded single-line token;
 - rate-limit rejection by endpoint definition;
 - provider HTTP status codes, provider error type, and reply lengths;
 - rejected requests, requests that hit the execution limit, and requests the caller abandoned.
 
 At these levels logs do not contain complete prompts, collection contents, provider response bodies, credentials, configured provider URLs, user IDs, listing/search text, or feedback notes.
 
-Setting **Admin → Settings → Log level** to `Debug` or `Trace` lifts that redaction. It is an explicit operator choice to trade privacy for diagnosis, and at those levels nothing is held back: the prompt (one line per advisor message), the model's reply, the provider's response body, the configured provider URL and model name, the user ID a request belongs to, per-round query/listing/selection counts, marketplace query terms, and the underlying exception. Every logged payload is truncated to 4000 characters and flattened to a single line, so untrusted text cannot forge a log entry. Credentials are never logged at any level.
+Setting **Admin → Settings → Log level** to `Debug` or `Trace` lifts that redaction. It is an explicit operator choice to trade privacy for diagnosis, and at those levels nothing is held back: the prompt (one line per advisor message), the model's reply, the provider's response body, the action type, tool name or clarification constraint the model asked for, the configured provider URL and model name, the user ID a request belongs to, per-round query/listing/selection counts, marketplace query terms, and the underlying exception. Every logged payload is truncated to 4000 characters and flattened to a single line, so untrusted text cannot forge a log entry. Credentials are never logged at any level.
 
 `Debug` and `Trace` also raise the `Microsoft.AspNetCore` category, which is what records a rate-limited or abandoned request; every other level pins it back to `Warning`.
 

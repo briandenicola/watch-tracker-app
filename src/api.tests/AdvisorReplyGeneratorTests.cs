@@ -345,7 +345,9 @@ public class AdvisorReplyGeneratorTests
     [Fact]
     public async Task Invalid_tool_name_is_not_written_to_diagnostics()
     {
-        var logger = new CollectingLogger<AdvisorReplyGenerator>();
+        // A tool name is arbitrary model text, so it stays out of the log a
+        // deployment actually runs at. Debug is the level that shows model output.
+        var logger = new CollectingLogger<AdvisorReplyGenerator>(LogLevel.Information);
         var generator = CreateGenerator(
             new SequenceHandler(
                 Ollama("""{"type":"tool","tool":"SECRET_PRIVATE_PROMPT","arguments":{}}""")),
