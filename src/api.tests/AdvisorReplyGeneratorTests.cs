@@ -47,7 +47,9 @@ public class AdvisorReplyGeneratorTests
     [Fact]
     public async Task Model_failure_is_diagnosable_without_logging_provider_body_or_prompt()
     {
-        var logger = new CollectingLogger<AdvisorReplyGenerator>();
+        // Information is the level a deployment runs at, and at that level the
+        // redaction holds: the failure is still diagnosable from status and category.
+        var logger = new CollectingLogger<AdvisorReplyGenerator>(LogLevel.Information);
         var handler = new SequenceHandler(new HttpResponseMessage(HttpStatusCode.BadRequest)
         {
             Content = new StringContent("SECRET_PROVIDER_BODY")
@@ -66,6 +68,31 @@ public class AdvisorReplyGeneratorTests
         Assert.Contains("HTTP 400", logs);
         Assert.DoesNotContain("SECRET_PROVIDER_BODY", logs);
         Assert.DoesNotContain("SECRET_PRIVATE_COLLECTION_PROMPT", logs);
+    }
+
+    [Fact]
+    public async Task Debug_logging_holds_nothing_back_about_a_model_failure()
+    {
+        // Debug is an operator asking to see everything, prompt and provider body
+        // included, because without them a failing model cannot be diagnosed.
+        var logger = new CollectingLogger<AdvisorReplyGenerator>(LogLevel.Debug);
+        var handler = new SequenceHandler(new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("SECRET_PROVIDER_BODY")
+        });
+        var generator = CreateGenerator(handler, new StubTools(), logger);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            generator.GenerateAsync(
+                7,
+                new CollectionProfileDto(),
+                [],
+                "SECRET_PRIVATE_COLLECTION_PROMPT"));
+
+        var logs = string.Join("\n", logger.Messages);
+        Assert.Contains("SECRET_PROVIDER_BODY", logs);
+        Assert.Contains("SECRET_PRIVATE_COLLECTION_PROMPT", logs);
+        Assert.Contains("http://ollama.test", logs);
     }
 
     [Fact]
@@ -618,19 +645,24 @@ public class AdvisorReplyGeneratorTests
         }
     }
 
-    private sealed class CollectingLogger<T> : ILogger<T>
+    private sealed class CollectingLogger<T>(LogLevel minimum = LogLevel.Debug) : ILogger<T>
     {
         public List<string> Messages { get; } = [];
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-        public bool IsEnabled(LogLevel logLevel) => true;
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= minimum;
 
         public void Log<TState>(
             LogLevel logLevel,
             EventId eventId,
             TState state,
             Exception? exception,
-            Func<TState, Exception?, string> formatter) =>
+            Func<TState, Exception?, string> formatter)
+        {
+            // The logging extension methods do not consult IsEnabled, so the level
+            // filter that a real provider applies has to happen here.
+            if (!IsEnabled(logLevel)) return;
             Messages.Add(formatter(state, exception));
+        }
     }
 }

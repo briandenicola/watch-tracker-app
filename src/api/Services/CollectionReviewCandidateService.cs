@@ -466,11 +466,14 @@ public class CollectionReviewCandidateService(
         };
 
         var callTimer = Stopwatch.StartNew();
-        logger.LogDebug(
-            "Calling Ollama model {OllamaModel} at {OllamaUrl} with a {PromptLength}-character candidate prompt.",
-            model,
-            ollamaUrl,
-            prompt.Length);
+        if (logger.IsEnabled(LogLevel.Debug))
+            logger.LogDebug(
+                "Calling Ollama model {OllamaModel} at {OllamaUrl} with a {PromptLength}-character candidate "
+                + "prompt: {Prompt}",
+                model,
+                ollamaUrl,
+                prompt.Length,
+                LogText.Bounded(prompt));
 
         HttpResponseMessage response;
         string responseBody;
@@ -505,14 +508,18 @@ public class CollectionReviewCandidateService(
                     (int)response.StatusCode,
                     callTimer.ElapsedMilliseconds,
                     responseBody.Length);
+                logger.LogDebug("Ollama rejected the candidate search: {ResponseBody}", LogText.Bounded(responseBody));
                 throw new InvalidOperationException($"Ollama API error: {responseBody}");
             }
         }
 
-        logger.LogDebug(
-            "Ollama answered the candidate search in {DurationMs} ms with {ResponseLength} characters.",
-            callTimer.ElapsedMilliseconds,
-            responseBody.Length);
+        if (logger.IsEnabled(LogLevel.Debug))
+            logger.LogDebug(
+                "Ollama answered the candidate search in {DurationMs} ms with {ResponseLength} characters: "
+                + "{ModelReply}",
+                callTimer.ElapsedMilliseconds,
+                responseBody.Length,
+                LogText.Bounded(responseBody));
 
         using var envelope = JsonDocument.Parse(responseBody);
         var content = envelope.RootElement.GetProperty("message").GetProperty("content").GetString()
@@ -524,6 +531,7 @@ public class CollectionReviewCandidateService(
             logger.LogWarning(
                 "The candidate search reply held no JSON object in {ReplyLength} characters.",
                 content.Length);
+            logger.LogDebug("The candidate search reply without JSON was: {ModelReply}", LogText.Bounded(content));
             throw new InvalidOperationException("The candidate search did not return usable JSON.");
         }
         try
@@ -536,7 +544,7 @@ public class CollectionReviewCandidateService(
             logger.LogWarning(
                 "The candidate search returned malformed JSON in {ReplyLength} characters.",
                 json.Length);
-            logger.LogDebug(ex, "The malformed candidate search reply could not be parsed.");
+            logger.LogDebug(ex, "The unparsable candidate search reply was: {ModelReply}", LogText.Bounded(json));
             throw new InvalidOperationException("The candidate search returned malformed JSON.");
         }
     }
@@ -548,19 +556,8 @@ public class CollectionReviewCandidateService(
     /// </summary>
     private static string DescribeKeys(JsonElement reply) =>
         reply.ValueKind == JsonValueKind.Object
-            ? string.Join(", ", reply.EnumerateObject().Select(p => SafeToken(p.Name)).Take(10))
+            ? string.Join(", ", reply.EnumerateObject().Select(p => LogText.Token(p.Name)).Take(10))
             : reply.ValueKind.ToString();
-
-    private static string SafeToken(string? value, int maxLength = 40)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return "none";
-        var cleaned = new string(value
-            .Where(c => char.IsLetterOrDigit(c) || c is '_' or '-' or ' ')
-            .Take(maxLength)
-            .ToArray())
-            .Trim();
-        return cleaned.Length == 0 ? "unprintable" : cleaned;
-    }
 
     private static List<SearchQuery> ReadQueries(JsonElement root)
     {

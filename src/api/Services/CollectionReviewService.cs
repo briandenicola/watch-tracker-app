@@ -173,6 +173,15 @@ public class CollectionReviewService(
                 "application/json")
         };
 
+        if (logger.IsEnabled(LogLevel.Debug))
+            logger.LogDebug(
+                "Calling Ollama model {OllamaModel} at {OllamaUrl} with a {PromptLength}-character review "
+                + "prompt: {Prompt}",
+                model,
+                ollamaUrl,
+                prompt.Length,
+                LogText.Bounded(prompt));
+
         HttpResponseMessage response;
         string responseBody;
         try
@@ -200,6 +209,7 @@ public class CollectionReviewService(
                     "Ollama returned HTTP {StatusCode} for a collection review ({ResponseLength} characters).",
                     (int)response.StatusCode,
                     responseBody.Length);
+                logger.LogDebug("Ollama rejected the collection review: {ResponseBody}", LogText.Bounded(responseBody));
                 throw new InvalidOperationException($"Ollama API error: {responseBody}");
             }
         }

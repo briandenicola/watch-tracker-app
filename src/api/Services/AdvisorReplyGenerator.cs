@@ -91,8 +91,8 @@ public class AdvisorReplyGenerator(
                 logger.LogDebug(
                     "Collection advisor returned a {ActionType} action (tool {Tool}) after {DurationMs} ms "
                     + "and {ToolCallCount} tool calls.",
-                    SafeToken(action.Type),
-                    SafeToken(action.Tool),
+                    LogText.Token(action.Type),
+                    LogText.Token(action.Tool),
                     requestTimer.ElapsedMilliseconds,
                     toolCalls);
                 if (action.Type.Equals("clarify", StringComparison.OrdinalIgnoreCase))
@@ -113,15 +113,15 @@ public class AdvisorReplyGenerator(
                 {
                     logger.LogWarning(
                         "The collection advisor returned an unsupported action type {ActionType} with tool {Tool}.",
-                        SafeToken(action.Type),
-                        SafeToken(action.Tool));
+                        LogText.Token(action.Type),
+                        LogText.Token(action.Tool));
                     throw new InvalidOperationException("The collection advisor returned an unsupported action.");
                 }
                 if (!ApprovedTools.Contains(action.Tool))
                 {
                     logger.LogWarning(
                         "The collection advisor requested the unapproved tool {Tool}.",
-                        SafeToken(action.Tool));
+                        LogText.Token(action.Tool));
                     throw new InvalidOperationException(
                         "The collection advisor requested an unsupported tool.");
                 }
@@ -290,6 +290,17 @@ public class AdvisorReplyGenerator(
             model,
             ollamaUrl,
             messages.Count);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            // One line per message: a single joined prompt truncates to the system
+            // prompt's head and hides the turn that actually caused the failure.
+            for (var index = 0; index < messages.Count; index++)
+                logger.LogDebug(
+                    "Collection advisor prompt [{Index}] {Role}: {Content}",
+                    index,
+                    messages[index].Role,
+                    LogText.Bounded(messages[index].Content));
+        }
         try
         {
             using var response = await httpClient.SendAsync(request, ct);
@@ -304,6 +315,7 @@ public class AdvisorReplyGenerator(
                     (int)response.StatusCode,
                     callTimer.ElapsedMilliseconds,
                     body.Length);
+                logger.LogDebug("Ollama rejected the collection advisor request: {ResponseBody}", LogText.Bounded(body));
                 throw new InvalidOperationException("The collection advisor model could not complete the request.");
             }
 
@@ -321,10 +333,13 @@ public class AdvisorReplyGenerator(
                 throw new InvalidOperationException("The collection advisor returned an empty response.");
             }
 
-            logger.LogDebug(
-                "Ollama answered the collection advisor in {DurationMs} ms with {ResponseLength} characters.",
-                callTimer.ElapsedMilliseconds,
-                content.Length);
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug(
+                    "Ollama answered the collection advisor in {DurationMs} ms with {ResponseLength} characters: "
+                    + "{ModelReply}",
+                    callTimer.ElapsedMilliseconds,
+                    content.Length,
+                    LogText.Bounded(content));
             return content;
         }
         catch (OperationCanceledException)
@@ -368,7 +383,7 @@ public class AdvisorReplyGenerator(
             logger.LogWarning(
                 "The collection advisor returned malformed JSON in a {ReplyLength}-character reply.",
                 content.Length);
-            logger.LogDebug(ex, "The malformed collection advisor reply could not be parsed.");
+            logger.LogDebug(ex, "The unparsable collection advisor reply was: {ModelReply}", LogText.Bounded(content));
             throw new InvalidOperationException("The collection advisor returned malformed JSON.", ex);
         }
     }
@@ -607,7 +622,7 @@ public class AdvisorReplyGenerator(
             logger.LogWarning(
                 "The collection advisor asked to clarify the unrecognized constraint {Constraint}; "
                 + "a generic clarification was sent instead.",
-                SafeToken(unrecognized));
+                LogText.Token(unrecognized));
             return (
                 "I need one more detail before I can recommend anything. What is your budget and "
                 + "currency, and do you want a new or pre-owned watch?",
@@ -623,22 +638,6 @@ public class AdvisorReplyGenerator(
         constraint is null
             ? ""
             : new string(constraint.Where(char.IsLetter).ToArray()).ToLowerInvariant();
-
-    /// <summary>
-    /// A short model-chosen token — an action type, a tool name, a constraint — kept
-    /// loggable: bounded, single-line, and stripped to characters a name can hold, so
-    /// it can neither forge a log line nor carry prompt text into one.
-    /// </summary>
-    private static string SafeToken(string? value, int maxLength = 40)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return "none";
-        var cleaned = new string(value
-            .Where(c => char.IsLetterOrDigit(c) || c is '_' or '-' or ' ')
-            .Take(maxLength)
-            .ToArray())
-            .Trim();
-        return cleaned.Length == 0 ? "unprintable" : cleaned;
-    }
 
     private void LogCompletion(Stopwatch timer, int toolCalls, string outcome) =>
         logger.LogInformation(
