@@ -173,12 +173,18 @@ public class CollectionReviewService(
                 "application/json")
         };
 
-        var response = await httpClient.SendAsync(request, ct);
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama API error: {responseBody}");
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "collection review",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException($"Ollama API error: {result.Body}");
 
-        using var document = JsonDocument.Parse(responseBody);
+        using var document = JsonDocument.Parse(result.Body);
         return document.RootElement.GetProperty("message").GetProperty("content").GetString()
             ?? throw new InvalidOperationException("No content in the Ollama response.");
     }

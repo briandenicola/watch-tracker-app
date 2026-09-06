@@ -10,7 +10,9 @@ namespace WatchTracker.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class RecommendationsController(IWatchRecommendationService recommendationService) : ControllerBase
+public class RecommendationsController(
+    IWatchRecommendationService recommendationService,
+    ILogger<RecommendationsController> logger) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -28,6 +30,10 @@ public class RecommendationsController(IWatchRecommendationService recommendatio
         }
         catch (InvalidOperationException ex)
         {
+            // The reason can carry provider text, so it rides at Debug with the
+            // user it belongs to; Warning records only that a request failed.
+            logger.LogWarning("An outfit recommendation request was rejected.");
+            logger.LogDebug(ex, "Outfit recommendation for user {UserId} was rejected: {Reason}", UserId, ex.Message);
             return BadRequest(new { error = ex.Message });
         }
     }

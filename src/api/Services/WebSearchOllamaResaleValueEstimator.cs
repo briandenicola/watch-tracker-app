@@ -93,13 +93,18 @@ public class WebSearchOllamaResaleValueEstimator(
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
-        var response = await httpClient.SendAsync(request, ct);
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "resale value estimate",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException($"Ollama API error: {result.Body}");
 
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama API error: {responseBody}");
-
-        using var doc = JsonDocument.Parse(responseBody);
+        using var doc = JsonDocument.Parse(result.Body);
         return doc.RootElement.GetProperty("message").GetProperty("content").GetString()
             ?? throw new InvalidOperationException("No content in Ollama response.");
     }

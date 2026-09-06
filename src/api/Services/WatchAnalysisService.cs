@@ -374,13 +374,18 @@ public class WatchAnalysisService(
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
-        var response = await httpClient.SendAsync(request, ct);
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "watch analysis",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException($"Ollama API error: {result.Body}");
 
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama API error: {responseBody}");
-
-        using var doc = JsonDocument.Parse(responseBody);
+        using var doc = JsonDocument.Parse(result.Body);
         var message = doc.RootElement.GetProperty("message");
         var analysis = message.GetProperty("content").GetString()
             ?? throw new InvalidOperationException("No content in Ollama response.");

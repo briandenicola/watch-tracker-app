@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
@@ -256,6 +257,58 @@ public class CollectionReviewCandidateServiceTests
             new CandidateWishlistActionDto { Provider = "eBay", ProviderItemId = "someone-elses-listing" });
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task An_unreachable_model_is_reported_as_a_request_failure_and_logged()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = await SeedReviewedCollectionAsync(database);
+        var logger = new CollectingLogger<CollectionReviewCandidateService>();
+        var service = new CollectionReviewCandidateService(
+            database.Context,
+            new StubSettings(),
+            new CollectionProfileService(database.Context),
+            new RecommendationWishlistService(database.Context),
+            [new StubMarketplace()],
+            new HttpClient(new ThrowingHandler()),
+            logger);
+
+        // Unhandled, this left the caller with a bare 500 and the operator with a
+        // stack trace that named no setting to fix.
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GenerateAsync(user.Id, new GenerateCandidatesDto()));
+
+        Assert.Contains("could not reach Ollama", error.Message);
+        Assert.Contains(
+            logger.Messages,
+            message => message.Contains(
+                "could not reach the configured model provider",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private sealed class ThrowingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            throw new HttpRequestException("Connection refused");
+    }
+
+    private sealed class CollectingLogger<T> : ILogger<T>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter) =>
+            Messages.Add(formatter(state, exception));
     }
 
     private static CollectionReviewCandidateService Build(

@@ -12,7 +12,8 @@ namespace WatchTracker.Api.Controllers;
 [Authorize]
 public class CollectionReviewController(
     ICollectionReviewService review,
-    ICollectionReviewCandidateService candidates) : ControllerBase
+    ICollectionReviewCandidateService candidates,
+    ILogger<CollectionReviewController> logger) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -38,6 +39,12 @@ public class CollectionReviewController(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning("A collection review request was rejected.");
+            logger.LogDebug(
+                ex,
+                "Collection review for user {UserId} was rejected: {Reason}",
+                UserId,
+                ex.Message);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -57,6 +64,14 @@ public class CollectionReviewController(
         }
         catch (InvalidOperationException ex)
         {
+            // Same reason as the review above: a rejected candidate search was
+            // invisible in the log, which is where this gets diagnosed.
+            logger.LogWarning("A candidate search request was rejected.");
+            logger.LogDebug(
+                ex,
+                "Candidate search for user {UserId} was rejected: {Reason}",
+                UserId,
+                ex.Message);
             return BadRequest(new { error = ex.Message });
         }
     }

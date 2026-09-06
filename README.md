@@ -386,7 +386,7 @@ Admins can manage application-wide settings under **Admin → Settings**, organi
 | -------- | ------- | ----------- |
 | `JWT_KEY` | *(required)* | JWT signing key (`openssl rand -base64 48`) |
 | `ALLOWED_ORIGINS` | `*` | CORS allowed origins (`*` or semicolon-separated URLs) |
-| `LOG_LEVEL` | `Information` | Initial log level (`Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical`, `None`) |
+| `LOG_LEVEL` | `Information` | Initial log level (`Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical`, `None`). A level saved under Admin → Settings overrides this one. `Debug` and `Trace` log the prompts, model replies and provider bodies of the AI features, so treat the log as sensitive while they are on. |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `true` | Enable forwarded headers for reverse proxy support |
 | `TRUSTED_PROXY_NETWORKS` | *(empty)* | Semicolon-separated IP/CIDR ranges permitted to supply `X-Forwarded-For` and `X-Forwarded-Proto`; leave empty when the app is directly reachable |
 

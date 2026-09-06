@@ -416,11 +416,13 @@ using (var scope = app.Services.CreateScope())
     // Relocate uploads written before images were stored per user
     await scope.ServiceProvider.GetRequiredService<UploadLayoutMigrator>().MigrateAsync();
 
-    // Seed runtime log level from database setting
-    var settingsService = scope.ServiceProvider.GetRequiredService<IAppSettingsService>();
-    var storedLogLevel = await settingsService.GetAsync(AppSettingsService.Keys.LogLevel, "Information");
+    // Seed the runtime log level. The dynamic provider outranks every other
+    // configuration source, so seeding it from the settings default made LOG_LEVEL
+    // in the environment a no-op: only a level an admin actually saved should win.
+    var storedLogLevel = (await db.AppSettings.FindAsync(AppSettingsService.Keys.LogLevel))?.Value;
+    var configuredLogLevel = app.Configuration[RuntimeLogLevel.DefaultKey];
     var dynConfig = scope.ServiceProvider.GetRequiredService<DynamicConfigurationProvider>();
-    dynConfig.Set("Logging:LogLevel:Default", storedLogLevel);
+    RuntimeLogLevel.Apply(dynConfig, storedLogLevel ?? configuredLogLevel);
 }
 
 app.Run();

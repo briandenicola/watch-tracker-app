@@ -11,7 +11,9 @@ namespace WatchTracker.Api.Controllers;
 [ApiController]
 [Route("api/watches/{watchId:int}/style")]
 [Authorize]
-public class StyleController(IStyleAgentService styleAgent) : ControllerBase
+public class StyleController(
+    IStyleAgentService styleAgent,
+    ILogger<StyleController> logger) : ControllerBase
 {
     private int UserId => int.Parse(
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -40,6 +42,10 @@ public class StyleController(IStyleAgentService styleAgent) : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            // The reason can carry provider text, so it rides at Debug with the
+            // user it belongs to; Warning records only that a request failed.
+            logger.LogWarning("A style agent request was rejected.");
+            logger.LogDebug(ex, "Style agent request for user {UserId} was rejected: {Reason}", UserId, ex.Message);
             return BadRequest(new { error = ex.Message });
         }
     }

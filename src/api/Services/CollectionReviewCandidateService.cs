@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,17 @@ public class CollectionReviewCandidateService(
         var (ollamaUrl, model) = await GetOllamaSettingsAsync();
         var profile = await collectionProfile.GetProfileAsync(userId, ct);
 
+        var requestTimer = Stopwatch.StartNew();
+        logger.LogDebug(
+            "Candidate search starting for user {UserId} against model {OllamaModel} at {OllamaUrl} "
+            + "with budget {Budget} {Currency} and {MarketplaceCount} marketplace clients.",
+            userId,
+            model,
+            ollamaUrl,
+            request.Budget,
+            request.Currency,
+            marketplaceClients.Count());
+
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(MaxExecutionTime);
 
@@ -74,9 +86,39 @@ public class CollectionReviewCandidateService(
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
+            logger.LogWarning(
+                "A candidate search hit its {LimitSeconds}-second limit after {DurationMs} ms.",
+                MaxExecutionTime.TotalSeconds,
+                requestTimer.ElapsedMilliseconds);
             throw new InvalidOperationException(
                 "The candidate search took too long. Try again, or use a faster Ollama model.");
         }
+        catch (OperationCanceledException)
+        {
+            // The caller hung up. Nothing else records this, which is why an
+            // abandoned request used to leave no trace at all.
+            logger.LogWarning(
+                "A candidate search was abandoned by the caller after {DurationMs} ms.",
+                requestTimer.ElapsedMilliseconds);
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            // The call sites above name what failed; this line times it. The exception
+            // itself is Debug-only because its message can carry provider text.
+            logger.LogWarning(
+                "A candidate search failed after {DurationMs} ms.",
+                requestTimer.ElapsedMilliseconds);
+            logger.LogDebug(ex, "Candidate search for user {UserId} failed.", userId);
+            throw;
+        }
+
+        logger.LogInformation(
+            "A candidate search completed in {DurationMs} ms with {CandidateCount} candidates. "
+            + "Marketplace status: {MarketplaceStatus}.",
+            requestTimer.ElapsedMilliseconds,
+            outcome.Candidates.Count,
+            string.Join(", ", outcome.ProviderStatus.Select(p => $"{p.Provider}={p.Status}")));
 
         var candidates = outcome.Candidates.Take(MaxCandidates).ToList();
         stored.CandidatesJson = JsonSerializer.Serialize(candidates, JsonOptions);
@@ -151,10 +193,25 @@ public class CollectionReviewCandidateService(
             var reply = await CallModelAsync(ollamaUrl, model, history.ToString(), ct);
             var queries = ReadQueries(reply);
             var selection = ReadSelection(reply);
+            logger.LogDebug(
+                "Candidate search round {Round} proposed {QueryCount} queries and selected {SelectionCount} listings "
+                + "from {SeenCount} seen so far.",
+                round,
+                queries.Count,
+                selection.Count,
+                seen.Count);
 
             // A selection ends the loop, and the last round must produce one.
             if (queries.Count == 0 || (selection.Count > 0 && round > 1))
+            {
+                if (queries.Count == 0 && selection.Count == 0)
+                    logger.LogWarning(
+                        "The candidate search model returned neither queries nor a selection in round {Round}, "
+                        + "so no candidates can be shown. Reply keys: {ReplyKeys}.",
+                        round,
+                        DescribeKeys(reply));
                 return Finish(selection, seen, providerStatus);
+            }
 
             foreach (var query in queries)
                 await SearchAsync(query, profile, request, seen, providerStatus, ct);
@@ -166,7 +223,17 @@ public class CollectionReviewCandidateService(
         }
 
         var final = await CallModelAsync(ollamaUrl, model, history.ToString(), ct);
-        return Finish(ReadSelection(final), seen, providerStatus);
+        var finalSelection = ReadSelection(final);
+        logger.LogDebug(
+            "Candidate search final round selected {SelectionCount} of {SeenCount} listings.",
+            finalSelection.Count,
+            seen.Count);
+        if (finalSelection.Count == 0)
+            logger.LogWarning(
+                "The candidate search model selected nothing from {SeenCount} listings. Reply keys: {ReplyKeys}.",
+                seen.Count,
+                DescribeKeys(final));
+        return Finish(finalSelection, seen, providerStatus);
     }
 
     private SearchOutcome Finish(
@@ -214,7 +281,20 @@ public class CollectionReviewCandidateService(
                 Status = result.Status.ToString(),
                 Error = result.Error
             };
-            if (result.Status != MarketplaceSearchStatus.Success) continue;
+            if (result.Status != MarketplaceSearchStatus.Success)
+            {
+                logger.LogWarning(
+                    "Marketplace {Provider} returned {Status} for a candidate query: {ProviderError}",
+                    client.ProviderName,
+                    result.Status,
+                    result.Error ?? "no detail given");
+                logger.LogDebug(
+                    "The failed {Provider} query was for {Brand} {Model}.",
+                    client.ProviderName,
+                    query.Brand,
+                    query.Model);
+                continue;
+            }
 
             // Marketplace results are noisy: straps, boxes, and lookalikes come
             // back for any query, so a title that does not name the watch is out.
@@ -224,7 +304,19 @@ public class CollectionReviewCandidateService(
                     || l.Currency.Equals(request.Currency, StringComparison.OrdinalIgnoreCase))
                 .Where(l => l.Title.Contains(query.Brand, StringComparison.OrdinalIgnoreCase)
                     && l.Title.Contains(query.Model, StringComparison.OrdinalIgnoreCase))
-                .Take(MaxListingsPerQuery);
+                .Take(MaxListingsPerQuery)
+                .ToList();
+
+            // Nothing downstream can tell "the provider found nothing" apart from
+            // "the filters dropped everything it found", and they need different fixes.
+            logger.LogDebug(
+                "Marketplace {Provider} returned {ListingCount} listings for {Brand} {Model}; "
+                + "{MatchCount} survived the fixed-price, currency and title filters.",
+                client.ProviderName,
+                result.Listings.Count,
+                query.Brand,
+                query.Model,
+                matching.Count);
 
             foreach (var listing in matching)
             {
@@ -373,17 +465,32 @@ public class CollectionReviewCandidateService(
                 "application/json")
         };
 
-        var response = await httpClient.SendAsync(request, ct);
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama API error: {responseBody}");
+        // Left unhandled, an unreachable Ollama surfaced as a 500 with no actionable
+        // message, which is what "unable to search for candidates right now" looked like.
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "candidate search",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException($"Ollama API error: {result.Body}");
 
-        using var envelope = JsonDocument.Parse(responseBody);
+        using var envelope = JsonDocument.Parse(result.Body);
         var content = envelope.RootElement.GetProperty("message").GetProperty("content").GetString()
             ?? throw new InvalidOperationException("No content in the Ollama response.");
 
-        var json = OllamaJson.ExtractObject(content)
-            ?? throw new InvalidOperationException("The candidate search did not return usable JSON.");
+        var json = OllamaJson.ExtractObject(content);
+        if (json is null)
+        {
+            logger.LogWarning(
+                "The candidate search reply held no JSON object in {ReplyLength} characters.",
+                content.Length);
+            logger.LogDebug("The candidate search reply without JSON was: {ModelReply}", LogText.Bounded(content));
+            throw new InvalidOperationException("The candidate search did not return usable JSON.");
+        }
         try
         {
             using var document = JsonDocument.Parse(json);
@@ -391,10 +498,23 @@ public class CollectionReviewCandidateService(
         }
         catch (JsonException ex)
         {
-            logger.LogWarning(ex, "The candidate search returned malformed JSON.");
+            logger.LogWarning(
+                "The candidate search returned malformed JSON in {ReplyLength} characters.",
+                json.Length);
+            logger.LogDebug(ex, "The unparsable candidate search reply was: {ModelReply}", LogText.Bounded(json));
             throw new InvalidOperationException("The candidate search returned malformed JSON.");
         }
     }
+
+    /// <summary>
+    /// The property names a reply carried, so an off-contract shape is visible without
+    /// putting the reply itself — which is derived from the user's collection — in the
+    /// log. Names are bounded and stripped so they cannot forge a log line.
+    /// </summary>
+    private static string DescribeKeys(JsonElement reply) =>
+        reply.ValueKind == JsonValueKind.Object
+            ? string.Join(", ", reply.EnumerateObject().Select(p => LogText.Token(p.Name)).Take(10))
+            : reply.ValueKind.ToString();
 
     private static List<SearchQuery> ReadQueries(JsonElement root)
     {

@@ -517,32 +517,24 @@ public class StyleAgentService(
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
-        HttpResponseMessage response;
-        string responseBody;
-        try
-        {
-            response = await httpClient.SendAsync(request, ct);
-            responseBody = await response.Content.ReadAsStringAsync(ct);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "The style agent could not reach Ollama at {OllamaUrl}.", ollamaUrl);
-            throw new InvalidOperationException("The style agent could not reach Ollama. Check the Ollama URL in Admin → Settings.");
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            logger.LogWarning("Ollama returned {StatusCode} for a style agent request: {Body}", (int)response.StatusCode, responseBody);
-            throw new OllamaRequestException($"Ollama API error: {responseBody}");
-        }
+        // The provider body used to go to the log at Warning here, unbounded. It is
+        // still logged, at Debug, where the rest of the model detail lives. What is
+        // logged as the prompt is the system prompt and the newest turn — never the
+        // base64 photo riding along with them.
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "style agent",
+            ollamaUrl,
+            $"{prompt}\n\n[newest turn] {newTurn}",
+            ct);
+        if (!result.IsSuccess)
+            throw new OllamaRequestException($"Ollama API error: {result.Body}");
 
         try
         {
-            using var doc = JsonDocument.Parse(responseBody);
+            using var doc = JsonDocument.Parse(result.Body);
             return doc.RootElement.GetProperty("message").GetProperty("content").GetString() ?? "";
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)

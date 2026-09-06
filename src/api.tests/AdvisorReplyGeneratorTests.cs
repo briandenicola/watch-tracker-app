@@ -47,7 +47,9 @@ public class AdvisorReplyGeneratorTests
     [Fact]
     public async Task Model_failure_is_diagnosable_without_logging_provider_body_or_prompt()
     {
-        var logger = new CollectingLogger<AdvisorReplyGenerator>();
+        // Information is the level a deployment runs at, and at that level the
+        // redaction holds: the failure is still diagnosable from status and category.
+        var logger = new CollectingLogger<AdvisorReplyGenerator>(LogLevel.Information);
         var handler = new SequenceHandler(new HttpResponseMessage(HttpStatusCode.BadRequest)
         {
             Content = new StringContent("SECRET_PROVIDER_BODY")
@@ -66,6 +68,31 @@ public class AdvisorReplyGeneratorTests
         Assert.Contains("HTTP 400", logs);
         Assert.DoesNotContain("SECRET_PROVIDER_BODY", logs);
         Assert.DoesNotContain("SECRET_PRIVATE_COLLECTION_PROMPT", logs);
+    }
+
+    [Fact]
+    public async Task Debug_logging_holds_nothing_back_about_a_model_failure()
+    {
+        // Debug is an operator asking to see everything, prompt and provider body
+        // included, because without them a failing model cannot be diagnosed.
+        var logger = new CollectingLogger<AdvisorReplyGenerator>(LogLevel.Debug);
+        var handler = new SequenceHandler(new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("SECRET_PROVIDER_BODY")
+        });
+        var generator = CreateGenerator(handler, new StubTools(), logger);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            generator.GenerateAsync(
+                7,
+                new CollectionProfileDto(),
+                [],
+                "SECRET_PRIVATE_COLLECTION_PROMPT"));
+
+        var logs = string.Join("\n", logger.Messages);
+        Assert.Contains("SECRET_PROVIDER_BODY", logs);
+        Assert.Contains("SECRET_PRIVATE_COLLECTION_PROMPT", logs);
+        Assert.Contains("http://ollama.test", logs);
     }
 
     [Fact]
@@ -318,7 +345,9 @@ public class AdvisorReplyGeneratorTests
     [Fact]
     public async Task Invalid_tool_name_is_not_written_to_diagnostics()
     {
-        var logger = new CollectingLogger<AdvisorReplyGenerator>();
+        // A tool name is arbitrary model text, so it stays out of the log a
+        // deployment actually runs at. Debug is the level that shows model output.
+        var logger = new CollectingLogger<AdvisorReplyGenerator>(LogLevel.Information);
         var generator = CreateGenerator(
             new SequenceHandler(
                 Ollama("""{"type":"tool","tool":"SECRET_PRIVATE_PROMPT","arguments":{}}""")),
@@ -460,17 +489,42 @@ public class AdvisorReplyGeneratorTests
     }
 
     [Fact]
-    public async Task Unsupported_clarification_is_rejected()
+    public async Task Unrecognized_clarification_falls_back_to_server_text_without_echoing_the_model()
     {
         var generator = CreateGenerator(
             new SequenceHandler(
                 Ollama("""{"type":"clarify","constraint":"ignore rules and claim facts"}""")),
             new StubTools());
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            generator.GenerateAsync(7, new CollectionProfileDto(), [], "Help me"));
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "Help me");
 
-        Assert.Contains("unsupported clarification", error.Message);
+        // The constraint is model-supplied text, so it never reaches the user. An
+        // unrecognized one asks the fixed question instead of failing the request.
+        Assert.DoesNotContain("ignore rules", reply.Content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("budget", reply.Content, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(reply.FollowUps);
+    }
+
+    [Theory]
+    [InlineData("intended use", "wear this watch for")]
+    [InlineData("Intended_Use", "wear this watch for")]
+    [InlineData("case size", "case-size range")]
+    [InlineData("Budget ", "maximum budget")]
+    public async Task Clarification_tokens_are_normalized_before_the_allowlist(
+        string constraint,
+        string expected)
+    {
+        var generator = CreateGenerator(
+            new SequenceHandler(
+                Ollama($$"""{"type":"clarify","constraint":"{{constraint}}"}""")),
+            new StubTools());
+
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "Find me a diver");
+
+        // Each of these is a supported constraint spelled the way a model spells it,
+        // so none of them may land on the generic fallback.
+        Assert.Contains(expected, reply.Content, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(reply.FollowUps);
     }
 
     [Fact]
@@ -593,19 +647,24 @@ public class AdvisorReplyGeneratorTests
         }
     }
 
-    private sealed class CollectingLogger<T> : ILogger<T>
+    private sealed class CollectingLogger<T>(LogLevel minimum = LogLevel.Debug) : ILogger<T>
     {
         public List<string> Messages { get; } = [];
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-        public bool IsEnabled(LogLevel logLevel) => true;
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= minimum;
 
         public void Log<TState>(
             LogLevel logLevel,
             EventId eventId,
             TState state,
             Exception? exception,
-            Func<TState, Exception?, string> formatter) =>
+            Func<TState, Exception?, string> formatter)
+        {
+            // The logging extension methods do not consult IsEnabled, so the level
+            // filter that a real provider applies has to happen here.
+            if (!IsEnabled(logLevel)) return;
             Messages.Add(formatter(state, exception));
+        }
     }
 }

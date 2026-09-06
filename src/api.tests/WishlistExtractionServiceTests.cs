@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Logging.Abstractions;
 using WatchTracker.Api.Services;
 
 namespace WatchTracker.Api.Tests;
@@ -120,7 +121,8 @@ public class WishlistExtractionServiceTests
         new(
             new StubPageReader(page),
             new StubSettings(),
-            new HttpClient(handler));
+            new HttpClient(handler),
+            NullLogger<WishlistExtractionService>.Instance);
 
     private static LinkedPageExcerpt ProductPage(string price, string currency)
     {
