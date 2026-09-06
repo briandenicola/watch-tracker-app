@@ -344,6 +344,7 @@ import {
 } from '@/services/review'
 import { useAuthStore } from '@/stores/auth'
 import { formatInstant } from '@/utils/dateTime'
+import { serverMessage } from '@/utils/serverMessage'
 import type { AdvisorRecommendationCard, CollectionReviewState, ReviewWatch } from '@/types'
 
 const auth = useAuthStore()
@@ -466,7 +467,10 @@ function requestError(error: unknown, fallback: string): string {
   if (error.response?.status === 429) {
     return 'That is a lot of reviews at once. Give it a minute and try again.'
   }
-  return error.response?.data?.error || fallback
+  // A 500 answers with problem details rather than an `error` field, so reading
+  // only that field turned every server fault into the same generic sentence.
+  if (!error.response) return 'The review API is unreachable. Check your connection and try again.'
+  return serverMessage(error) || fallback
 }
 
 async function load() {

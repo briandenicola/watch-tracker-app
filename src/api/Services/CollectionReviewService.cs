@@ -173,10 +173,36 @@ public class CollectionReviewService(
                 "application/json")
         };
 
-        var response = await httpClient.SendAsync(request, ct);
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama API error: {responseBody}");
+        HttpResponseMessage response;
+        string responseBody;
+        try
+        {
+            response = await httpClient.SendAsync(request, ct);
+            responseBody = await response.Content.ReadAsStringAsync(ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            // Unhandled, an unreachable Ollama surfaced as a bare 500 with nothing in
+            // the log naming the setting that would fix it.
+            logger.LogWarning(
+                "The collection review could not reach the configured model provider ({ErrorType}).",
+                ex.GetType().Name);
+            logger.LogDebug(ex, "The collection review request to {OllamaUrl} failed.", ollamaUrl);
+            throw new InvalidOperationException(
+                "The collection review could not reach Ollama. Check the Ollama URL under Admin -> Settings.");
+        }
+
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(
+                    "Ollama returned HTTP {StatusCode} for a collection review ({ResponseLength} characters).",
+                    (int)response.StatusCode,
+                    responseBody.Length);
+                throw new InvalidOperationException($"Ollama API error: {responseBody}");
+            }
+        }
 
         using var document = JsonDocument.Parse(responseBody);
         return document.RootElement.GetProperty("message").GetProperty("content").GetString()

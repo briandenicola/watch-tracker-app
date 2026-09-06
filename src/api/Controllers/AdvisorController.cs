@@ -10,7 +10,9 @@ namespace WatchTracker.Api.Controllers;
 [ApiController]
 [Route("api/advisor")]
 [Authorize]
-public class AdvisorController(ICollectionAdvisorService advisor) : ControllerBase
+public class AdvisorController(
+    ICollectionAdvisorService advisor,
+    ILogger<AdvisorController> logger) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -55,6 +57,15 @@ public class AdvisorController(ICollectionAdvisorService advisor) : ControllerBa
         }
         catch (InvalidOperationException ex)
         {
+            // A 400 carries its reason to the user but used to leave no trace here,
+            // so a failing advisor looked identical to a healthy one in the log.
+            logger.LogWarning("An advisor message was rejected.");
+            logger.LogDebug(
+                ex,
+                "Advisor message in session {SessionId} for user {UserId} was rejected: {Reason}",
+                sessionId,
+                UserId,
+                ex.Message);
             return BadRequest(new { error = ex.Message });
         }
     }

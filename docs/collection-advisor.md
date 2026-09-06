@@ -50,15 +50,19 @@ Feedback can be changed or removed. At most ten recent feedback records are supp
 
 ## Diagnostics and privacy
 
-Structured logs record:
+Structured logs record, at `Information` and `Warning`:
 
 - request outcome, elapsed milliseconds, and tool-call count;
 - tool name, status, and elapsed milliseconds;
 - safe failure category (`grounding_validation`, `tool_execution`, `model_provider`, `safety_limit`, or `invalid_model_output`);
+- the action type, tool name, or clarification constraint the model asked for, reduced to a bounded single-line token;
 - rate-limit rejection by endpoint definition;
-- provider HTTP status codes.
+- provider HTTP status codes, provider error type, and reply lengths;
+- rejected requests, requests that hit the execution limit, and requests the caller abandoned.
 
-Logs do not contain complete prompts, collection contents, provider response bodies, credentials, configured provider URLs, user IDs, listing/search text, or feedback notes.
+At these levels logs do not contain complete prompts, collection contents, provider response bodies, credentials, configured provider URLs, user IDs, listing/search text, or feedback notes.
+
+Setting **Admin → Settings → Log level** to `Debug` or `Trace` is an explicit operator choice to trade some of that redaction for diagnosis. Those levels add the configured provider URL and model name, the user ID a request belongs to, per-round query/listing/selection counts, marketplace query terms, and the underlying exception — still never the prompt, the collection, or a provider response body. `Debug` and `Trace` also raise the `Microsoft.AspNetCore` category, which is what records a rate-limited or abandoned request; every other level pins it back to `Warning`.
 
 ## Release evaluation thresholds
 
@@ -86,6 +90,8 @@ All listed tests must pass. API build, frontend type-check/build, frontend lint,
 | Model request fails | Confirm Ollama is reachable from the API container and the configured model supports structured JSON output. Review `model_provider` diagnostics. |
 | No brand research | Configure the selected Brave or SearXNG provider. The tool status identifies not-configured and provider-error states. |
 | No marketplace listings | Confirm eBay settings, query specificity, currency, fixed-price availability, and delivered-total availability for strict budgets. |
+| A failure with nothing in the log | Raise **Admin → Settings → Log level** to `Debug`. Rejected requests, execution-limit overruns, abandoned requests, provider connection failures, and per-round counts are all recorded; `Debug` adds the provider URL, model, user ID and exception behind them. |
+| Advisor asks a generic clarifying question | The model asked to clarify a constraint outside the allowlist. The reply is server-authored by design; the `Debug` log names the constraint it asked for. |
 | A listing is stale or unavailable | Ask the advisor to search again. Saved observations are not refreshed automatically. |
 | A response is rejected | Review the safe failure category. `grounding_validation` means the model emitted an unobserved citation, unsupported listing/price, or unstructured external claim. |
 | HTTP 429 | Wait for the one-minute advisor rate-limit window before retrying. |

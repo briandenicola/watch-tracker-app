@@ -100,7 +100,7 @@ public class AdminController(
         var logLevelEntry = settings.FirstOrDefault(s => s.Key == AppSettingsService.Keys.LogLevel);
         if (logLevelEntry is not null)
         {
-            dynamicConfig.Set("Logging:LogLevel:Default", logLevelEntry.Value);
+            RuntimeLogLevel.Apply(dynamicConfig, logLevelEntry.Value);
             logger.LogInformation("Log level changed to {LogLevel}", logLevelEntry.Value);
         }
 

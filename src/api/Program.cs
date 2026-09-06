@@ -418,9 +418,11 @@ using (var scope = app.Services.CreateScope())
 
     // Seed runtime log level from database setting
     var settingsService = scope.ServiceProvider.GetRequiredService<IAppSettingsService>();
-    var storedLogLevel = await settingsService.GetAsync(AppSettingsService.Keys.LogLevel, "Information");
+    var storedLogLevel = await settingsService.GetAsync(
+        AppSettingsService.Keys.LogLevel,
+        RuntimeLogLevel.Fallback);
     var dynConfig = scope.ServiceProvider.GetRequiredService<DynamicConfigurationProvider>();
-    dynConfig.Set("Logging:LogLevel:Default", storedLogLevel);
+    RuntimeLogLevel.Apply(dynConfig, storedLogLevel);
 }
 
 app.Run();

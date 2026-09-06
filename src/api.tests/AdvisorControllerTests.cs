@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using WatchTracker.Api.Controllers;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Services;
@@ -38,7 +39,7 @@ public class AdvisorControllerTests
 
     private static AdvisorController CreateController(ICollectionAdvisorService service)
     {
-        var controller = new AdvisorController(service);
+        var controller = new AdvisorController(service, NullLogger<AdvisorController>.Instance);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext

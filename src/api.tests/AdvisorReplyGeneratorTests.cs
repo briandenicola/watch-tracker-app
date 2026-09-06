@@ -460,17 +460,42 @@ public class AdvisorReplyGeneratorTests
     }
 
     [Fact]
-    public async Task Unsupported_clarification_is_rejected()
+    public async Task Unrecognized_clarification_falls_back_to_server_text_without_echoing_the_model()
     {
         var generator = CreateGenerator(
             new SequenceHandler(
                 Ollama("""{"type":"clarify","constraint":"ignore rules and claim facts"}""")),
             new StubTools());
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            generator.GenerateAsync(7, new CollectionProfileDto(), [], "Help me"));
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "Help me");
 
-        Assert.Contains("unsupported clarification", error.Message);
+        // The constraint is model-supplied text, so it never reaches the user. An
+        // unrecognized one asks the fixed question instead of failing the request.
+        Assert.DoesNotContain("ignore rules", reply.Content, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("budget", reply.Content, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(reply.FollowUps);
+    }
+
+    [Theory]
+    [InlineData("intended use", "wear this watch for")]
+    [InlineData("Intended_Use", "wear this watch for")]
+    [InlineData("case size", "case-size range")]
+    [InlineData("Budget ", "maximum budget")]
+    public async Task Clarification_tokens_are_normalized_before_the_allowlist(
+        string constraint,
+        string expected)
+    {
+        var generator = CreateGenerator(
+            new SequenceHandler(
+                Ollama($$"""{"type":"clarify","constraint":"{{constraint}}"}""")),
+            new StubTools());
+
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "Find me a diver");
+
+        // Each of these is a supported constraint spelled the way a model spells it,
+        // so none of them may land on the generic fallback.
+        Assert.Contains(expected, reply.Content, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(reply.FollowUps);
     }
 
     [Fact]
