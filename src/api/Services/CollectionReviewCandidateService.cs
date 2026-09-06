@@ -272,9 +272,37 @@ public class CollectionReviewCandidateService(
         Dictionary<string, MarketplaceProviderStatusDto> providerStatus,
         CancellationToken ct)
     {
-        foreach (var client in marketplaceClients)
+        var searches = await Task.WhenAll(marketplaceClients.Select(async client =>
         {
-            var result = await client.SearchAsync($"{query.Brand} {query.Model} watch", ct);
+            try
+            {
+                return (Client: client, Result: await client.SearchAsync(
+                    $"{query.Brand} {query.Model} watch",
+                    ct));
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(
+                    ex,
+                    "Marketplace {Provider} threw while searching for candidates.",
+                    client.ProviderName);
+                return (
+                    Client: client,
+                    Result: new MarketplaceSearchResult(
+                        MarketplaceSearchStatus.ProviderError,
+                        [],
+                        $"{client.ProviderName} search failed."));
+            }
+        }));
+
+        foreach (var search in searches)
+        {
+            var client = search.Client;
+            var result = search.Result;
             providerStatus[client.ProviderName] = new MarketplaceProviderStatusDto
             {
                 Provider = client.ProviderName,
@@ -302,6 +330,8 @@ public class CollectionReviewCandidateService(
                 .Where(l => l.ListingType == MarketplaceListingType.FixedPrice)
                 .Where(l => request.Currency is null
                     || l.Currency.Equals(request.Currency, StringComparison.OrdinalIgnoreCase))
+                .Where(l => request.Budget is null
+                    || (l.TotalPrice ?? l.Price) <= request.Budget)
                 .Where(l => l.Title.Contains(query.Brand, StringComparison.OrdinalIgnoreCase)
                     && l.Title.Contains(query.Model, StringComparison.OrdinalIgnoreCase))
                 .Take(MaxListingsPerQuery)
@@ -324,10 +354,9 @@ public class CollectionReviewCandidateService(
                 if (seen.ContainsKey(key)) continue;
 
                 var budget = request.Budget is not null
-                    && listing.TotalPrice is not null
                     && listing.Currency.Equals(request.Currency, StringComparison.OrdinalIgnoreCase)
-                        ? request.Budget
-                        : null;
+                    ? request.Budget
+                    : null;
                 var score = collectionProfile.ScoreCandidate(
                     profile,
                     new CollectionCandidateProfile
@@ -338,7 +367,7 @@ public class CollectionReviewCandidateService(
                         CaseSizeMm = listing.CaseSizeMm,
                         DialColor = listing.DialColor,
                         BandType = listing.BandType,
-                        Price = listing.TotalPrice
+                        Price = listing.TotalPrice ?? listing.Price
                     },
                     budget);
                 seen[key] = new ScoredListing(listing, score);

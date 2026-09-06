@@ -32,6 +32,44 @@ public class AdvisorReplyGeneratorTests
     }
 
     [Fact]
+    public async Task Collection_claim_with_external_data_gets_one_correction_attempt()
+    {
+        var handler = new SequenceHandler(
+            Ollama("""{"type":"tool","tool":"collection_profile","arguments":{}}"""),
+            Ollama("""{"type":"answer","claims":[{"text":"Add a field watch under $2,000.","evidenceTools":["collection_profile"]}],"recommendedListings":[],"followUps":[]}"""),
+            Ollama("""{"type":"answer","claims":[{"text":"A field watch would broaden the collection.","evidenceTools":["collection_profile"]}],"recommendedListings":[],"followUps":[]}"""));
+        var generator = CreateGenerator(handler, new StubTools());
+
+        var reply = await generator.GenerateAsync(
+            7,
+            new CollectionProfileDto(),
+            [],
+            "What would complement my collection?");
+
+        Assert.Equal("A field watch would broaden the collection.", reply.Content);
+        Assert.Equal(3, handler.RequestBodies.Count);
+        Assert.Contains("CORRECTION REQUIRED", handler.RequestBodies[2]);
+    }
+
+    [Fact]
+    public async Task Collection_claim_with_a_watch_count_is_not_mistaken_for_a_price()
+    {
+        var generator = CreateGenerator(
+            new SequenceHandler(
+                Ollama("""{"type":"tool","tool":"collection_profile","arguments":{}}"""),
+                Ollama("""{"type":"answer","claims":[{"text":"You own 3 automatic divers.","evidenceTools":["collection_profile"]}],"recommendedListings":[],"followUps":[]}""")),
+            new StubTools());
+
+        var reply = await generator.GenerateAsync(
+            7,
+            new CollectionProfileDto(),
+            [],
+            "What overlaps?");
+
+        Assert.Equal("You own 3 automatic divers.", reply.Content);
+    }
+
+    [Fact]
     public async Task Malformed_model_output_is_rejected()
     {
         var generator = CreateGenerator(

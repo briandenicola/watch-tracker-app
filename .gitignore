@@ -4,6 +4,7 @@ src/api/obj/
 src/api.tests/bin/
 src/api.tests/obj/
 *.db
+logs*.txt
 
 # Node
 src/web/node_modules/

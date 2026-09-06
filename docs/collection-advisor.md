@@ -14,7 +14,8 @@ Configure these values under **Admin > Settings**:
 | `WebSearchProvider` | For web research | Selects Brave or SearXNG. |
 | `BraveSearchApiKey` | For Brave | Credential sent only to Brave Search. It is never included in prompts or diagnostics. |
 | `SearXngUrl` | For SearXNG | Base URL of a SearXNG instance. |
-| eBay client settings | For marketplace results | Enables eBay Browse fixed-price listing searches. |
+| `WebSearchProvider` plus its settings | For vendor marketplace results | Searches the approved vendor catalog through Brave or SearXNG snippets. |
+| eBay client settings | Optional | Adds eBay Browse fixed-price listing searches when credentials are available. |
 
 The advisor remains available for collection-only questions when an optional search provider is unavailable. The UI reports provider failures and no-result states instead of presenting them as current evidence.
 
@@ -35,7 +36,8 @@ The advisor remains available for collection-only questions when an optional sea
 | Provider/tool | Evidence type | Important limitation |
 | --- | --- | --- |
 | Collection profile | Recorded collection and wishlist data | Results are only as complete as the user's watch metadata. |
-| eBay Browse | Active fixed-price listings | Asking prices are not completed sales; listings may change or expire. |
+| Approved vendor catalog | Current listing snippets from Ashford, WatchMaxx, Bob's Watches, Jomashop, and Chrono24 | Snippet prices can omit shipping, condition, or availability details. |
+| eBay Browse | Active fixed-price listings | Optional; asking prices are not completed sales and listings may change or expire. |
 | Brave Search | Current web snippets and source URLs | Snippets can be incomplete and must be verified at the cited source. |
 | SearXNG | Current web snippets and source URLs | Coverage and freshness depend on the configured instance. |
 | Resale comparables | Min/median/max of matching active asking prices | This is not an appraisal or guaranteed resale value. |
@@ -92,7 +94,7 @@ All listed tests must pass. API build, frontend type-check/build, frontend lint,
 | Advisor says it is not configured | Set both `OllamaUrl` and `OllamaModel`, then use the Admin connection test. |
 | Model request fails | Confirm Ollama is reachable from the API container and the configured model supports structured JSON output. Review `model_provider` diagnostics. |
 | No brand research | Configure the selected Brave or SearXNG provider. The tool status identifies not-configured and provider-error states. |
-| No marketplace listings | Confirm eBay settings, query specificity, currency, fixed-price availability, and delivered-total availability for strict budgets. |
+| No marketplace listings | Confirm Brave or SearXNG is configured, then check query specificity and USD listing availability. eBay is an optional additional source. |
 | A failure with nothing in the log | Raise **Admin → Settings → Log level** to `Debug`. Rejected requests, execution-limit overruns, abandoned requests, provider connection failures, and per-round counts are all recorded; `Debug` adds the prompt, the model reply, the provider body, the provider URL, model, user ID and exception behind them. |
 | Advisor asks a generic clarifying question | The model asked to clarify a constraint outside the allowlist. The reply is server-authored by design; the `Debug` log names the constraint it asked for. |
 | A listing is stale or unavailable | Ask the advisor to search again. Saved observations are not refreshed automatically. |

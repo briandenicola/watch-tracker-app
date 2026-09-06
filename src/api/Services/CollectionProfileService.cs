@@ -384,7 +384,52 @@ public class CollectionProfileService(AppDbContext context) : ICollectionProfile
             EvidenceFields = ["Movement", "Case size", "Dial color"]
         }));
 
+        var existingSets = redundancies
+            .Select(insight => insight.WatchIds.Order().ToArray())
+            .ToList();
+        var strongestPairs = watches
+            .SelectMany((left, index) => watches.Skip(index + 1).Select(right =>
+                PairOverlap(left, right)))
+            .Where(overlap => overlap.Fields.Count >= 3)
+            .Where(overlap => !existingSets.Any(existing =>
+                existing.Contains(overlap.Left.Id)
+                && existing.Contains(overlap.Right.Id)))
+            .OrderByDescending(overlap => overlap.Fields.Count)
+            .ThenBy(overlap => overlap.Left.Id)
+            .ThenBy(overlap => overlap.Right.Id)
+            .Take(5);
+        redundancies.AddRange(strongestPairs.Select(overlap => new CollectionInsightDto
+        {
+            Summary = "Strong watch-to-watch overlap",
+            Reason =
+                $"{overlap.Left.Brand} {overlap.Left.Model} and {overlap.Right.Brand} {overlap.Right.Model} "
+                + $"share {string.Join(", ", overlap.Fields.Select(field => field.ToLowerInvariant()))}.",
+            Confidence = overlap.Fields.Count == 4
+                ? CollectionInsightConfidence.High
+                : CollectionInsightConfidence.Medium,
+            WatchIds = [overlap.Left.Id, overlap.Right.Id],
+            EvidenceFields = overlap.Fields.ToList()
+        }));
+
         return redundancies;
+    }
+
+    private static WatchPairOverlap PairOverlap(Watch left, Watch right)
+    {
+        var fields = new List<string>();
+        if (left.MovementType != MovementType.Unknown
+            && left.MovementType == right.MovementType)
+            fields.Add("Movement");
+        if (CaseSizeBand(left.CaseSizeMm) is { } leftSize
+            && leftSize == CaseSizeBand(right.CaseSizeMm))
+            fields.Add("Case size");
+        if (Normalize(left.DialColor) is { } leftDial
+            && leftDial == Normalize(right.DialColor))
+            fields.Add("Dial color");
+        if (Normalize(left.BandType) is { } leftBand
+            && leftBand == Normalize(right.BandType))
+            fields.Add("Band type");
+        return new WatchPairOverlap(left, right, fields);
     }
 
     private static List<CollectionInsightDto> FindDataQuality(IReadOnlyCollection<Watch> watches)
@@ -474,4 +519,9 @@ public class CollectionProfileService(AppDbContext context) : ICollectionProfile
         string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
 
     private static int Present(object? value) => value is null ? 0 : 1;
+
+    private sealed record WatchPairOverlap(
+        Watch Left,
+        Watch Right,
+        IReadOnlyList<string> Fields);
 }

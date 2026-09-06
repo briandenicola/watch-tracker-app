@@ -21,6 +21,7 @@ public class AdvisorReplyGenerator(
     private const int MaxCitations = 10;
     private const int MaxRecommendationCards = 5;
     private const int MaxFollowUps = 3;
+    private const int MaxAnswerCorrections = 1;
     private static readonly HashSet<string> ApprovedTools =
     [
         "collection_profile",
@@ -56,6 +57,7 @@ public class AdvisorReplyGenerator(
     {
         var requestTimer = Stopwatch.StartNew();
         var toolCalls = 0;
+        var answerCorrections = 0;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(MaxExecutionTime);
         try
@@ -103,9 +105,27 @@ public class AdvisorReplyGenerator(
                 }
                 if (action.Type.Equals("answer", StringComparison.OrdinalIgnoreCase))
                 {
-                    var reply = BuildReply(action, toolContext, activities);
-                    LogCompletion(requestTimer, toolCalls, "answer");
-                    return reply;
+                    try
+                    {
+                        var reply = BuildReply(action, toolContext, activities);
+                        LogCompletion(requestTimer, toolCalls, "answer");
+                        return reply;
+                    }
+                    catch (CorrectableGroundingException) when (
+                        answerCorrections < MaxAnswerCorrections
+                        && messages.Sum(message => message.Content.Length) < MaxPromptCharacters - 500)
+                    {
+                        answerCorrections++;
+                        logger.LogWarning(
+                            "The collection advisor mislabeled external data in a collection claim; requesting one corrected answer.");
+                        messages.Add(new ChatMessage("assistant", rawAction));
+                        messages.Add(new ChatMessage(
+                            "user",
+                            "CORRECTION REQUIRED: Return the answer again using the required schema. "
+                            + "Collection-only claim text must not contain prices, URLs, or other external data. "
+                            + "Use only completed local evidenceTools for collection claims."));
+                        continue;
+                    }
                 }
 
                 if (!action.Type.Equals("tool", StringComparison.OrdinalIgnoreCase)
@@ -496,7 +516,7 @@ public class AdvisorReplyGenerator(
                     if (ContainsPriceValue(text)
                         || text.Contains("http://", StringComparison.OrdinalIgnoreCase)
                         || text.Contains("https://", StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidOperationException(
+                        throw new CorrectableGroundingException(
                             "The collection advisor returned unsupported external data in a collection claim.");
                     if (claim.Citations is { Count: > 0 }
                         || claim.EvidenceTools is not { Count: > 0 }
@@ -651,7 +671,7 @@ public class AdvisorReplyGenerator(
     private static bool ContainsPriceValue(string value) =>
         Regex.IsMatch(
             value,
-            @"[$€£¥]\s*\d|\b[A-Z]{3}\s*\d|\b\d[\d,.]*\s*(?:USD|EUR|GBP|CAD|AUD|JPY|dollars?|euros?|pounds?)\b|\b(?:price|cost|asking|listed|available|selling|offered)\D{0,20}\d",
+            @"[$€£¥]\s*\d|\b(?:USD|EUR|GBP|CAD|AUD|JPY|CHF)\s*\d|\b\d[\d,.]*\s*(?:USD|EUR|GBP|CAD|AUD|JPY|CHF|dollars?|euros?|pounds?)\b|\b(?:price|cost|asking|listed|available|selling|offered)\D{0,20}\d",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     private static void EnsurePromptBound(IReadOnlyCollection<ChatMessage> messages)
@@ -673,6 +693,9 @@ public class AdvisorReplyGenerator(
     }
 
     private sealed record ChatMessage(string Role, string Content);
+
+    private sealed class CorrectableGroundingException(string message)
+        : InvalidOperationException(message);
 
     private sealed class AgentAction
     {

@@ -174,6 +174,30 @@ public class CollectionReviewCandidateServiceTests
     }
 
     [Fact]
+    public async Task Candidates_over_the_requested_budget_are_excluded()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = await SeedReviewedCollectionAsync(database);
+        var market = new StubMarketplace(
+            Listing("within-budget", "Tudor Black Bay automatic", 1900m),
+            Listing("over-budget", "Tudor Black Bay automatic", 2400m));
+        var service = Build(
+            database,
+            market,
+            Queries(),
+            Picks(
+                ("eBay", "within-budget", "Within budget."),
+                ("eBay", "over-budget", "Over budget.")));
+
+        var result = await service.GenerateAsync(
+            user.Id,
+            new GenerateCandidatesDto { Budget = 2000m, Currency = "USD" });
+
+        var candidate = Assert.Single(result.Candidates);
+        Assert.Equal("within-budget", candidate.ProviderItemId);
+    }
+
+    [Fact]
     public async Task Stale_listings_are_dropped_on_read()
     {
         await using var database = await TestDatabase.CreateAsync();

@@ -293,6 +293,7 @@ builder.Services.AddHttpClient<IEbayBrowseClient, EbayBrowseClient>()
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddScoped<IMarketplaceSearchClient>(
     services => services.GetRequiredService<IEbayBrowseClient>());
+builder.Services.AddScoped<IMarketplaceSearchClient, CatalogMarketplaceSearchClient>();
 builder.Services.AddScoped<IResaleValueEstimator, EbayResaleValueEstimator>();
 builder.Services.AddScoped<IResaleValueRefreshService, ResaleValueRefreshService>();
 builder.Services.AddHostedService<ResaleValueRefreshBackgroundService>();
