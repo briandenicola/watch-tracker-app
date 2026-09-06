@@ -465,63 +465,20 @@ public class CollectionReviewCandidateService(
                 "application/json")
         };
 
-        var callTimer = Stopwatch.StartNew();
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug(
-                "Calling Ollama model {OllamaModel} at {OllamaUrl} with a {PromptLength}-character candidate "
-                + "prompt: {Prompt}",
-                model,
-                ollamaUrl,
-                prompt.Length,
-                LogText.Bounded(prompt));
+        // Left unhandled, an unreachable Ollama surfaced as a 500 with no actionable
+        // message, which is what "unable to search for candidates right now" looked like.
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "candidate search",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException($"Ollama API error: {result.Body}");
 
-        HttpResponseMessage response;
-        string responseBody;
-        try
-        {
-            response = await httpClient.SendAsync(request, ct);
-            responseBody = await response.Content.ReadAsStringAsync(ct);
-        }
-        catch (HttpRequestException ex)
-        {
-            // Left unhandled this surfaced as a 500 with no actionable message, which
-            // is what "unable to search for candidates right now" looked like.
-            logger.LogWarning(
-                "The candidate search could not reach the configured model provider after {DurationMs} ms "
-                + "({ErrorType}).",
-                callTimer.ElapsedMilliseconds,
-                ex.GetType().Name);
-            logger.LogDebug(ex, "The candidate search request to {OllamaUrl} failed.", ollamaUrl);
-            throw new InvalidOperationException(
-                "The candidate search could not reach Ollama. Check the Ollama URL under Admin -> Settings.");
-        }
-
-        using (response)
-        {
-            if (!response.IsSuccessStatusCode)
-            {
-                // The prompt holds the user's collection and the body is the provider's,
-                // so the log carries the shape of the failure and not its text.
-                logger.LogWarning(
-                    "Ollama returned HTTP {StatusCode} for a candidate search after {DurationMs} ms "
-                    + "({ResponseLength} characters).",
-                    (int)response.StatusCode,
-                    callTimer.ElapsedMilliseconds,
-                    responseBody.Length);
-                logger.LogDebug("Ollama rejected the candidate search: {ResponseBody}", LogText.Bounded(responseBody));
-                throw new InvalidOperationException($"Ollama API error: {responseBody}");
-            }
-        }
-
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug(
-                "Ollama answered the candidate search in {DurationMs} ms with {ResponseLength} characters: "
-                + "{ModelReply}",
-                callTimer.ElapsedMilliseconds,
-                responseBody.Length,
-                LogText.Bounded(responseBody));
-
-        using var envelope = JsonDocument.Parse(responseBody);
+        using var envelope = JsonDocument.Parse(result.Body);
         var content = envelope.RootElement.GetProperty("message").GetProperty("content").GetString()
             ?? throw new InvalidOperationException("No content in the Ollama response.");
 

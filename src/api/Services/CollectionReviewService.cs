@@ -173,48 +173,18 @@ public class CollectionReviewService(
                 "application/json")
         };
 
-        if (logger.IsEnabled(LogLevel.Debug))
-            logger.LogDebug(
-                "Calling Ollama model {OllamaModel} at {OllamaUrl} with a {PromptLength}-character review "
-                + "prompt: {Prompt}",
-                model,
-                ollamaUrl,
-                prompt.Length,
-                LogText.Bounded(prompt));
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "collection review",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException($"Ollama API error: {result.Body}");
 
-        HttpResponseMessage response;
-        string responseBody;
-        try
-        {
-            response = await httpClient.SendAsync(request, ct);
-            responseBody = await response.Content.ReadAsStringAsync(ct);
-        }
-        catch (HttpRequestException ex)
-        {
-            // Unhandled, an unreachable Ollama surfaced as a bare 500 with nothing in
-            // the log naming the setting that would fix it.
-            logger.LogWarning(
-                "The collection review could not reach the configured model provider ({ErrorType}).",
-                ex.GetType().Name);
-            logger.LogDebug(ex, "The collection review request to {OllamaUrl} failed.", ollamaUrl);
-            throw new InvalidOperationException(
-                "The collection review could not reach Ollama. Check the Ollama URL under Admin -> Settings.");
-        }
-
-        using (response)
-        {
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning(
-                    "Ollama returned HTTP {StatusCode} for a collection review ({ResponseLength} characters).",
-                    (int)response.StatusCode,
-                    responseBody.Length);
-                logger.LogDebug("Ollama rejected the collection review: {ResponseBody}", LogText.Bounded(responseBody));
-                throw new InvalidOperationException($"Ollama API error: {responseBody}");
-            }
-        }
-
-        using var document = JsonDocument.Parse(responseBody);
+        using var document = JsonDocument.Parse(result.Body);
         return document.RootElement.GetProperty("message").GetProperty("content").GetString()
             ?? throw new InvalidOperationException("No content in the Ollama response.");
     }

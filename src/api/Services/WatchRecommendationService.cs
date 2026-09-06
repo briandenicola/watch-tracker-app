@@ -10,7 +10,8 @@ namespace WatchTracker.Api.Services;
 public class WatchRecommendationService(
     AppDbContext context,
     IAppSettingsService appSettings,
-    HttpClient httpClient) : IWatchRecommendationService
+    HttpClient httpClient,
+    ILogger<WatchRecommendationService> logger) : IWatchRecommendationService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -144,13 +145,18 @@ public class WatchRecommendationService(
                 Encoding.UTF8,
                 "application/json")
         };
-        using var response = await httpClient.SendAsync(request, ct);
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "watch recommendation",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
+            throw new InvalidOperationException($"Ollama API error: {result.Body}");
 
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama API error: {responseBody}");
-
-        using var document = JsonDocument.Parse(responseBody);
+        using var document = JsonDocument.Parse(result.Body);
         return document.RootElement
             .GetProperty("message")
             .GetProperty("content")

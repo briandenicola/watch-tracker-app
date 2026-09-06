@@ -282,15 +282,11 @@ public class AdvisorReplyGenerator(
         };
 
         var callTimer = Stopwatch.StartNew();
-        logger.LogDebug(
-            "Calling Ollama model {OllamaModel} at {OllamaUrl} with {MessageCount} advisor messages.",
-            model,
-            ollamaUrl,
-            messages.Count);
         if (logger.IsEnabled(LogLevel.Debug))
         {
-            // One line per message: a single joined prompt truncates to the system
-            // prompt's head and hides the turn that actually caused the failure.
+            // One line per message: a joined prompt truncates to the system prompt's
+            // head and hides the turn that actually caused the failure, so the shared
+            // helper is handed no prompt and this does the job instead.
             for (var index = 0; index < messages.Count; index++)
                 logger.LogDebug(
                     "Collection advisor prompt [{Index}] {Role}: {Content}",
@@ -300,23 +296,18 @@ public class AdvisorReplyGenerator(
         }
         try
         {
-            using var response = await httpClient.SendAsync(request, ct);
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (!response.IsSuccessStatusCode)
-            {
-                // The provider body and the prompt stay out of the log: one can carry
-                // provider detail, the other carries the user's collection.
-                logger.LogWarning(
-                    "Ollama returned HTTP {StatusCode} for a collection advisor request after {DurationMs} ms "
-                    + "({ResponseLength} characters).",
-                    (int)response.StatusCode,
-                    callTimer.ElapsedMilliseconds,
-                    body.Length);
-                logger.LogDebug("Ollama rejected the collection advisor request: {ResponseBody}", LogText.Bounded(body));
+            var result = await OllamaChat.SendAsync(
+                httpClient,
+                request,
+                logger,
+                "collection advisor",
+                ollamaUrl,
+                prompt: null,
+                ct);
+            if (!result.IsSuccess)
                 throw new InvalidOperationException("The collection advisor model could not complete the request.");
-            }
 
-            using var document = JsonDocument.Parse(body);
+            using var document = JsonDocument.Parse(result.Body);
             var content = document.RootElement
                 .GetProperty("message")
                 .GetProperty("content")
@@ -330,13 +321,6 @@ public class AdvisorReplyGenerator(
                 throw new InvalidOperationException("The collection advisor returned an empty response.");
             }
 
-            if (logger.IsEnabled(LogLevel.Debug))
-                logger.LogDebug(
-                    "Ollama answered the collection advisor in {DurationMs} ms with {ResponseLength} characters: "
-                    + "{ModelReply}",
-                    callTimer.ElapsedMilliseconds,
-                    content.Length,
-                    LogText.Bounded(content));
             return content;
         }
         catch (OperationCanceledException)

@@ -8,7 +8,8 @@ namespace WatchTracker.Api.Services;
 public class WishlistExtractionService(
     IProductPageReader pageReader,
     IAppSettingsService appSettings,
-    HttpClient httpClient) : IWishlistExtractionService
+    HttpClient httpClient,
+    ILogger<WishlistExtractionService> logger) : IWishlistExtractionService
 {
     private const decimal MaxPrice = 10_000_000m;
 
@@ -97,15 +98,21 @@ public class WishlistExtractionService(
                 Encoding.UTF8,
                 "application/json")
         };
-        using var response = await httpClient.SendAsync(request, ct);
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
-        if (!response.IsSuccessStatusCode)
+        var result = await OllamaChat.SendAsync(
+            httpClient,
+            request,
+            logger,
+            "wishlist extraction",
+            ollamaUrl,
+            prompt,
+            ct);
+        if (!result.IsSuccess)
             throw new InvalidOperationException(
-                $"Ollama could not extract the product details (HTTP {(int)response.StatusCode}).");
+                $"Ollama could not extract the product details (HTTP {(int)result.StatusCode}).");
 
         try
         {
-            using var envelope = JsonDocument.Parse(responseBody);
+            using var envelope = JsonDocument.Parse(result.Body);
             if (!envelope.RootElement.TryGetProperty("message", out var message)
                 || message.ValueKind != JsonValueKind.Object
                 || !message.TryGetProperty("content", out var contentElement)
