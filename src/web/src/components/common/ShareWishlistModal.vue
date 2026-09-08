@@ -36,7 +36,16 @@
           <template v-else>
             <p v-if="error" class="text-sm text-danger">{{ error }}</p>
 
-            <template v-if="share">
+            <div class="grid grid-cols-2 rounded-lg border border-border bg-bg-surface p-1">
+              <button type="button" class="min-h-11 rounded-md px-3 py-2 text-sm" :class="mode === 'link' ? 'bg-bg-elevated text-accent' : 'text-text-muted'" @click="mode = 'link'">
+                Share a URL
+              </button>
+              <button type="button" class="min-h-11 rounded-md px-3 py-2 text-sm" :class="mode === 'user' ? 'bg-bg-elevated text-accent' : 'text-text-muted'" @click="mode = 'user'">
+                Share with a user
+              </button>
+            </div>
+
+            <template v-if="mode === 'link' && share">
               <p class="text-sm text-text-secondary">
                 Anyone with this link can see your wish list — no account needed. It always shows the list as it stands,
                 in your priority order.
@@ -103,7 +112,7 @@
               </div>
             </template>
 
-            <template v-else>
+            <template v-else-if="mode === 'link'">
               <p class="text-sm text-text-secondary">
                 Create a link that shows your whole wish list to anyone you send it to, whether or not they have an
                 account. Handy when someone asks what you are after.
@@ -122,6 +131,58 @@
               <button type="button" class="btn-accent w-full" :disabled="working" @click="create">
                 {{ working ? 'Creating…' : 'Create share link' }}
               </button>
+            </template>
+
+            <template v-else>
+              <p class="text-sm text-text-secondary">
+                Give another WatchTracker user view-only access. They will find your live wish list on their Shared page.
+              </p>
+
+              <label class="flex items-start gap-2.5 cursor-pointer rounded-lg border border-border bg-bg-surface p-3">
+                <input v-model="includePrices" type="checkbox" class="mt-0.5 accent-accent" />
+                <span class="min-w-0">
+                  <span class="block text-sm text-text">Show target prices</span>
+                  <span class="block text-xs text-text-muted mt-0.5">This choice applies to the user you share with.</span>
+                </span>
+              </label>
+
+              <form class="flex gap-2" @submit.prevent="searchUsers">
+                <input v-model="userQuery" class="form-control flex-1 text-sm" minlength="2" maxlength="100" placeholder="Search by username" aria-label="Search by username" />
+                <button type="submit" class="btn-accent flex-shrink-0" :disabled="working || userQuery.trim().length < 2">
+                  Search
+                </button>
+              </form>
+
+              <div v-if="userResults.length" class="space-y-2">
+                <p class="text-xs uppercase tracking-wide text-text-muted">Results</p>
+                <button
+                  v-for="user in userResults"
+                  :key="user.id"
+                  type="button"
+                  class="flex min-h-11 w-full items-center justify-between rounded-lg border border-border bg-bg-surface px-3 py-2 text-left hover:border-accent/60"
+                  :disabled="working || userShares.some(existing => existing.recipientUserId === user.id)"
+                  @click="shareWith(user)"
+                >
+                  <span class="text-sm text-text">{{ user.username }}</span>
+                  <span class="text-xs text-accent">
+                    {{ userShares.some(existing => existing.recipientUserId === user.id) ? 'Already shared' : 'Share' }}
+                  </span>
+                </button>
+              </div>
+
+              <div class="space-y-2">
+                <p class="text-xs uppercase tracking-wide text-text-muted">People with access</p>
+                <p v-if="!userShares.length" class="text-sm text-text-muted">No direct user shares yet.</p>
+                <div v-for="userShare in userShares" :key="userShare.id" class="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-surface p-3">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm text-text">{{ userShare.recipientUsername }}</p>
+                    <p class="text-xs text-text-muted">
+                      {{ userShare.includePrices ? 'Prices included' : 'Prices hidden' }} · {{ userShare.viewCount }} {{ userShare.viewCount === 1 ? 'view' : 'views' }}
+                    </p>
+                  </div>
+                  <button type="button" class="min-h-11 px-2 text-sm text-danger hover:underline" :disabled="working" @click="revokeUser(userShare.id)">Remove</button>
+                </div>
+              </div>
             </template>
 
             <div class="rounded-lg border border-border bg-bg-surface p-3 space-y-2">
@@ -143,10 +204,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { WishlistShare } from '@/types'
+import type { WishlistShare, WishlistShareUser, WishlistUserShare } from '@/types'
 import AppIcon from '@/components/icons/AppIcon.vue'
 import {
   createWishlistShare, getWishlistShare, revokeWishlistShare, shareUrl, updateWishlistShare,
+  getWishlistUserShares, revokeWishlistUserShare, searchWishlistShareUsers, shareWishlistWithUser,
 } from '@/services/sharing'
 
 const emit = defineEmits<{ close: [] }>()
@@ -158,6 +220,10 @@ const error = ref('')
 const copied = ref(false)
 const copyHint = ref('')
 const includePrices = ref(false)
+const mode = ref<'link' | 'user'>('link')
+const userQuery = ref('')
+const userResults = ref<WishlistShareUser[]>([])
+const userShares = ref<WishlistUserShare[]>([])
 const dialogEl = ref<HTMLElement | null>(null)
 const urlEl = ref<HTMLInputElement | null>(null)
 
@@ -174,13 +240,59 @@ function selectAll() {
 onMounted(async () => {
   dialogEl.value?.focus()
   try {
-    share.value = await getWishlistShare()
+    const [linkShare, directShares] = await Promise.all([
+      getWishlistShare(),
+      getWishlistUserShares(),
+    ])
+    share.value = linkShare
+    userShares.value = directShares
+    includePrices.value = linkShare?.includePrices ?? false
   } catch {
     error.value = 'Could not check whether your wish list is already shared.'
   } finally {
     loading.value = false
   }
 })
+
+async function searchUsers() {
+  working.value = true
+  error.value = ''
+  try {
+    userResults.value = await searchWishlistShareUsers(userQuery.value.trim())
+  } catch {
+    error.value = 'Could not search for users.'
+  } finally {
+    working.value = false
+  }
+}
+
+async function shareWith(user: WishlistShareUser) {
+  working.value = true
+  error.value = ''
+  try {
+    const created = await shareWishlistWithUser(user.id, includePrices.value)
+    userShares.value = [...userShares.value.filter(existing => existing.id !== created.id), created]
+      .sort((left, right) => left.recipientUsername.localeCompare(right.recipientUsername))
+  } catch {
+    error.value = 'Could not share with that user.'
+  } finally {
+    working.value = false
+  }
+}
+
+async function revokeUser(shareId: number) {
+  if (!confirm('Remove this user’s access to your wish list?')) return
+  working.value = true
+  error.value = ''
+  try {
+    await revokeWishlistUserShare(shareId)
+    userShares.value = userShares.value.filter(share => share.id !== shareId)
+  } catch {
+    error.value = 'Could not remove that user’s access.'
+  } finally {
+    working.value = false
+  }
+}
 
 async function create() {
   working.value = true

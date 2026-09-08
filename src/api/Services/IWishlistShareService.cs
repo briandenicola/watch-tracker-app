@@ -24,4 +24,17 @@ public interface IWishlistShareService
     /// or revoked. Records the visit as a side effect.
     /// </summary>
     Task<SharedWishlistDto?> ViewAsync(string token, CancellationToken ct = default);
+
+    Task<IReadOnlyList<WishlistShareUserDto>> SearchUsersAsync(
+        int ownerUserId, string query, CancellationToken ct = default);
+    Task<IReadOnlyList<WishlistUserShareDto>> GetUserSharesAsync(
+        int ownerUserId, CancellationToken ct = default);
+    Task<WishlistUserShareDto?> ShareWithUserAsync(
+        int ownerUserId, CreateWishlistUserShareDto request, CancellationToken ct = default);
+    Task<bool> RevokeUserShareAsync(
+        int ownerUserId, int shareId, CancellationToken ct = default);
+    Task<IReadOnlyList<ReceivedWishlistShareDto>> GetReceivedSharesAsync(
+        int recipientUserId, CancellationToken ct = default);
+    Task<SharedWishlistDto?> ViewReceivedShareAsync(
+        int shareId, int recipientUserId, CancellationToken ct = default);
 }

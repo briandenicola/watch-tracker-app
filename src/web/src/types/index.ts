@@ -497,6 +497,29 @@ export interface SharedWishlist {
   sharedAt: string
 }
 
+export interface WishlistShareUser {
+  id: number
+  username: string
+}
+
+export interface WishlistUserShare {
+  id: number
+  recipientUserId: number
+  recipientUsername: string
+  includePrices: boolean
+  createdAt: string
+  lastViewedAt?: string | null
+  viewCount: number
+}
+
+export interface ReceivedWishlistShare {
+  id: number
+  ownerName: string
+  includesPrices: boolean
+  sharedAt: string
+  itemCount: number
+}
+
 export interface WatchShare {
   token: string
   /** The full link, when an admin has set a public address for shares. */

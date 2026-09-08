@@ -70,4 +70,68 @@ public class ShareServiceTests
         var withPrices = await service.ViewAsync(share.Token);
         Assert.Equal(1200m, Assert.Single(withPrices!.Items).TargetPrice);
     }
+
+    [Fact]
+    public async Task Direct_wishlist_share_is_visible_only_to_its_recipient_and_revokes_independently()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = TestDatabase.User("owner");
+        var recipient = TestDatabase.User("recipient");
+        var stranger = TestDatabase.User("stranger");
+        var watch = new Watch
+        {
+            User = owner,
+            Brand = "Hamilton",
+            Model = "Khaki Field",
+            IsWishList = true,
+            PurchasePrice = 650m,
+            WishlistPriority = 0
+        };
+        database.Context.AddRange(owner, recipient, stranger, watch);
+        await database.Context.SaveChangesAsync();
+        var service = new WishlistShareService(
+            database.Context,
+            new AppSettingsService(database.Context));
+
+        var direct = await service.ShareWithUserAsync(
+            owner.Id,
+            new CreateWishlistUserShareDto
+            {
+                RecipientUserId = recipient.Id,
+                IncludePrices = true
+            });
+
+        Assert.NotNull(direct);
+        Assert.Empty(await service.GetReceivedSharesAsync(stranger.Id));
+        var received = Assert.Single(await service.GetReceivedSharesAsync(recipient.Id));
+        Assert.Equal(owner.Username, received.OwnerName);
+        var sharedWishlist = await service.ViewReceivedShareAsync(received.Id, recipient.Id);
+        Assert.NotNull(sharedWishlist);
+        Assert.Equal(650m, Assert.Single(sharedWishlist.Items).TargetPrice);
+        Assert.Null(await service.ViewReceivedShareAsync(received.Id, stranger.Id));
+
+        var publicLink = await service.CreateAsync(
+            owner.Id,
+            new UpdateWishlistShareDto { IncludePrices = false });
+        Assert.True(await service.RevokeUserShareAsync(owner.Id, direct.Id));
+        Assert.Null(await service.ViewReceivedShareAsync(received.Id, recipient.Id));
+        Assert.NotNull(await service.ViewAsync(publicLink.Token));
+    }
+
+    [Fact]
+    public async Task User_search_excludes_the_owner_and_requires_two_characters()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var owner = TestDatabase.User("owner");
+        var match = TestDatabase.User("another-owner");
+        database.Context.Users.AddRange(owner, match);
+        await database.Context.SaveChangesAsync();
+        var service = new WishlistShareService(
+            database.Context,
+            new AppSettingsService(database.Context));
+
+        Assert.Empty(await service.SearchUsersAsync(owner.Id, "o"));
+        var result = Assert.Single(await service.SearchUsersAsync(owner.Id, "owner"));
+        Assert.Equal(match.Id, result.Id);
+    }
 }

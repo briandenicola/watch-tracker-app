@@ -300,10 +300,13 @@ Configuration, provider behavior, operational limits, privacy-safe diagnostics, 
 **Settings → Sharing → Share Wish List** creates one public link — `/w/<token>` — to your whole list, in your priority
 order. It always reflects the list as it stands, so an item added or bought later needs no new link.
 
+The same dialog can share directly with another registered user by username. Direct grants are view-only, independently
+revocable, and appear under **Shared** in the recipient's side menu; they do not require or expose a public URL.
+
 - The list is live: watches you add to the wish list appear on the shared page automatically, and ones you buy drop
   off it, with no need to reissue the link.
-- Same shape as a watch share: an unguessable token, one link per person, revocable at any time, `noindex`, rate
-  limited, and honouring `ShareLinkBaseUrl`.
+- The public URL uses an unguessable token, is revocable at any time, is marked `noindex`, is rate
+  limited, and honours `ShareLinkBaseUrl`.
 - Visitors see your display name and, per item, its photos, brand and model, reference, case, dial, strap, movement,
   water resistance and any product link. They never see your collection, what you paid for anything, notes, storage,
   wear history or account details.

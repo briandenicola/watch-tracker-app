@@ -70,5 +70,6 @@ describe('AppLayout notifications link', () => {
     const wrapper = mountLayout()
 
     expect(wrapper.find('a[href="/notifications"]').exists()).toBe(false)
+    expect(wrapper.get('a[href="/shared"]').text()).toContain('Shared')
   })
 })

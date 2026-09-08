@@ -72,13 +72,7 @@ public class WishlistShareService(AppDbContext context, IAppSettingsService appS
 
         // Disposed-of wish list entries are not on the list any more, and a
         // retired one was never on it, so both stay out of the public view.
-        var items = await context.Watches
-            .Where(w => w.UserId == share.UserId && w.IsWishList && w.Disposition == null)
-            .Include(w => w.Images)
-            .OrderBy(w => w.WishlistPriority == null)
-            .ThenBy(w => w.WishlistPriority)
-            .ThenByDescending(w => w.CreatedAt)
-            .ToListAsync(ct);
+        var items = await GetItemsAsync(share.UserId, ct);
 
         share.ViewCount++;
         share.LastViewedAt = DateTime.UtcNow;
@@ -92,6 +86,153 @@ public class WishlistShareService(AppDbContext context, IAppSettingsService appS
             Items = items.Select(w => ToItemDto(w, share.IncludePrices)).ToList()
         };
     }
+
+    public async Task<IReadOnlyList<WishlistShareUserDto>> SearchUsersAsync(
+        int ownerUserId,
+        string query,
+        CancellationToken ct = default)
+    {
+        var normalized = query.Trim();
+        if (normalized.Length < 2) return [];
+
+        return await context.Users
+            .AsNoTracking()
+            .Where(user => user.Id != ownerUserId)
+            .Where(user => user.Username.Contains(normalized))
+            .OrderBy(user => user.Username)
+            .Take(10)
+            .Select(user => new WishlistShareUserDto
+            {
+                Id = user.Id,
+                Username = user.Username
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<WishlistUserShareDto>> GetUserSharesAsync(
+        int ownerUserId,
+        CancellationToken ct = default) =>
+        await context.WishlistUserShares
+            .AsNoTracking()
+            .Where(share => share.OwnerUserId == ownerUserId)
+            .OrderBy(share => share.RecipientUser.Username)
+            .Select(share => new WishlistUserShareDto
+            {
+                Id = share.Id,
+                RecipientUserId = share.RecipientUserId,
+                RecipientUsername = share.RecipientUser.Username,
+                IncludePrices = share.IncludePrices,
+                CreatedAt = share.CreatedAt,
+                LastViewedAt = share.LastViewedAt,
+                ViewCount = share.ViewCount
+            })
+            .ToListAsync(ct);
+
+    public async Task<WishlistUserShareDto?> ShareWithUserAsync(
+        int ownerUserId,
+        CreateWishlistUserShareDto request,
+        CancellationToken ct = default)
+    {
+        if (request.RecipientUserId == ownerUserId) return null;
+        var recipientExists = await context.Users
+            .AnyAsync(user => user.Id == request.RecipientUserId, ct);
+        if (!recipientExists) return null;
+
+        var share = await context.WishlistUserShares
+            .Include(existing => existing.RecipientUser)
+            .FirstOrDefaultAsync(existing =>
+                existing.OwnerUserId == ownerUserId
+                && existing.RecipientUserId == request.RecipientUserId, ct);
+        if (share is null)
+        {
+            share = new WishlistUserShare
+            {
+                OwnerUserId = ownerUserId,
+                RecipientUserId = request.RecipientUserId,
+                IncludePrices = request.IncludePrices
+            };
+            context.WishlistUserShares.Add(share);
+        }
+        else
+        {
+            share.IncludePrices = request.IncludePrices;
+        }
+
+        await context.SaveChangesAsync(ct);
+        if (share.RecipientUser is null)
+            await context.Entry(share).Reference(existing => existing.RecipientUser).LoadAsync(ct);
+        return ToUserShareDto(share);
+    }
+
+    public async Task<bool> RevokeUserShareAsync(
+        int ownerUserId,
+        int shareId,
+        CancellationToken ct = default)
+    {
+        var share = await context.WishlistUserShares.FirstOrDefaultAsync(
+            existing => existing.Id == shareId && existing.OwnerUserId == ownerUserId,
+            ct);
+        if (share is null) return false;
+
+        context.WishlistUserShares.Remove(share);
+        await context.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<IReadOnlyList<ReceivedWishlistShareDto>> GetReceivedSharesAsync(
+        int recipientUserId,
+        CancellationToken ct = default) =>
+        await context.WishlistUserShares
+            .AsNoTracking()
+            .Where(share => share.RecipientUserId == recipientUserId)
+            .OrderByDescending(share => share.CreatedAt)
+            .Select(share => new ReceivedWishlistShareDto
+            {
+                Id = share.Id,
+                OwnerName = share.OwnerUser.Username,
+                IncludesPrices = share.IncludePrices,
+                SharedAt = share.CreatedAt,
+                ItemCount = context.Watches.Count(watch =>
+                    watch.UserId == share.OwnerUserId
+                    && watch.IsWishList
+                    && watch.Disposition == null)
+            })
+            .ToListAsync(ct);
+
+    public async Task<SharedWishlistDto?> ViewReceivedShareAsync(
+        int shareId,
+        int recipientUserId,
+        CancellationToken ct = default)
+    {
+        var share = await context.WishlistUserShares
+            .Include(existing => existing.OwnerUser)
+            .FirstOrDefaultAsync(existing =>
+                existing.Id == shareId && existing.RecipientUserId == recipientUserId,
+                ct);
+        if (share is null) return null;
+
+        var items = await GetItemsAsync(share.OwnerUserId, ct);
+        share.ViewCount++;
+        share.LastViewedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync(ct);
+
+        return new SharedWishlistDto
+        {
+            OwnerName = share.OwnerUser.Username,
+            IncludesPrices = share.IncludePrices,
+            SharedAt = share.CreatedAt,
+            Items = items.Select(watch => ToItemDto(watch, share.IncludePrices)).ToList()
+        };
+    }
+
+    private async Task<List<Watch>> GetItemsAsync(int ownerUserId, CancellationToken ct) =>
+        await context.Watches
+            .Where(w => w.UserId == ownerUserId && w.IsWishList && w.Disposition == null)
+            .Include(w => w.Images)
+            .OrderBy(w => w.WishlistPriority == null)
+            .ThenBy(w => w.WishlistPriority)
+            .ThenByDescending(w => w.CreatedAt)
+            .ToListAsync(ct);
 
     /// <summary>
     /// Copies across only the fields <see cref="SharedWishlistItemDto"/> declares,
@@ -141,6 +282,17 @@ public class WishlistShareService(AppDbContext context, IAppSettingsService appS
         Token = share.Token,
         Url = baseUrl is null ? null : $"{baseUrl}/w/{share.Token}",
         Path = $"/w/{share.Token}",
+        IncludePrices = share.IncludePrices,
+        CreatedAt = share.CreatedAt,
+        LastViewedAt = share.LastViewedAt,
+        ViewCount = share.ViewCount
+    };
+
+    private static WishlistUserShareDto ToUserShareDto(WishlistUserShare share) => new()
+    {
+        Id = share.Id,
+        RecipientUserId = share.RecipientUserId,
+        RecipientUsername = share.RecipientUser.Username,
         IncludePrices = share.IncludePrices,
         CreatedAt = share.CreatedAt,
         LastViewedAt = share.LastViewedAt,

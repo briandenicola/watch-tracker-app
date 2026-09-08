@@ -61,3 +61,36 @@ public class UpdateWishlistShareDto
 {
     public bool IncludePrices { get; set; }
 }
+
+public class WishlistShareUserDto
+{
+    public int Id { get; set; }
+    public required string Username { get; set; }
+}
+
+public class CreateWishlistUserShareDto
+{
+    [Range(1, int.MaxValue)]
+    public int RecipientUserId { get; set; }
+    public bool IncludePrices { get; set; }
+}
+
+public class WishlistUserShareDto
+{
+    public int Id { get; set; }
+    public int RecipientUserId { get; set; }
+    public required string RecipientUsername { get; set; }
+    public bool IncludePrices { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastViewedAt { get; set; }
+    public int ViewCount { get; set; }
+}
+
+public class ReceivedWishlistShareDto
+{
+    public int Id { get; set; }
+    public required string OwnerName { get; set; }
+    public bool IncludesPrices { get; set; }
+    public DateTime SharedAt { get; set; }
+    public int ItemCount { get; set; }
+}

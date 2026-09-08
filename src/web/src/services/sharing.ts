@@ -1,5 +1,13 @@
 import { api } from './api'
-import type { SharedWatch, SharedWishlist, WatchShare, WishlistShare } from '@/types'
+import type {
+  ReceivedWishlistShare,
+  SharedWatch,
+  SharedWishlist,
+  WatchShare,
+  WishlistShare,
+  WishlistShareUser,
+  WishlistUserShare,
+} from '@/types'
 
 /**
  * The absolute link to hand out. Prefers the public address an admin configured,
@@ -67,5 +75,42 @@ export async function revokeWishlistShare(): Promise<void> {
 /** The public read. Needs no account, and 404s once the link is revoked. */
 export async function getSharedWishlist(token: string): Promise<SharedWishlist> {
   const { data } = await api.get<SharedWishlist>(`/api/shared/wishlist/${encodeURIComponent(token)}`)
+  return data
+}
+
+export async function searchWishlistShareUsers(query: string): Promise<WishlistShareUser[]> {
+  const { data } = await api.get<WishlistShareUser[]>('/api/wishlist/share/users/search', {
+    params: { query },
+  })
+  return data
+}
+
+export async function getWishlistUserShares(): Promise<WishlistUserShare[]> {
+  const { data } = await api.get<WishlistUserShare[]>('/api/wishlist/share/users')
+  return data
+}
+
+export async function shareWishlistWithUser(
+  recipientUserId: number,
+  includePrices: boolean,
+): Promise<WishlistUserShare> {
+  const { data } = await api.post<WishlistUserShare>('/api/wishlist/share/users', {
+    recipientUserId,
+    includePrices,
+  })
+  return data
+}
+
+export async function revokeWishlistUserShare(shareId: number): Promise<void> {
+  await api.delete(`/api/wishlist/share/users/${shareId}`)
+}
+
+export async function getReceivedWishlistShares(): Promise<ReceivedWishlistShare[]> {
+  const { data } = await api.get<ReceivedWishlistShare[]>('/api/shared/wishlists')
+  return data
+}
+
+export async function getReceivedWishlistShare(shareId: number): Promise<SharedWishlist> {
+  const { data } = await api.get<SharedWishlist>(`/api/shared/wishlists/${shareId}`)
   return data
 }
