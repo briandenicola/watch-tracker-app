@@ -23,7 +23,7 @@
     "@types/marked": "^5.0.2",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "2.5.0",
-    "eslint": "10.9.0",
+    "eslint": "10.10.0",
     "eslint-plugin-vue": "10.11.0",
     "globals": "17.12.0",
     "jsdom": "30.0.1",
