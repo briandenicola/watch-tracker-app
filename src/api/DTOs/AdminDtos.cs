@@ -12,6 +12,7 @@ public class UserDto
     public bool IsLockedOut { get; set; }
     public int FailedLoginAttempts { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsCurrentUser { get; set; }
 }
 
 public class AdminResetPasswordDto

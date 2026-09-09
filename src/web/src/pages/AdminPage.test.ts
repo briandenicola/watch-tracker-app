@@ -6,6 +6,7 @@ const api = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
+  delete: vi.fn(),
 }))
 
 vi.mock('@/services/api', () => ({ api }))
@@ -113,5 +114,37 @@ describe('Admin Ollama settings', () => {
         { key: 'ApplicationTimeZone', value: 'America/Chicago' },
       ]),
     )
+  })
+
+  it('confirms and deletes another user from the user table', async () => {
+    api.get.mockImplementation((url: string) => {
+      if (url === '/api/admin/users') {
+        return Promise.resolve({
+          data: [
+            { id: 1, username: 'admin', email: 'admin@example.test', role: 'Admin', isCurrentUser: true },
+            { id: 2, username: 'viewer', email: 'viewer@example.test', role: 'Standard', isCurrentUser: false },
+          ],
+        })
+      }
+      if (url === '/api/admin/oidc/providers') return Promise.resolve({ data: [] })
+      return Promise.resolve({ data: [] })
+    })
+    api.delete.mockResolvedValue({ data: undefined })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    const wrapper = mount(AdminPage)
+    await flushPromises()
+
+    const deleteButtons = wrapper.findAll('button').filter(button => button.text() === 'Delete')
+    expect(deleteButtons).toHaveLength(2)
+    expect(deleteButtons[0].attributes('disabled')).toBeDefined()
+
+    await deleteButtons[1].trigger('click')
+    await flushPromises()
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('permanently deletes'))
+    expect(api.delete).toHaveBeenCalledWith('/api/admin/users/2')
+    expect(wrapper.text()).not.toContain('viewer@example.test')
+    expect(wrapper.text()).toContain('Deleted viewer')
   })
 })

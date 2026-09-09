@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -21,12 +22,32 @@ public class AdminController(
     DynamicConfigurationProvider dynamicConfig,
     ILogger<AdminController> logger) : ControllerBase
 {
+    private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
     [HttpGet("users")]
     [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<UserDto>>> GetUsers()
     {
-        var users = await adminService.ListUsersAsync();
+        var users = await adminService.ListUsersAsync(UserId);
         return Ok(users);
+    }
+
+    [HttpDelete("users/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        return await adminService.DeleteUserAsync(id, UserId) switch
+        {
+            DeleteUserResult.Deleted => NoContent(),
+            DeleteUserResult.NotFound => NotFound(),
+            DeleteUserResult.CannotDeleteSelf => BadRequest(new ProblemDetails
+            {
+                Title = "You cannot delete your own account."
+            }),
+            _ => throw new InvalidOperationException("Unexpected user deletion result.")
+        };
     }
 
     [HttpPost("users/{id}/unlock")]

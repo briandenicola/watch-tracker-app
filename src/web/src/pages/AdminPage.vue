@@ -54,6 +54,14 @@
                     >
                       Reset PW
                     </button>
+                    <button
+                      @click="handleDeleteUser(user)"
+                      :disabled="user.isCurrentUser || deletingUserId === user.id"
+                      :title="user.isCurrentUser ? 'You cannot delete your own account' : `Delete ${user.username}`"
+                      class="px-3 py-1.5 bg-danger/10 border border-danger/40 text-xs text-danger rounded-lg hover:bg-danger/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {{ deletingUserId === user.id ? 'Deleting...' : 'Delete' }}
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -319,6 +327,7 @@ const commonTimeZones = [
 const loading = ref(true)
 const error = ref(false)
 const users = ref<UserDto[]>([])
+const deletingUserId = ref<number | null>(null)
 const settings = ref<AppSettingDto[]>([])
 const userMsg = ref('')
 const settingsMsg = ref('')
@@ -408,6 +417,26 @@ async function handleResetPassword(userId: number, username: string) {
     userMsg.value = `Password reset for ${username}`
   } catch {
     userMsg.value = 'Error resetting password'
+  }
+}
+
+async function handleDeleteUser(user: UserDto) {
+  if (user.isCurrentUser) return
+  const confirmed = window.confirm(
+    `Delete ${user.username}? This permanently deletes their watches, history, shares, and uploaded images.`
+  )
+  if (!confirmed) return
+
+  userMsg.value = ''
+  deletingUserId.value = user.id
+  try {
+    await api.delete(`/api/admin/users/${user.id}`)
+    users.value = users.value.filter(existing => existing.id !== user.id)
+    userMsg.value = `Deleted ${user.username}`
+  } catch {
+    userMsg.value = `Error deleting ${user.username}`
+  } finally {
+    deletingUserId.value = null
   }
 }
 

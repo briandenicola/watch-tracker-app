@@ -250,6 +250,7 @@ export interface UserDto {
   isLockedOut: boolean
   failedLoginAttempts: number
   createdAt: string
+  isCurrentUser: boolean
 }
 
 export interface WearLog {
