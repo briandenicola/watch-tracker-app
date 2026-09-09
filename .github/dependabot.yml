@@ -9,6 +9,10 @@ updates:
     directory: /src/web
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: vue-router
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: nuget
     directory: /src/api
