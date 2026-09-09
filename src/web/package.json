@@ -20,7 +20,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/marked": "^5.0.2",
+    "@types/marked": "^6.0.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "2.5.0",
     "eslint": "10.10.0",
