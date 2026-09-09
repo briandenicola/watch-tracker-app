@@ -41,7 +41,7 @@ public class DataImportService(AppDbContext context, IUploadStorage storage) : I
         using (var reader = new StreamReader(csvEntry.Open(), Encoding.UTF8))
         {
             var content = await reader.ReadToEndAsync();
-            rows = ParseCsv(content);
+            rows = CsvParser.Parse(content);
         }
 
         if (rows.Count < 2)
@@ -106,7 +106,10 @@ public class DataImportService(AppDbContext context, IUploadStorage storage) : I
                 Brand = Val("Brand"),
                 Model = Val("Model"),
                 MovementType = Enum.TryParse<MovementType>(Val("MovementType"), true, out var mt) ? mt : MovementType.Automatic,
+                Category = NullIfEmpty(Val("Category")),
                 CaseSizeMm = double.TryParse(Val("CaseSizeMm"), CultureInfo.InvariantCulture, out var cs) ? cs : null,
+                CaseThicknessMm = double.TryParse(Val("CaseThicknessMm"), CultureInfo.InvariantCulture, out var caseThickness) ? caseThickness : null,
+                CaseMaterial = NullIfEmpty(Val("CaseMaterial")),
                 BandType = NullIfEmpty(Val("BandType")),
                 BandColor = NullIfEmpty(Val("BandColor")),
                 PurchaseDate = DateTime.TryParse(Val("PurchaseDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var pd) ? pd : null,
@@ -121,6 +124,7 @@ public class DataImportService(AppDbContext context, IUploadStorage storage) : I
                 CaseShape = NullIfEmpty(Val("CaseShape")),
                 CrownType = NullIfEmpty(Val("CrownType")),
                 CalendarType = NullIfEmpty(Val("CalendarType")),
+                DateComplication = NullIfEmpty(Val("DateComplication")),
                 CountryOfOrigin = NullIfEmpty(Val("CountryOfOrigin")),
                 WaterResistance = NullIfEmpty(Val("WaterResistance")),
                 LugWidthMm = double.TryParse(Val("LugWidthMm"), CultureInfo.InvariantCulture, out var lw) ? lw : null,
@@ -133,6 +137,10 @@ public class DataImportService(AppDbContext context, IUploadStorage storage) : I
                 ProductionYear = int.TryParse(Val("ProductionYear"), out var py) ? py : null,
                 BatteryType = NullIfEmpty(Val("BatteryType")),
                 LastBatteryChangedDate = DateTime.TryParse(Val("LastBatteryChangedDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var lbcd) ? lbcd : null,
+                WarrantyExpiryDate = DateTime.TryParse(Val("WarrantyExpiryDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var wed) ? wed : null,
+                LastServicedDate = DateTime.TryParse(Val("LastServicedDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out var lsd) ? lsd : null,
+                WinderTpd = int.TryParse(Val("WinderTpd"), CultureInfo.InvariantCulture, out var wt) ? wt : null,
+                WinderDirection = NullIfEmpty(Val("WinderDirection")),
                 LinkUrl = NullIfEmpty(Val("LinkUrl")),
                 LinkText = NullIfEmpty(Val("LinkText")),
                 StorageLocation = NullIfEmpty(Val("StorageLocation")),
@@ -351,80 +359,4 @@ public class DataImportService(AppDbContext context, IUploadStorage storage) : I
         return (wornDate, startedAt, endedAt);
     }
 
-    /// <summary>Simple RFC 4180 CSV parser that handles quoted fields.</summary>
-    private static List<string[]> ParseCsv(string content)
-    {
-        var rows = new List<string[]>();
-        var fields = new List<string>();
-        var field = new StringBuilder();
-        bool inQuotes = false;
-        int i = 0;
-
-        while (i < content.Length)
-        {
-            char c = content[i];
-
-            if (inQuotes)
-            {
-                if (c == '"')
-                {
-                    if (i + 1 < content.Length && content[i + 1] == '"')
-                    {
-                        field.Append('"');
-                        i += 2;
-                    }
-                    else
-                    {
-                        inQuotes = false;
-                        i++;
-                    }
-                }
-                else
-                {
-                    field.Append(c);
-                    i++;
-                }
-            }
-            else
-            {
-                if (c == '"')
-                {
-                    inQuotes = true;
-                    i++;
-                }
-                else if (c == ',')
-                {
-                    fields.Add(field.ToString());
-                    field.Clear();
-                    i++;
-                }
-                else if (c == '\r' || c == '\n')
-                {
-                    fields.Add(field.ToString());
-                    field.Clear();
-                    if (fields.Any(f => f.Length > 0))
-                        rows.Add(fields.ToArray());
-                    fields.Clear();
-                    if (c == '\r' && i + 1 < content.Length && content[i + 1] == '\n')
-                        i++;
-                    i++;
-                }
-                else
-                {
-                    field.Append(c);
-                    i++;
-                }
-            }
-        }
-
-        // Last row
-        if (field.Length > 0 || fields.Count > 0)
-        {
-            fields.Add(field.ToString());
-            if (fields.Any(f => f.Length > 0))
-                rows.Add(fields.ToArray());
-        }
-
-        return rows;
-    }
 }

@@ -13,7 +13,10 @@ public abstract class WatchFieldsDto
     public required string Model { get; set; }
 
     public MovementType MovementType { get; set; }
+    [StringLength(100)] public string? Category { get; set; }
     [Range(1, 200)] public double? CaseSizeMm { get; set; }
+    [Range(1, 100)] public double? CaseThicknessMm { get; set; }
+    [StringLength(100)] public string? CaseMaterial { get; set; }
     [StringLength(100)] public string? BandType { get; set; }
     [StringLength(100)] public string? BandColor { get; set; }
     public DateTime? PurchaseDate { get; set; }
@@ -26,6 +29,7 @@ public abstract class WatchFieldsDto
     [StringLength(100)] public string? CaseShape { get; set; }
     [StringLength(100)] public string? CrownType { get; set; }
     [StringLength(100)] public string? CalendarType { get; set; }
+    [StringLength(100)] public string? DateComplication { get; set; }
     [StringLength(100)] public string? CountryOfOrigin { get; set; }
     [StringLength(100)] public string? WaterResistance { get; set; }
     [Range(1, 100)] public double? LugWidthMm { get; set; }
@@ -38,6 +42,10 @@ public abstract class WatchFieldsDto
     [Range(1800, 2200)] public int? ProductionYear { get; set; }
     [StringLength(100)] public string? BatteryType { get; set; }
     public DateTime? LastBatteryChangedDate { get; set; }
+    public DateTime? WarrantyExpiryDate { get; set; }
+    public DateTime? LastServicedDate { get; set; }
+    [Range(0, 10000)] public int? WinderTpd { get; set; }
+    [StringLength(100)] public string? WinderDirection { get; set; }
     [StringLength(2000), Url] public string? LinkUrl { get; set; }
     [StringLength(200)] public string? LinkText { get; set; }
     [StringLength(100)] public string? StorageLocation { get; set; }

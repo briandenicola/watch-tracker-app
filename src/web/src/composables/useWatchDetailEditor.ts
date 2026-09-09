@@ -191,11 +191,14 @@ export function useWatchDetailEditor(watch: Ref<Watch | null>) {
     const sections: DetailSection[] = [
       { heading: 'Identification', rows: [
         { label: 'Brand', value: value.brand, field: 'brand' }, { label: 'Model', value: value.model, field: 'model' },
+        { label: 'Category', value: value.category, field: 'category' },
         { label: 'SKU / Reference', value: value.sku, field: 'sku' }, { label: 'Serial', value: value.serialNumber, field: 'serialNumber' },
         { label: 'Production Year', value: value.productionYear?.toString(), field: 'productionYear' }, { label: 'Origin', value: value.countryOfOrigin, field: 'countryOfOrigin' },
       ] },
       { heading: 'Case & Band', rows: [
         { label: 'Case Size', value: mm(value.caseSizeMm), field: 'caseSizeMm' }, { label: 'Lug Width', value: mm(value.lugWidthMm), field: 'lugWidthMm' },
+        { label: 'Case Thickness', value: mm(value.caseThicknessMm), field: 'caseThicknessMm' },
+        { label: 'Case Material', value: value.caseMaterial, field: 'caseMaterial' },
         { label: 'Lug-to-Lug', value: mm(value.lugToLugMm), field: 'lugToLugMm' }, { label: 'Case Shape', value: value.caseShape, field: 'caseShape' },
         { label: 'Crystal', value: value.crystalType, field: 'crystalType' }, { label: 'Bezel', value: value.bezelType, field: 'bezelType' },
         { label: 'Crown', value: value.crownType, field: 'crownType' }, { label: 'Dial', value: value.dialColor, field: 'dialColor' },
@@ -204,8 +207,11 @@ export function useWatchDetailEditor(watch: Ref<Watch | null>) {
       ] },
       { heading: 'Movement', rows: [
         { label: 'Movement Type', value: value.movementType, field: 'movementType' }, { label: 'Power Reserve', value: value.powerReserveHours ? `${value.powerReserveHours} hours` : undefined, field: 'powerReserveHours' },
-        { label: 'Calendar', value: value.calendarType, field: 'calendarType' }, { label: 'Battery Type', value: value.batteryType, field: 'batteryType' },
+        { label: 'Calendar', value: value.calendarType, field: 'calendarType' }, { label: 'Date Complication', value: value.dateComplication, field: 'dateComplication' },
+        { label: 'Battery Type', value: value.batteryType, field: 'batteryType' },
         { label: 'Last Battery Changed', value: calendarDate(value.lastBatteryChangedDate), field: 'lastBatteryChangedDate' },
+        { label: 'Winder TPD', value: value.winderTpd?.toString(), field: 'winderTpd' },
+        { label: 'Winder Direction', value: value.winderDirection, field: 'winderDirection' },
       ] },
       { heading: 'Purchase Details', rows: [
         { label: value.isWishList ? 'Target Price' : 'Purchase Price', value: money(value.purchasePrice), field: 'purchasePrice' },
@@ -213,6 +219,8 @@ export function useWatchDetailEditor(watch: Ref<Watch | null>) {
         { label: 'Acquired From', value: value.acquiredFrom, field: 'acquiredFrom' },
         ...(editMode.value ? [{ label: 'Acquisition Source URL', value: value.acquisitionSourceUrl, field: 'acquisitionSourceUrl' as InlineField }] : [{ label: 'Acquisition Source', value: value.acquisitionSourceUrl ? (value.acquiredFrom || 'Source Link') : undefined, href: value.acquisitionSourceUrl }]),
         { label: 'Current Resale', value: money(value.currentResaleValue) }, { label: 'Resale Updated', value: fullDate(value.resaleValueUpdatedAt) },
+        { label: 'Warranty Expires', value: calendarDate(value.warrantyExpiryDate), field: 'warrantyExpiryDate' },
+        { label: 'Last Serviced', value: calendarDate(value.lastServicedDate), field: 'lastServicedDate' },
         ...(editMode.value ? [
           { label: 'Product / Reference URL', value: value.linkUrl, field: 'linkUrl' as InlineField },
           { label: 'Product Link Text', value: value.linkText, field: 'linkText' as InlineField },

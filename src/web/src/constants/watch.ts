@@ -44,6 +44,7 @@ export const fieldMeta: Record<InlineField, FieldMeta> = {
   brand: { input: 'text', maxlength: 200, required: true },
   model: { input: 'text', maxlength: 200, required: true },
   movementType: { input: 'select', options: movementTypes, strict: true, required: true },
+  category: { input: 'text', maxlength: 100 },
 
   sku: { input: 'text', maxlength: 100 },
   serialNumber: { input: 'text', maxlength: 200 },
@@ -51,6 +52,8 @@ export const fieldMeta: Record<InlineField, FieldMeta> = {
   countryOfOrigin: { input: 'text', maxlength: 100 },
 
   caseSizeMm: { input: 'number', min: 1, max: 200, step: 0.1 },
+  caseThicknessMm: { input: 'number', min: 1, max: 100, step: 0.1 },
+  caseMaterial: { input: 'text', maxlength: 100 },
   lugWidthMm: { input: 'number', min: 1, max: 100, step: 0.5 },
   lugToLugMm: { input: 'number', min: 1, max: 200, step: 0.1 },
   caseShape: { input: 'text', maxlength: 100 },
@@ -64,8 +67,13 @@ export const fieldMeta: Record<InlineField, FieldMeta> = {
 
   powerReserveHours: { input: 'number', min: 0, max: 10000, step: 1 },
   calendarType: { input: 'text', maxlength: 100 },
+  dateComplication: { input: 'text', maxlength: 100 },
   batteryType: { input: 'text', maxlength: 100 },
   lastBatteryChangedDate: { input: 'date' },
+  warrantyExpiryDate: { input: 'date' },
+  lastServicedDate: { input: 'date' },
+  winderTpd: { input: 'number', min: 0, max: 10000, step: 1 },
+  winderDirection: { input: 'text', maxlength: 100 },
 
   purchasePrice: { input: 'number', min: 0, max: 10_000_000, step: 0.01 },
   purchaseDate: { input: 'date' },

@@ -280,14 +280,15 @@
             :disabled="exporting"
             class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
-            {{ exporting ? 'Exporting...' : 'Export Data (JSON)' }}
+            {{ exporting ? 'Exporting...' : 'Download Backup (.zip)' }}
           </button>
           <label class="px-4 py-2 bg-bg-surface border border-border text-text text-sm font-medium rounded-lg hover:border-accent/50 transition-colors cursor-pointer">
-            {{ importing ? 'Importing...' : 'Import Data' }}
-            <input type="file" accept=".json" class="hidden" @change="handleImport" :disabled="importing" />
+            {{ importing ? 'Restoring...' : 'Restore Backup (.zip)' }}
+            <input type="file" accept=".zip,application/zip" class="hidden" @change="handleImport" :disabled="importing" />
           </label>
         </div>
         <p v-if="dataMsg" class="text-sm mt-3" :class="dataMsg.includes('Error') ? 'text-danger' : 'text-success'">{{ dataMsg }}</p>
+        <ExternalImportPanel />
       </section>
     </div>
   </div>
@@ -303,6 +304,7 @@ import { useTheme, type ThemeMode } from '@/stores/theme'
 import { usePreferences, type SortOption } from '@/stores/preferences'
 import { currentDateKey, formatInstant } from '@/utils/dateTime'
 import ShareWishlistModal from '@/components/common/ShareWishlistModal.vue'
+import ExternalImportPanel from '@/components/common/ExternalImportPanel.vue'
 
 const showWishlistShare = ref(false)
 
@@ -527,11 +529,11 @@ async function handleExport() {
   dataMsg.value = ''
   try {
     const { data } = await api.get('/api/data/export', { responseType: 'blob' })
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const blob = data as Blob
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `watch-collection-${currentDateKey()}.json`
+    a.download = `watch-collection-${currentDateKey()}.zip`
     a.click()
     URL.revokeObjectURL(url)
     dataMsg.value = 'Export downloaded'
@@ -544,7 +546,7 @@ async function handleExport() {
 
 async function handleImport(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file || !confirm('Import data? This may overwrite existing data.')) return
+  if (!file || !confirm('Restore this backup? Its watches will be added to your account.')) return
   importing.value = true
   dataMsg.value = ''
   const form = new FormData()

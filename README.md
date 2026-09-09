@@ -361,7 +361,8 @@ All authenticated users can open **Settings** from the navigation bar:
 - **Change Password** — Update your account password.
 - **Linked Sign-in Accounts** — Connect or disconnect an OIDC provider.
 - **API Keys** — Issue and revoke keys for programmatic access. A key is shown once, at creation.
-- **Data** — Export your collection, or import one.
+- **Data** — Download or restore the app's ZIP backup format. Wristcheck CSV exports can be previewed and
+  selectively imported; likely duplicates are skipped by default and can be explicitly included.
 
 Two related settings live elsewhere: the collection view mode is remembered from the toolbar toggle rather than set
 here, and the time zone is application-wide and set by an admin.

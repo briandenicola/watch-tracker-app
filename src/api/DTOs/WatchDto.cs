@@ -8,7 +8,10 @@ public class WatchDto
     public required string Brand { get; set; }
     public required string Model { get; set; }
     public MovementType MovementType { get; set; }
+    public string? Category { get; set; }
     public double? CaseSizeMm { get; set; }
+    public double? CaseThicknessMm { get; set; }
+    public string? CaseMaterial { get; set; }
     public string? BandType { get; set; }
     public string? BandColor { get; set; }
     public DateTime? PurchaseDate { get; set; }
@@ -27,6 +30,7 @@ public class WatchDto
     public string? CaseShape { get; set; }
     public string? CrownType { get; set; }
     public string? CalendarType { get; set; }
+    public string? DateComplication { get; set; }
     public string? CountryOfOrigin { get; set; }
     public string? WaterResistance { get; set; }
     public double? LugWidthMm { get; set; }
@@ -39,6 +43,10 @@ public class WatchDto
     public int? ProductionYear { get; set; }
     public string? BatteryType { get; set; }
     public DateTime? LastBatteryChangedDate { get; set; }
+    public DateTime? WarrantyExpiryDate { get; set; }
+    public DateTime? LastServicedDate { get; set; }
+    public int? WinderTpd { get; set; }
+    public string? WinderDirection { get; set; }
     public string? LinkUrl { get; set; }
     public string? LinkText { get; set; }
     public string? MarketplaceCurrency { get; set; }

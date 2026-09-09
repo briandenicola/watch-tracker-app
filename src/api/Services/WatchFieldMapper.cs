@@ -10,7 +10,10 @@ internal static class WatchFieldMapper
         watch.Brand = dto.Brand;
         watch.Model = dto.Model;
         watch.MovementType = dto.MovementType;
+        watch.Category = dto.Category;
         watch.CaseSizeMm = dto.CaseSizeMm;
+        watch.CaseThicknessMm = dto.CaseThicknessMm;
+        watch.CaseMaterial = dto.CaseMaterial;
         watch.BandType = dto.BandType;
         watch.BandColor = dto.BandColor;
         watch.PurchaseDate = dto.PurchaseDate;
@@ -23,6 +26,7 @@ internal static class WatchFieldMapper
         watch.CaseShape = dto.CaseShape;
         watch.CrownType = dto.CrownType;
         watch.CalendarType = dto.CalendarType;
+        watch.DateComplication = dto.DateComplication;
         watch.CountryOfOrigin = dto.CountryOfOrigin;
         watch.WaterResistance = dto.WaterResistance;
         watch.LugWidthMm = dto.LugWidthMm;
@@ -35,6 +39,10 @@ internal static class WatchFieldMapper
         watch.ProductionYear = dto.ProductionYear;
         watch.BatteryType = dto.BatteryType;
         watch.LastBatteryChangedDate = dto.LastBatteryChangedDate;
+        watch.WarrantyExpiryDate = dto.WarrantyExpiryDate;
+        watch.LastServicedDate = dto.LastServicedDate;
+        watch.WinderTpd = dto.WinderTpd;
+        watch.WinderDirection = dto.WinderDirection;
         watch.LinkUrl = dto.LinkUrl;
         watch.LinkText = dto.LinkText;
         watch.StorageLocation = dto.StorageLocation;

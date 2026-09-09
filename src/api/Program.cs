@@ -265,6 +265,7 @@ builder.Services.AddSingleton<IUploadStorage, UploadStorage>();
 builder.Services.AddScoped<UploadLayoutMigrator>();
 builder.Services.AddScoped<IWatchImageService, WatchImageService>();
 builder.Services.AddScoped<IDataImportService, DataImportService>();
+builder.Services.AddScoped<IExternalDataImportService, ExternalDataImportService>();
 builder.Services.AddScoped<IWatchShareService, WatchShareService>();
 builder.Services.AddScoped<IWishlistShareService, WishlistShareService>();
 builder.Services.AddSingleton<IBackgroundRemovalService, BackgroundRemovalService>();

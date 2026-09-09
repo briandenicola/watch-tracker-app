@@ -15,7 +15,11 @@ namespace WatchTracker.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class DataController(AppDbContext context, IUploadStorage uploadStorage, IDataImportService dataImportService) : ControllerBase
+public class DataController(
+    AppDbContext context,
+    IUploadStorage uploadStorage,
+    IDataImportService dataImportService,
+    IExternalDataImportService externalDataImportService) : ControllerBase
 {
     private int UserId => int.Parse(
         User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -51,7 +55,10 @@ public class DataController(AppDbContext context, IUploadStorage uploadStorage, 
                     Esc(w.Brand),
                     Esc(w.Model),
                     Esc(w.MovementType.ToString()),
+                    Esc(w.Category),
                     Esc(w.CaseSizeMm?.ToString(CultureInfo.InvariantCulture)),
+                    Esc(w.CaseThicknessMm?.ToString(CultureInfo.InvariantCulture)),
+                    Esc(w.CaseMaterial),
                     Esc(w.BandType),
                     Esc(w.BandColor),
                     Esc(w.PurchaseDate?.ToString("yyyy-MM-dd")),
@@ -64,6 +71,7 @@ public class DataController(AppDbContext context, IUploadStorage uploadStorage, 
                     Esc(w.CaseShape),
                     Esc(w.CrownType),
                     Esc(w.CalendarType),
+                    Esc(w.DateComplication),
                     Esc(w.CountryOfOrigin),
                     Esc(w.WaterResistance),
                     Esc(w.LugWidthMm?.ToString(CultureInfo.InvariantCulture)),
@@ -76,6 +84,10 @@ public class DataController(AppDbContext context, IUploadStorage uploadStorage, 
                     Esc(w.ProductionYear?.ToString(CultureInfo.InvariantCulture)),
                     Esc(w.BatteryType),
                     Esc(w.LastBatteryChangedDate?.ToString("yyyy-MM-dd")),
+                    Esc(w.WarrantyExpiryDate?.ToString("yyyy-MM-dd")),
+                    Esc(w.LastServicedDate?.ToString("yyyy-MM-dd")),
+                    Esc(w.WinderTpd?.ToString(CultureInfo.InvariantCulture)),
+                    Esc(w.WinderDirection),
                     Esc(w.LinkUrl),
                     Esc(w.LinkText),
                     Esc(w.StorageLocation),
@@ -141,14 +153,56 @@ public class DataController(AppDbContext context, IUploadStorage uploadStorage, 
             : Ok(outcome.Result);
     }
 
+    [HttpPost("import/external/preview")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    [ProducesResponseType(typeof(ExternalImportPreviewDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ExternalImportPreviewDto>> PreviewExternalImport(
+        IFormFile file,
+        CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await externalDataImportService.PreviewAsync(UserId, file, ct));
+        }
+        catch (InvalidDataException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("import/external")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    [ProducesResponseType(typeof(ExternalImportResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ExternalImportResultDto>> ImportExternal(
+        [FromForm] ExternalImportRequestDto request,
+        CancellationToken ct)
+    {
+        var selectedRows = request.SelectedRows
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => int.TryParse(value, CultureInfo.InvariantCulture, out var row) ? row : -1)
+            .Where(row => row > 1)
+            .ToHashSet();
+        try
+        {
+            return Ok(await externalDataImportService.ImportAsync(UserId, request.File, selectedRows, ct));
+        }
+        catch (InvalidDataException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     private static readonly string[] CsvColumns =
     [
-        "ExportId", "Brand", "Model", "MovementType", "CaseSizeMm", "BandType", "BandColor",
+        "ExportId", "Brand", "Model", "MovementType", "Category", "CaseSizeMm", "CaseThicknessMm", "CaseMaterial", "BandType", "BandColor",
         "PurchaseDate", "PurchasePrice", "AcquisitionType", "AcquiredFrom", "AcquisitionSourceUrl",
         "Notes", "CrystalType", "CaseShape",
-        "CrownType", "CalendarType", "CountryOfOrigin", "WaterResistance",
+        "CrownType", "CalendarType", "DateComplication", "CountryOfOrigin", "WaterResistance",
         "LugWidthMm", "LugToLugMm", "DialColor", "BezelType", "PowerReserveHours", "Sku", "SerialNumber",
-        "ProductionYear", "BatteryType", "LastBatteryChangedDate", "LinkUrl", "LinkText",
+        "ProductionYear", "BatteryType", "LastBatteryChangedDate", "WarrantyExpiryDate", "LastServicedDate",
+        "WinderTpd", "WinderDirection", "LinkUrl", "LinkText",
         "StorageLocation", "IsWishList", "WishlistPriority", "DispositionType", "DispositionDate", "DispositionNotes",
         "SoldTo", "SalePrice", "TradeReceivedWatchExportId", "TradeReceivedWatch", "TradeDetails", "OtherLabel", "ReturnReason",
         "ReturnedTo", "RefundAmount", "TimesWorn", "LastWornDate", "CreatedAt", "Images",

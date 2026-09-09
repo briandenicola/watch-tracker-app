@@ -29,7 +29,10 @@ export interface Watch {
   brand: string
   model: string
   movementType: MovementType
+  category?: string
   caseSizeMm?: number
+  caseThicknessMm?: number
+  caseMaterial?: string
   bandType?: string
   bandColor?: string
   purchaseDate?: string
@@ -48,6 +51,7 @@ export interface Watch {
   caseShape?: string
   crownType?: string
   calendarType?: string
+  dateComplication?: string
   countryOfOrigin?: string
   waterResistance?: string
   lugWidthMm?: number
@@ -60,6 +64,10 @@ export interface Watch {
   productionYear?: number
   batteryType?: string
   lastBatteryChangedDate?: string
+  warrantyExpiryDate?: string
+  lastServicedDate?: string
+  winderTpd?: number
+  winderDirection?: string
   linkUrl?: string
   linkText?: string
   marketplaceCurrency?: string
@@ -103,7 +111,10 @@ export interface CreateWatch {
   brand: string
   model: string
   movementType?: MovementType
+  category?: string
   caseSizeMm?: number
+  caseThicknessMm?: number
+  caseMaterial?: string
   bandType?: string
   bandColor?: string
   purchaseDate?: string
@@ -116,6 +127,7 @@ export interface CreateWatch {
   caseShape?: string
   crownType?: string
   calendarType?: string
+  dateComplication?: string
   countryOfOrigin?: string
   waterResistance?: string
   lugWidthMm?: number
@@ -128,6 +140,10 @@ export interface CreateWatch {
   productionYear?: number
   batteryType?: string
   lastBatteryChangedDate?: string
+  warrantyExpiryDate?: string
+  lastServicedDate?: string
+  winderTpd?: number
+  winderDirection?: string
   linkUrl?: string
   linkText?: string
   storageLocation?: string
@@ -135,6 +151,34 @@ export interface CreateWatch {
 }
 
 export type UpdateWatch = CreateWatch
+
+export interface ExternalImportRow {
+  rowNumber: number
+  brand: string
+  model: string
+  destination: string
+  canImport: boolean
+  isDuplicate: boolean
+  duplicateWatchId?: number
+  duplicateReason?: string
+  warnings: string[]
+  errors: string[]
+}
+
+export interface ExternalImportPreview {
+  source: string
+  collectionCount: number
+  wishlistCount: number
+  disposedCount: number
+  duplicateCount: number
+  rows: ExternalImportRow[]
+}
+
+export interface ExternalImportResult {
+  imported: number
+  skipped: number
+  duplicatesImported: number
+}
 
 export interface WishlistExtractionResult {
   brand?: string

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging.Abstractions;
 using WatchTracker.Api.Controllers;
 using WatchTracker.Api.Models;
 using WatchTracker.Api.Services;
@@ -98,6 +99,9 @@ ExportId,Brand,Model,Images
             User = owner,
             Brand = "Tudor",
             Model = "Black Bay 58",
+            Category = "Diver",
+            CaseThicknessMm = 11.9,
+            WarrantyExpiryDate = new DateTime(2030, 1, 2),
             Images = [new WatchImage { FileName = "watch.jpg", ContentType = "image/jpeg" }]
         };
         database.Context.AddRange(owner, watch);
@@ -105,7 +109,11 @@ ExportId,Brand,Model,Images
         using var fixture = new ImportFixture(database);
         Directory.CreateDirectory(fixture.UploadsPath);
         await File.WriteAllBytesAsync(Path.Combine(fixture.UploadsPath, "watch.jpg"), "image-bytes"u8.ToArray());
-        var controller = new DataController(database.Context, new UploadStorage(fixture.Environment), fixture.Service)
+        var controller = new DataController(
+            database.Context,
+            new UploadStorage(fixture.Environment),
+            fixture.Service,
+            new ExternalDataImportService(database.Context, NullLogger<ExternalDataImportService>.Instance))
         {
             ControllerContext = new ControllerContext
             {
@@ -126,6 +134,10 @@ ExportId,Brand,Model,Images
 
         var csv = await csvReader.ReadToEndAsync();
         Assert.Contains("Tudor,Black Bay 58", csv);
+        Assert.Contains("Category", csv);
+        Assert.Contains("CaseThicknessMm", csv);
+        Assert.Contains("WarrantyExpiryDate", csv);
+        Assert.Contains("Diver", csv);
         var image = archive.GetEntry("images/watch.jpg");
         Assert.NotNull(image);
         await using var imageStream = image.Open();

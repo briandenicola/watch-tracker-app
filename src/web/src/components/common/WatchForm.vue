@@ -176,6 +176,10 @@
           <!-- Identification -->
           <div class="space-y-4">
             <h3 class="form-subheading">Identification</h3>
+            <div>
+              <label class="block text-xs font-medium text-text-muted mb-1">Category</label>
+              <input v-model="formData.category" maxlength="100" placeholder="e.g. Diver, Dress, Field" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+            </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-text-muted mb-1">SKU / Reference</label>
@@ -208,6 +212,10 @@
                 <input v-model.number="formData.caseSizeMm" type="number" step="0.1" min="1" max="200" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
               </div>
               <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Case Thickness (mm)</label>
+                <input v-model.number="formData.caseThicknessMm" type="number" step="0.1" min="1" max="100" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
                 <label class="block text-xs font-medium text-text-muted mb-1">Lug Width (mm)</label>
                 <input v-model.number="formData.lugWidthMm" type="number" step="0.5" min="1" max="100" placeholder="e.g. 20" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
               </div>
@@ -218,6 +226,10 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Case Material</label>
+                <input v-model="formData.caseMaterial" maxlength="100" placeholder="e.g. Stainless steel" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
               <div>
                 <label class="block text-xs font-medium text-text-muted mb-1">Case Shape</label>
                 <input v-model="formData.caseShape" placeholder="e.g. Round, Tonneau" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
@@ -314,6 +326,10 @@
                 <label class="block text-xs font-medium text-text-muted mb-1">Calendar Type</label>
                 <input v-model="formData.calendarType" placeholder="e.g. Day-Date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
               </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Date Complication</label>
+                <input v-model="formData.dateComplication" maxlength="100" placeholder="e.g. Date, day-date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -324,6 +340,26 @@
               <div>
                 <label class="block text-xs font-medium text-text-muted mb-1">Last Battery Changed</label>
                 <input v-model="formData.lastBatteryChangedDate" type="date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Winder TPD</label>
+                <input v-model.number="formData.winderTpd" type="number" min="0" max="10000" step="1" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Winder Direction</label>
+                <input v-model="formData.winderDirection" maxlength="100" placeholder="e.g. Clockwise, bidirectional" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Warranty Expiry</label>
+                <input v-model="formData.warrantyExpiryDate" type="date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-muted mb-1">Last Serviced</label>
+                <input v-model="formData.lastServicedDate" type="date" class="w-full px-3 py-2.5 bg-bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors" />
               </div>
             </div>
           </div>
@@ -437,7 +473,10 @@ const formData = reactive({
   brand: props.initial?.brand || '',
   model: props.initial?.model || '',
   movementType: props.initial?.movementType || (props.mode === 'wishlist' ? '' : 'Automatic'),
+  category: props.initial?.category || '',
   caseSizeMm: props.initial?.caseSizeMm,
+  caseThicknessMm: props.initial?.caseThicknessMm,
+  caseMaterial: props.initial?.caseMaterial || '',
   bandType: props.initial?.bandType ? matchListValue(props.initial.bandType, bandTypes) : '',
   bandColor: props.initial?.bandColor || '',
   purchaseDate: formatDateForInput(props.initial?.purchaseDate),
@@ -450,6 +489,7 @@ const formData = reactive({
   caseShape: props.initial?.caseShape || '',
   crownType: props.initial?.crownType || '',
   calendarType: props.initial?.calendarType || '',
+  dateComplication: props.initial?.dateComplication || '',
   countryOfOrigin: props.initial?.countryOfOrigin || '',
   lugWidthMm: props.initial?.lugWidthMm,
   lugToLugMm: props.initial?.lugToLugMm,
@@ -462,6 +502,10 @@ const formData = reactive({
   productionYear: props.initial?.productionYear,
   batteryType: props.initial?.batteryType || '',
   lastBatteryChangedDate: formatDateForInput(props.initial?.lastBatteryChangedDate),
+  warrantyExpiryDate: formatDateForInput(props.initial?.warrantyExpiryDate),
+  lastServicedDate: formatDateForInput(props.initial?.lastServicedDate),
+  winderTpd: props.initial?.winderTpd,
+  winderDirection: props.initial?.winderDirection || '',
   linkUrl: props.initial?.linkUrl || '',
   linkText: props.initial?.linkText || '',
   storageLocation: props.initial?.storageLocation || '',
