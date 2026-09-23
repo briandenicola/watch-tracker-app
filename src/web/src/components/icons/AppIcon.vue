@@ -80,6 +80,13 @@
       <line x1="12" y1="12" x2="8" y2="8" />
     </template>
 
+    <!-- Help -->
+    <template v-else-if="name === 'help'">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.7 9a2.4 2.4 0 1 1 3.9 1.9c-1 .8-1.6 1.3-1.6 2.6" />
+      <circle cx="12" cy="17" r="0.6" :fill="color" stroke="none" />
+    </template>
+
     <!-- Admin: crown (Rolex-inspired) -->
     <template v-else-if="name === 'admin'">
       <path d="M3 17l2-10 4 4 3-6 3 6 4-4 2 10z" />

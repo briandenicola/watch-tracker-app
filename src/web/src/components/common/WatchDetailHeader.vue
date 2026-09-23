@@ -21,6 +21,9 @@
           <button @click="emit('discard-edits')" :disabled="savingEdits" class="header-action text-danger" aria-label="Discard edits" title="Discard edits">
             <AppIcon name="close" :size="20" :stroke-width="2" />
           </button>
+          <button @click="emit('show-help')" class="header-action" aria-label="Open watch field guide" title="Watch field guide">
+            <AppIcon name="help" :size="20" :stroke-width="1.75" />
+          </button>
         </template>
         <button v-else @click="run('edit')" class="header-action" aria-label="Edit watch" title="Edit watch">
           <AppIcon name="edit" :size="20" :stroke-width="1.75" />
@@ -86,7 +89,7 @@ type HeaderAction = 'edit' | 'wear' | 'analyze' | 'style' | 'share' | 'refresh-r
 
 const emit = defineEmits<{
   (event: HeaderAction): void
-  (event: 'save-edits' | 'discard-edits'): void
+  (event: 'save-edits' | 'discard-edits' | 'show-help'): void
   (event: 'upload', files: File[]): void
 }>()
 

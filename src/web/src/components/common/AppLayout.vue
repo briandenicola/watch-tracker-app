@@ -246,6 +246,7 @@ const navItems = computed(() => [
   { to: '/wear-log', icon: 'wear-log', label: 'Wear Log' },
   { to: '/shared', icon: 'collection', label: 'Shared' },
   { to: '/settings', icon: 'settings', label: 'Settings' },
+  { to: '/help', icon: 'help', label: 'Help' },
   ...(auth.isAdmin ? [{ to: '/admin', icon: 'admin', label: 'Admin' }] : []),
 ])
 

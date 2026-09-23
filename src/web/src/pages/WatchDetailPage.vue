@@ -17,7 +17,7 @@
         @edit="beginEdit" @save-edits="saveEdits" @discard-edits="discardEdits" @wear="handleWear"
         @upload="handleImageUpload" @analyze="handleAnalyze" @style="showStyleAgent = true" @share="showShare = true"
         @refresh-resale="handleRefreshResale" @disposition="openDisposition" @restore="handleRestore"
-        @delete="handleDelete" @purchase="handlePurchase"
+        @delete="handleDelete" @purchase="handlePurchase" @show-help="showHelp = true"
       />
 
       <WatchImageGallery :watch="watch" :removing-background="removingBg" @delete-image="handleDeleteImage" @remove-background="handleRemoveBackground" />
@@ -73,6 +73,7 @@
     <AnalysisReviewModal v-if="analysisResult && watch" :watch-id="watch.id" :watch-name="`${watch.brand} ${watch.model}`" :result="analysisResult" @applied="onAnalysisApplied" @close="analysisResult = null" />
     <ShareWatchModal v-if="showShare && watch" :watch-id="watch.id" :watch-name="`${watch.brand} ${watch.model}`" @close="showShare = false" />
     <StyleAgentModal v-if="showStyleAgent && watch" :watch-id="watch.id" :watch-name="`${watch.brand} ${watch.model}`" :has-photo="watch.imageUrls.length > 0" @close="showStyleAgent = false" />
+    <WatchHelpModal v-if="showHelp" @close="showHelp = false" />
     <DispositionModal
       v-if="showDispositionModal && watch" :current-watch-id="watch.id" :disposition="watch.disposition"
       :watches="allWatches" :saving="savingDisposition" :error-message="dispositionError"
@@ -94,6 +95,7 @@ import ShareWatchModal from '@/components/common/ShareWatchModal.vue'
 import StyleAgentModal from '@/components/common/StyleAgentModal.vue'
 import WatchDetailHeader from '@/components/common/WatchDetailHeader.vue'
 import WatchImageGallery from '@/components/common/WatchImageGallery.vue'
+import WatchHelpModal from '@/components/common/WatchHelpModal.vue'
 import WatchResaleHistory from '@/components/common/WatchResaleHistory.vue'
 import PriceWatchPanel from '@/components/common/PriceWatchPanel.vue'
 import { useWatchDetailEditor } from '@/composables/useWatchDetailEditor'
@@ -131,6 +133,7 @@ const resalePanel = ref<InstanceType<typeof WatchResaleHistory> | null>(null)
 const allWatches = ref<Watch[]>([])
 const showStyleAgent = ref(false)
 const showShare = ref(false)
+const showHelp = ref(false)
 const analysisResult = ref<WatchAnalysisResult | null>(null)
 const analysisError = ref('')
 const showDispositionModal = ref(false)

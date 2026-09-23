@@ -71,5 +71,9 @@ describe('AppLayout notifications link', () => {
 
     expect(wrapper.find('a[href="/notifications"]').exists()).toBe(false)
     expect(wrapper.get('a[href="/shared"]').text()).toContain('Shared')
+    const links = wrapper.findAll('nav a')
+    const settingsIndex = links.findIndex(link => link.attributes('href') === '/settings')
+    expect(links[settingsIndex + 1].attributes('href')).toBe('/help')
+    expect(links[settingsIndex + 1].text()).toContain('Help')
   })
 })

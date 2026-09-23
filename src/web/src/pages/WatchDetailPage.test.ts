@@ -123,6 +123,23 @@ describe('WatchDetailPage characteristic workflows', () => {
     expect(watchApi.updateWatch).toHaveBeenCalledWith(12, { saved: true })
   })
 
+  it('opens the field guide from inline edit mode and closes it', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('button[aria-label="Open watch field guide"]').exists()).toBe(false)
+    await wrapper.get('button[aria-label="Edit watch"]').trigger('click')
+    await wrapper.get('button[aria-label="Open watch field guide"]').trigger('click')
+
+    expect(document.body.textContent).toContain('Watch Field Guide')
+    expect(document.body.textContent).toContain('Lug-to-Lug')
+    const closeButton = document.body.querySelector<HTMLButtonElement>('button[aria-label="Close field guide"]')
+    expect(closeButton).not.toBeNull()
+    closeButton!.click()
+    await flushPromises()
+    expect(document.body.querySelector('button[aria-label="Close field guide"]')).toBeNull()
+  })
+
   it('uploads selected images then reloads the watch', async () => {
     const wrapper = mountPage()
     await flushPromises()

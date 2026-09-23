@@ -61,6 +61,7 @@ const router = createRouter({
         { path: 'shared/:id?', name: 'shared', component: () => import('@/pages/SharedPage.vue') },
         { path: 'retired', name: 'retired', component: () => import('@/pages/RetiredWatchesPage.vue') },
         { path: 'settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
+        { path: 'help', name: 'help', component: () => import('@/pages/HelpPage.vue') },
         { path: 'admin', name: 'admin', component: () => import('@/pages/AdminPage.vue'), meta: { admin: true } },
       ],
     },
