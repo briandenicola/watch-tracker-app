@@ -295,6 +295,10 @@ Recommendations can be added to the wishlist and marked helpful, irrelevant, alr
 
 Configuration, provider behavior, operational limits, privacy-safe diagnostics, evaluation thresholds, and troubleshooting are documented in [`docs/collection-advisor.md`](docs/collection-advisor.md).
 
+### How the AI Helpers Work
+
+A plain-language guide to every AI helper — what it does, where it runs, the tools it uses, how they work together, and Mermaid diagrams of the whole thing — is in [`docs/ai-agents.md`](docs/ai-agents.md).
+
 ### Share a Wish List
 
 **Settings → Sharing → Share Wish List** creates one public link — `/w/<token>` — to your whole list, in your priority
