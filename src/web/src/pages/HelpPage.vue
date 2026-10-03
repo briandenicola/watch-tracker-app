@@ -6,10 +6,12 @@
       A plain-language guide to the details you can record for watches in your collection and wish list.
       Values can be left blank when they do not apply or are not known.
     </p>
+    <WatchAnatomyDiagram class="mb-8" />
     <WatchHelpContent />
   </div>
 </template>
 
 <script setup lang="ts">
+import WatchAnatomyDiagram from '@/components/common/WatchAnatomyDiagram.vue'
 import WatchHelpContent from '@/components/common/WatchHelpContent.vue'
 </script>

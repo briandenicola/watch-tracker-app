@@ -89,3 +89,27 @@ export const watchHelpSections: WatchHelpSection[] = [
     ],
   },
 ]
+
+export type WatchAnatomyPartKey =
+  | 'band' | 'lugs' | 'bezel' | 'crystal' | 'dial' | 'case' | 'markers' | 'hands' | 'crown' | 'date'
+
+export interface WatchAnatomyPart {
+  key: WatchAnatomyPartKey
+  name: string
+  color: string
+  description: string
+}
+
+// Colors are chosen to stay distinguishable on both the dark and light themes.
+export const watchAnatomyParts: WatchAnatomyPart[] = [
+  { key: 'band', name: 'Band', color: '#c08457', description: 'The strap or bracelet that holds the watch on your wrist.' },
+  { key: 'lugs', name: 'Lugs', color: '#a78bfa', description: 'The horns on the case where the band attaches with spring bars. Lug width is the gap between them.' },
+  { key: 'bezel', name: 'Bezel', color: '#ef6b6b', description: 'The ring around the crystal. It can be fixed or rotate, and may carry a timing, GMT, or tachymeter scale.' },
+  { key: 'crystal', name: 'Crystal', color: '#38bdf8', description: 'The transparent cover protecting the dial, usually sapphire, mineral glass, or acrylic.' },
+  { key: 'dial', name: 'Dial', color: '#14b8a6', description: 'The face of the watch beneath the hands, also called the watch face.' },
+  { key: 'case', name: 'Case', color: '#94a3b8', description: 'The main body that houses and protects the movement. Case size is measured across it.' },
+  { key: 'markers', name: 'Hour Markers', color: '#facc15', description: 'The indices or numerals around the dial that mark the hours.' },
+  { key: 'hands', name: 'Hands', color: '#f97316', description: 'The pointers that show hours, minutes, and often seconds.' },
+  { key: 'crown', name: 'Crown', color: '#84cc16', description: 'The knob on the side of the case used to set the time and date and to wind the watch.' },
+  { key: 'date', name: 'Date Window', color: '#ec4899', description: 'A cut-out in the dial that shows the date. It is the most common date complication.' },
+]
