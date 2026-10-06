@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using WatchTracker.Api.Authentication;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
@@ -13,6 +14,8 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
 
     public async Task<ApiKeyCreatedDto> CreateAsync(int userId, CreateApiKeyDto dto, CancellationToken ct = default)
     {
+        var scopes = ApiKeyScopes.Normalize(dto.Scopes)
+            ?? throw new ArgumentException("Scopes must be \"read\" or \"read,agents\".", nameof(dto));
         var rawKey = GenerateKey();
         var hash = HashKey(rawKey);
 
@@ -21,6 +24,7 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
             UserId = userId,
             Name = dto.Name,
             KeyHash = hash,
+            Scopes = scopes,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -32,6 +36,7 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
             Id = apiKey.Id,
             Name = apiKey.Name,
             Key = rawKey,
+            Scopes = apiKey.Scopes,
             CreatedAt = apiKey.CreatedAt
         };
     }
@@ -45,6 +50,7 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
             {
                 Id = k.Id,
                 Name = k.Name,
+                Scopes = k.Scopes,
                 CreatedAt = k.CreatedAt,
                 LastUsedAt = k.LastUsedAt
             })
@@ -62,7 +68,10 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
         return true;
     }
 
-    public async Task<User?> ValidateAsync(string rawKey, CancellationToken ct = default)
+    public async Task<User?> ValidateAsync(string rawKey, CancellationToken ct = default) =>
+        (await ValidateWithScopesAsync(rawKey, ct))?.User;
+
+    public async Task<ValidatedApiKey?> ValidateWithScopesAsync(string rawKey, CancellationToken ct = default)
     {
         var hash = HashKey(rawKey);
         var apiKey = await context.ApiKeys
@@ -74,7 +83,7 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
         apiKey.LastUsedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(ct);
 
-        return apiKey.User;
+        return new ValidatedApiKey(apiKey.User, apiKey.Scopes);
     }
 
     private static string GenerateKey()

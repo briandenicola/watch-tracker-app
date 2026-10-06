@@ -101,6 +101,14 @@
                     <option value="Bob's Watches">Bob's Watches</option>
                     <option value="Ashford">Ashford</option>
                   </select>
+                  <select
+                    v-else-if="setting.key === 'McpServerEnabled'"
+                    v-model="setting.value"
+                    class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
+                  >
+                    <option value="false">Disabled</option>
+                    <option value="true">Enabled</option>
+                  </select>
                   <template v-else-if="setting.key === 'ApplicationTimeZone'">
                     <input
                       v-model="setting.value"
@@ -147,6 +155,10 @@
                     class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
                   />
                 </div>
+                <p v-if="setting.key === 'McpServerEnabled'" class="text-xs text-text-muted mt-1 sm:ml-[13rem]">
+                  Lets AI assistants such as Hermes Agent connect at <code>/api/mcp</code> using a personal API key.
+                  Off by default. Keys are created in Settings, and only keys given the agents scope can run the AI agents.
+                </p>
                 <p v-if="setting.key === 'ShareLinkBaseUrl'" class="text-xs text-text-muted mt-1 sm:ml-[13rem]">
                   The address share links should use, for people outside your network. Leave blank to build links from
                   whichever address you are viewing the app on.
@@ -290,6 +302,7 @@ import { setApplicationTimeZone } from '@/utils/dateTime'
 const SETTING_GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Regional Settings', keys: ['ApplicationTimeZone'] },
   { label: 'Sharing', keys: ['ShareLinkBaseUrl'] },
+  { label: 'MCP Server', keys: ['McpServerEnabled'] },
   { label: 'Ollama Configuration', keys: ['OllamaUrl', 'OllamaModel'] },
   { label: 'Web Search Configuration', keys: ['WebSearchProvider', 'MarketplaceVendor', 'BraveSearchApiKey', 'SearXngUrl'] },
   { label: 'eBay Pricing', keys: ['EbayClientId', 'EbayClientSecret'] },

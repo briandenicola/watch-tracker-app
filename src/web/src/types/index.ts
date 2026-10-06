@@ -622,6 +622,7 @@ export interface ApiKey {
   id: number
   name: string
   prefix: string
+  scopes?: string
   createdAt: string
   lastUsedAt?: string
 }

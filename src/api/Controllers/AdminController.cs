@@ -113,6 +113,10 @@ public class AdminController(
             return ValidationProblem("PriceAlertScanIntervalHours must be a whole number from 1 to 168.");
         }
 
+        var mcpEntry = settings.SingleOrDefault(s => s.Key == AppSettingsService.Keys.McpServerEnabled);
+        if (mcpEntry is not null && !bool.TryParse(mcpEntry.Value, out _))
+            return ValidationProblem("McpServerEnabled must be true or false.");
+
         foreach (var s in settings)
         {
             await appSettings.SetAsync(s.Key, s.Value);

@@ -244,7 +244,7 @@
           <div v-for="key in apiKeys" :key="key.id" class="flex items-center justify-between p-3 bg-bg-surface border border-border rounded-lg">
             <div>
               <p class="text-sm text-text">{{ key.name }}</p>
-              <p class="text-xs text-text-muted">{{ key.prefix }}… · Created {{ formatInstant(key.createdAt, { year: 'numeric', month: 'numeric', day: 'numeric' }) }}</p>
+              <p class="text-xs text-text-muted">{{ key.prefix }}… · {{ key.scopes === 'read,agents' ? 'Read + AI agents' : 'Read only' }} · Created {{ formatInstant(key.createdAt, { year: 'numeric', month: 'numeric', day: 'numeric' }) }}</p>
             </div>
             <button
               @click="handleDeleteApiKey(key.id)"
@@ -261,6 +261,14 @@
             placeholder="Key name"
             class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
           />
+          <select
+            v-model="newKeyScopes"
+            aria-label="Key access"
+            class="px-3 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
+          >
+            <option value="read">Read only</option>
+            <option value="read,agents">Read + AI agents</option>
+          </select>
           <button
             type="submit"
             :disabled="!newKeyName || creatingKey"
@@ -358,6 +366,7 @@ const oidcMsg = ref('')
 // API Keys
 const apiKeys = ref<ApiKey[]>([])
 const newKeyName = ref('')
+const newKeyScopes = ref('read')
 const creatingKey = ref(false)
 const newlyCreatedKey = ref('')
 
@@ -503,9 +512,9 @@ async function handleCreateApiKey() {
   creatingKey.value = true
   newlyCreatedKey.value = ''
   try {
-    const { data } = await api.post<{ id: number; name: string; key: string; prefix: string; createdAt: string }>('/api/apikeys', { name: newKeyName.value })
+    const { data } = await api.post<{ id: number; name: string; key: string; prefix: string; scopes: string; createdAt: string }>('/api/apikeys', { name: newKeyName.value, scopes: newKeyScopes.value })
     newlyCreatedKey.value = data.key
-    apiKeys.value.push({ id: data.id, name: data.name, prefix: data.prefix, createdAt: data.createdAt })
+    apiKeys.value.push({ id: data.id, name: data.name, prefix: data.prefix, scopes: data.scopes, createdAt: data.createdAt })
     newKeyName.value = ''
   } catch {
     /* silent */

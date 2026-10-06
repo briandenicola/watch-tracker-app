@@ -26,8 +26,15 @@ public class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
     [ProducesResponseType(typeof(ApiKeyCreatedDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<ApiKeyCreatedDto>> Create(CreateApiKeyDto dto, CancellationToken ct)
     {
-        var result = await apiKeyService.CreateAsync(UserId, dto, ct);
-        return CreatedAtAction(nameof(GetAll), result);
+        try
+        {
+            var result = await apiKeyService.CreateAsync(UserId, dto, ct);
+            return CreatedAtAction(nameof(GetAll), result);
+        }
+        catch (ArgumentException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]

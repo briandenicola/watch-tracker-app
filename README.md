@@ -299,6 +299,8 @@ Configuration, provider behavior, operational limits, privacy-safe diagnostics, 
 
 A plain-language guide to every AI helper — what it does, where it runs, the tools it uses, how they work together, and Mermaid diagrams of the whole thing — is in [`docs/ai-agents.md`](docs/ai-agents.md).
 
+To use these agents and your collection data from an outside assistant such as Hermes Agent, see [`docs/mcp.md`](docs/mcp.md).
+
 ### Share a Wish List
 
 **Settings → Sharing → Share Wish List** creates one public link — `/w/<token>` — to your whole list, in your priority

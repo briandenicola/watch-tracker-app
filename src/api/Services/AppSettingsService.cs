@@ -28,6 +28,7 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         public const string EbayClientId = "EbayClientId";
         public const string EbayClientSecret = "EbayClientSecret";
         public const string ApplicationTimeZone = "ApplicationTimeZone";
+        public const string McpServerEnabled = "McpServerEnabled";
     }
 
     private static readonly Dictionary<string, string> Defaults = new()
@@ -51,7 +52,8 @@ public class AppSettingsService(AppDbContext context) : IAppSettingsService
         [Keys.SearXngUrl] = "",
         [Keys.EbayClientId] = "",
         [Keys.EbayClientSecret] = "",
-        [Keys.ApplicationTimeZone] = "America/Chicago"
+        [Keys.ApplicationTimeZone] = "America/Chicago",
+        [Keys.McpServerEnabled] = "false"
     };
 
     public async Task<string> GetAsync(string key, string defaultValue = "")

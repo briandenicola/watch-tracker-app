@@ -243,6 +243,18 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+    options.AddPolicy("mcp", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 
 builder.Services.AddHttpClient();
@@ -274,6 +286,34 @@ builder.Services.AddScoped<IOidcService, OidcService>();
 builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<WatchTracker.Api.Mcp.McpCaller>();
+var mcpJson = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)
+{
+    TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver(),
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+};
+mcpJson.Converters.Add(new JsonStringEnumConverter());
+builder.Services.AddMcpServer()
+    .WithHttpTransport(o => o.Stateless = true)
+    .WithTools<WatchTracker.Api.Mcp.WatchTrackerReadTools>(mcpJson)
+    .WithTools<WatchTracker.Api.Mcp.WatchTrackerAgentTools>(mcpJson)
+    .WithRequestFilters(f => f.AddListToolsFilter(next => async (ctx, ct) =>
+    {
+        var result = await next(ctx, ct);
+        var caller = ctx.Services?.GetService<WatchTracker.Api.Mcp.McpCaller>();
+        if (caller is not null && !caller.HasScope(ApiKeyScopes.Agents))
+        {
+            var agentTools = typeof(WatchTracker.Api.Mcp.WatchTrackerAgentTools).GetMethods()
+                .Select(m => m.GetCustomAttributes(typeof(ModelContextProtocol.Server.McpServerToolAttribute), false)
+                    .Cast<ModelContextProtocol.Server.McpServerToolAttribute>().FirstOrDefault()?.Name)
+                .Where(n => n is not null)
+                .ToHashSet();
+            result.Tools = result.Tools.Where(t => !agentTools.Contains(t.Name)).ToList();
+        }
+        return result;
+    }));
 builder.Services.AddHttpClient<IWatchAnalysisService, WatchAnalysisService>();
 builder.Services.AddHttpClient<IWishlistExtractionService, WishlistExtractionService>();
 // Fetches whatever page a watch links to, so the analysis can read a spec sheet
@@ -352,7 +392,51 @@ app.UseStaticFiles();
 
 app.UseAuthorization();
 
+// MCP is for API keys only (never browser JWTs), off until an admin enables it.
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/api/mcp"))
+    {
+        await next();
+        return;
+    }
+
+    var principal = context.User;
+    if (principal.Identity?.IsAuthenticated != true)
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return;
+    }
+
+    if (!ApiKeyScopes.Has(principal.FindFirstValue(ApiKeyScopes.ClaimType), ApiKeyScopes.Read))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return;
+    }
+
+    var settings = context.RequestServices.GetRequiredService<IAppSettingsService>();
+    if (!string.Equals(await settings.GetAsync("McpServerEnabled"), "true", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        await context.Response.WriteAsJsonAsync(new { error = "The MCP server is disabled. An admin can enable it in Admin > Settings." });
+        return;
+    }
+
+    if (context.Request.ContentLength > 128 * 1024)
+    {
+        context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+        return;
+    }
+
+    var limiterFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>();
+    if (limiterFeature is { IsReadOnly: false })
+        limiterFeature.MaxRequestBodySize = 128 * 1024;
+
+    await next();
+});
+
 app.MapControllers();
+app.MapMcp("/api/mcp").RequireAuthorization().RequireRateLimiting("mcp");
 app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = _ => false

@@ -9,4 +9,7 @@ public interface IApiKeyService
     Task<List<ApiKeyDto>> GetAllAsync(int userId, CancellationToken ct = default);
     Task<bool> DeleteAsync(int id, int userId, CancellationToken ct = default);
     Task<User?> ValidateAsync(string rawKey, CancellationToken ct = default);
+    Task<ValidatedApiKey?> ValidateWithScopesAsync(string rawKey, CancellationToken ct = default);
 }
+
+public record ValidatedApiKey(User User, string Scopes);

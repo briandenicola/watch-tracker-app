@@ -27,17 +27,19 @@ public class ApiKeyAuthenticationHandler(
 
         using var scope = scopeFactory.CreateScope();
         var apiKeyService = scope.ServiceProvider.GetRequiredService<IApiKeyService>();
-        var user = await apiKeyService.ValidateAsync(rawKey);
+        var validated = await apiKeyService.ValidateWithScopesAsync(rawKey);
 
-        if (user is null)
+        if (validated is null)
             return AuthenticateResult.Fail("Invalid API key.");
 
+        var user = validated.User;
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role.ToString())
+            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim(ApiKeyScopes.ClaimType, validated.Scopes)
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);
