@@ -417,8 +417,9 @@ function addStorageLocation() {
 
 function removeStorageLocation(location: string) {
   storageLocations.value = storageLocations.value.filter(l => l !== location)
-  const { [location]: _removed, ...rest } = storageLayouts.value
-  storageLayouts.value = rest
+  storageLayouts.value = Object.fromEntries(
+    Object.entries(storageLayouts.value).filter(([name]) => name !== location),
+  )
   storageLocationsMsg.value = ''
 }
 

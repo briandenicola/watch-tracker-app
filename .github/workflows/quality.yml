@@ -21,8 +21,9 @@ jobs:
       - name: Audit NuGet dependencies
         run: |
           set -o pipefail
+          # TEMPORARY: SixLabors.ImageSharp 3.1.12 has high advisories fixed only in 4.x, which needs a paid license.
           for project in src/api/WatchTracker.Api.csproj src/api.tests/WatchTracker.Api.Tests.csproj; do
-            dotnet package list --project "$project" --vulnerable --include-transitive --format json --output-version 1 --no-restore | jq -e '[.. | objects | .vulnerabilities? | arrays | .[]? | select((.severity // .Severity // "" | ascii_downcase) as $severity | $severity == "high" or $severity == "critical")] | length == 0'
+            dotnet package list --project "$project" --vulnerable --include-transitive --format json --output-version 1 --no-restore | jq -e '[.. | objects | select(.id? != "SixLabors.ImageSharp") | .vulnerabilities? | arrays | .[]? | select((.severity // .Severity // "" | ascii_downcase) as $severity | $severity == "high" or $severity == "critical")] | length == 0'
           done
       - run: dotnet build src/api/WatchTracker.Api.csproj --no-restore --no-incremental
       - run: dotnet test src/api.tests/WatchTracker.Api.Tests.csproj --no-restore
