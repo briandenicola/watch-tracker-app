@@ -106,11 +106,20 @@
 
         <div class="mt-5 pt-5 border-t border-border">
           <label class="text-sm text-text-secondary mb-2 block">Storage Locations</label>
-          <div v-if="storageLocations.length" class="flex flex-wrap gap-2 mb-3">
-            <span v-for="location in storageLocations" :key="location" class="inline-flex items-center gap-2 px-3 py-1.5 bg-bg-surface border border-border rounded-full text-xs text-text-secondary">
-              {{ location }}
+          <div v-if="storageLocations.length" class="space-y-2 mb-3">
+            <div v-for="location in storageLocations" :key="location" class="flex flex-wrap items-center gap-3 px-3 py-2 bg-bg-surface border border-border rounded-lg text-sm text-text-secondary">
+              <span class="flex-1 min-w-[8rem] text-text">{{ location }}</span>
+              <label class="inline-flex items-center gap-1 text-xs">
+                Rows
+                <input type="number" min="1" max="12" :value="storageLayouts[location]?.rows ?? ''" @input="setLayoutDimension(location, 'rows', $event)" class="w-16 px-2 py-1 bg-bg-card border border-border rounded text-text" />
+              </label>
+              <label class="inline-flex items-center gap-1 text-xs">
+                Columns
+                <input type="number" min="1" max="12" :value="storageLayouts[location]?.columns ?? ''" @input="setLayoutDimension(location, 'columns', $event)" class="w-16 px-2 py-1 bg-bg-card border border-border rounded text-text" />
+              </label>
               <button type="button" @click="removeStorageLocation(location)" class="text-text-muted hover:text-danger transition-colors" :aria-label="`Remove ${location}`">×</button>
-            </span>
+            </div>
+            <p class="text-xs text-text-muted">Set rows and columns (e.g. 2 × 6) to arrange watches in this location on the Storage page.</p>
           </div>
           <p v-else class="text-sm text-text-muted mb-3">No storage locations defined yet.</p>
           <form @submit.prevent="addStorageLocation" class="flex gap-2 mb-3">
@@ -305,7 +314,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { ApiKey, LinkedOidcProvider, OidcProvider, OidcProviderPublic } from '@/types'
+import type { ApiKey, LinkedOidcProvider, OidcProvider, OidcProviderPublic, StorageLayout, StorageSettings } from '@/types'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme, type ThemeMode } from '@/stores/theme'
@@ -342,6 +351,7 @@ const wishlistSortOptions: { value: SortOption; label: string }[] = [
 ]
 
 const storageLocations = ref<string[]>([])
+const storageLayouts = ref<Record<string, { rows?: number; columns?: number }>>({})
 const newStorageLocation = ref('')
 const savingStorageLocations = ref(false)
 const storageLocationsMsg = ref('')
@@ -378,7 +388,7 @@ const dataMsg = ref('')
 onMounted(async () => {
   try {
     const [meResp, keysResp, oidcProvidersResp, linkedOidcResp] = await Promise.all([
-      api.get<{ username: string; email: string; profileImage?: string; storageLocations: string[] }>('/api/auth/me'),
+      api.get<{ username: string; email: string; profileImage?: string; storageLocations: string[]; storageLayouts?: Record<string, StorageLayout> }>('/api/auth/me'),
       api.get<ApiKey[]>('/api/apikeys'),
       api.get<OidcProviderPublic[]>('/api/auth/oidc/providers'),
       api.get<LinkedOidcProvider[]>('/api/auth/oidc/linked'),
@@ -386,6 +396,7 @@ onMounted(async () => {
     newUsername.value = meResp.data.username
     profileImage.value = meResp.data.profileImage || null
     storageLocations.value = [...(meResp.data.storageLocations || [])]
+    storageLayouts.value = { ...(meResp.data.storageLayouts || {}) }
     apiKeys.value = keysResp.data
     oidcProviders.value = oidcProvidersResp.data
     linkedOidcProviders.value = linkedOidcResp.data
@@ -406,18 +417,40 @@ function addStorageLocation() {
 
 function removeStorageLocation(location: string) {
   storageLocations.value = storageLocations.value.filter(l => l !== location)
+  const { [location]: _removed, ...rest } = storageLayouts.value
+  storageLayouts.value = rest
+  storageLocationsMsg.value = ''
+}
+
+function setLayoutDimension(location: string, dimension: 'rows' | 'columns', event: Event) {
+  const parsed = parseInt((event.target as HTMLInputElement).value, 10)
+  const value = Number.isFinite(parsed) ? Math.min(12, Math.max(1, parsed)) : undefined
+  storageLayouts.value = {
+    ...storageLayouts.value,
+    [location]: { ...storageLayouts.value[location], [dimension]: value },
+  }
   storageLocationsMsg.value = ''
 }
 
 async function saveStorageLocations() {
   savingStorageLocations.value = true
   storageLocationsMsg.value = ''
+  const layouts: Record<string, StorageLayout> = {}
+  for (const location of storageLocations.value) {
+    const layout = storageLayouts.value[location]
+    if (layout?.rows && layout?.columns) layouts[location] = { rows: layout.rows, columns: layout.columns }
+  }
   try {
-    const { data } = await api.put<string[]>('/api/auth/storage-locations', { storageLocations: storageLocations.value })
-    storageLocations.value = data
+    const { data } = await api.put<StorageSettings>('/api/auth/storage-locations', {
+      storageLocations: storageLocations.value,
+      storageLayouts: layouts,
+    })
+    storageLocations.value = data.storageLocations
+    storageLayouts.value = { ...data.storageLayouts }
     storageLocationsMsg.value = 'Locations saved'
-  } catch {
-    storageLocationsMsg.value = 'Error saving locations'
+  } catch (e) {
+    const apiError = (e as { response?: { data?: { error?: string } } }).response?.data?.error
+    storageLocationsMsg.value = `Error saving locations${apiError ? `: ${apiError}` : ''}`
   } finally {
     savingStorageLocations.value = false
   }

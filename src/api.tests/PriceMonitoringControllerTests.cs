@@ -80,6 +80,7 @@ public class PriceMonitoringControllerTests
             null!,
             null!,
             null!,
+            null!,
             scanner,
             alerts ?? new StubAlerts(),
             null!,

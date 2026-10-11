@@ -45,6 +45,8 @@ internal static class WatchFieldMapper
         watch.WinderDirection = dto.WinderDirection;
         watch.LinkUrl = dto.LinkUrl;
         watch.LinkText = dto.LinkText;
+        if (!string.Equals(watch.StorageLocation, dto.StorageLocation, StringComparison.Ordinal))
+            watch.StorageSlot = null;
         watch.StorageLocation = dto.StorageLocation;
         watch.IsWishList = dto.IsWishList;
     }

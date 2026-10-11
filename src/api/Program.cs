@@ -262,6 +262,7 @@ builder.Services.AddScoped<IWatchCatalogService, WatchCatalogService>();
 builder.Services.AddScoped<IWatchWearLogService, WatchWearLogService>();
 builder.Services.AddScoped<IWatchDispositionService, WatchDispositionService>();
 builder.Services.AddScoped<IWishlistService, WishlistService>();
+builder.Services.AddScoped<IStorageSlotService, StorageSlotService>();
 builder.Services.AddScoped<IResaleValueService, ResaleValueService>();
 builder.Services.AddScoped<ICollectionProfileService, CollectionProfileService>();
 builder.Services.AddScoped<IRecommendationWishlistService, RecommendationWishlistService>();

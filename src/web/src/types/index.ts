@@ -73,6 +73,7 @@ export interface Watch {
   marketplaceCurrency?: string
   marketplaceObservedAt?: string
   storageLocation?: string
+  storageSlot?: number
   isWishList: boolean
   wishlistPriority?: number
   priceAlertEnabled: boolean
@@ -198,6 +199,17 @@ export interface AuthResponse {
   role: string
   profileImage?: string
   storageLocations: string[]
+  storageLayouts?: Record<string, StorageLayout>
+}
+
+export interface StorageLayout {
+  rows: number
+  columns: number
+}
+
+export interface StorageSettings {
+  storageLocations: string[]
+  storageLayouts: Record<string, StorageLayout>
 }
 
 export interface LoginCredentials {

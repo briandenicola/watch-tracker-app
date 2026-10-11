@@ -129,7 +129,9 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         Email = user.Email,
         Role = user.Role.ToString(),
         ProfileImage = user.ProfileImage is not null ? $"/uploads/{user.ProfileImage}" : null,
-        StorageLocations = ParseStorageLocations(user.StorageLocationsJson)
+        StorageLocations = ParseStorageLocations(user.StorageLocationsJson),
+        StorageLayouts = StorageLayouts.Parse(user.StorageLayoutsJson)
+            .ToDictionary(kv => kv.Key, kv => kv.Value)
     };
 
     private string GenerateAccessToken(User user)
@@ -223,15 +225,48 @@ public class AuthService(AppDbContext context, IConfiguration configuration, IAp
         return true;
     }
 
-    public async Task<List<string>?> UpdateStorageLocationsAsync(int userId, IEnumerable<string> storageLocations)
+    public async Task<StorageSettingsDto?> UpdateStorageLocationsAsync(
+        int userId,
+        IEnumerable<string> storageLocations,
+        Dictionary<string, StorageLayoutDto>? storageLayouts)
     {
         var user = await context.Users.FindAsync(userId);
         if (user is null) return null;
 
         var normalized = NormalizeStorageLocations(storageLocations);
+        var requested = storageLayouts is null
+            ? StorageLayouts.Parse(user.StorageLayoutsJson)
+            : new Dictionary<string, StorageLayoutDto>(storageLayouts, StringComparer.OrdinalIgnoreCase);
+
+        var layouts = new Dictionary<string, StorageLayoutDto>();
+        foreach (var location in normalized)
+        {
+            if (requested.TryGetValue(location, out var layout) && StorageLayouts.IsValid(layout))
+                layouts[location] = layout;
+        }
+
+        await EnsureWatchesFitAsync(userId, layouts);
+
         user.StorageLocationsJson = JsonSerializer.Serialize(normalized);
+        user.StorageLayoutsJson = JsonSerializer.Serialize(layouts);
         await context.SaveChangesAsync();
-        return normalized;
+        return new StorageSettingsDto { StorageLocations = normalized, StorageLayouts = layouts };
+    }
+
+    private async Task EnsureWatchesFitAsync(int userId, Dictionary<string, StorageLayoutDto> layouts)
+    {
+        foreach (var (location, layout) in layouts)
+        {
+            var capacity = StorageLayouts.Capacity(layout);
+            var slots = await context.Watches
+                .Where(w => w.UserId == userId && !w.IsWishList && w.Disposition == null && w.StorageLocation == location)
+                .Select(w => w.StorageSlot)
+                .ToListAsync();
+
+            if (slots.Count > capacity || slots.Any(s => s >= capacity))
+                throw new InvalidOperationException(
+                    $"'{location}' holds {slots.Count} watches and cannot be resized to {layout.Rows}x{layout.Columns}. Move watches out or pick a larger grid.");
+        }
     }
 
     private static List<string> NormalizeStorageLocations(IEnumerable<string> storageLocations)

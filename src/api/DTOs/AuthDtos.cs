@@ -32,10 +32,10 @@ public class AuthResponseDto
     public required string Role { get; set; }
     public string? ProfileImage { get; set; }
     public List<string> StorageLocations { get; set; } = [];
+    public Dictionary<string, StorageLayoutDto> StorageLayouts { get; set; } = [];
 }
 
-public class RefreshTokenRequestDto
-{
+public class RefreshTokenRequestDto{
     [Required]
     public required string RefreshToken { get; set; }
 }
@@ -55,13 +55,31 @@ public class UpdateUsernameDto
     public required string Username { get; set; }
 }
 
+public class StorageSettingsDto
+{
+    public List<string> StorageLocations { get; set; } = [];
+    public Dictionary<string, StorageLayoutDto> StorageLayouts { get; set; } = [];
+}
+
 public class UpdateStorageLocationsDto : IValidatableObject
 {
     [MaxLength(50)]
     public List<string> StorageLocations { get; set; } = [];
 
+    public Dictionary<string, StorageLayoutDto>? StorageLayouts { get; set; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        foreach (var layout in StorageLayouts?.Values ?? Enumerable.Empty<StorageLayoutDto>())
+        {
+            if (layout is null
+                || layout.Rows < 1 || layout.Rows > StorageLayoutLimits.MaxDimension
+                || layout.Columns < 1 || layout.Columns > StorageLayoutLimits.MaxDimension)
+                yield return new ValidationResult(
+                    $"Storage layout rows and columns must be between 1 and {StorageLayoutLimits.MaxDimension}.",
+                    [nameof(StorageLayouts)]);
+        }
+
         foreach (var location in StorageLocations)
         {
             if (string.IsNullOrWhiteSpace(location) || location.Length > 100)

@@ -15,6 +15,7 @@ public class WatchesController(
     IWatchWearLogService wearLogService,
     IWatchDispositionService dispositionService,
     IWishlistService wishlistService,
+    IStorageSlotService storageSlotService,
     IResaleValueService resaleValueService,
     IWatchAnalysisService analysisService,
     IWishlistExtractionService wishlistExtractionService,
@@ -356,6 +357,22 @@ public class WatchesController(
         if (watch is not null)
             logger.LogInformation("Watch {WatchId} disposition cleared by user {UserId}", id, UserId);
         return watch is null ? NotFound() : Ok(watch);
+    }
+
+    [HttpPut("storage-slots")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateStorageSlots(UpdateStorageSlotsDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await storageSlotService.UpdateSlotsAsync(UserId, dto, ct);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("wishlist/order")]

@@ -746,6 +746,10 @@ namespace WatchTracker.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("StorageLayoutsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("StorageLocationsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -920,6 +924,9 @@ namespace WatchTracker.Api.Migrations
 
                     b.Property<string>("StorageLocation")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("StorageSlot")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("TimesWorn")
                         .HasColumnType("INTEGER");

@@ -88,7 +88,7 @@ public class OidcServiceTests
         public Task SetProfileImageAsync(int userId, string fileName) => Task.CompletedTask;
         public Task<string?> DeleteProfileImageAsync(int userId) => Task.FromResult<string?>(null);
         public Task<bool> UpdateUsernameAsync(int userId, string username) => Task.FromResult(false);
-        public Task<List<string>?> UpdateStorageLocationsAsync(int userId, IEnumerable<string> storageLocations) => Task.FromResult<List<string>?>(null);
+        public Task<StorageSettingsDto?> UpdateStorageLocationsAsync(int userId, IEnumerable<string> storageLocations, Dictionary<string, StorageLayoutDto>? storageLayouts) => Task.FromResult<StorageSettingsDto?>(null);
         public Task<AuthResponseDto?> RefreshAsync(string refreshToken) => Task.FromResult<AuthResponseDto?>(null);
         public Task RevokeRefreshTokenAsync(string refreshToken) => Task.CompletedTask;
         public Task<AuthResponseDto?> IssueTokensForUserAsync(int userId) => Task.FromResult<AuthResponseDto?>(null);

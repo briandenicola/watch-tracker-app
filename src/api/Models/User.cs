@@ -8,6 +8,7 @@ public class User
     public required string PasswordHash { get; set; }
     public string? ProfileImage { get; set; }
     public string StorageLocationsJson { get; set; } = "[]";
+    public string StorageLayoutsJson { get; set; } = "{}";
     public UserRole Role { get; set; } = UserRole.Standard;
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }

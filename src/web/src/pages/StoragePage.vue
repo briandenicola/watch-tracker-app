@@ -10,6 +10,8 @@
       </RouterLink>
     </div>
 
+    <p v-if="error" class="text-sm text-danger mb-4">{{ error }}</p>
+
     <div v-if="loading" class="flex items-center justify-center py-20">
       <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
     </div>
@@ -42,7 +44,41 @@
           </RouterLink>
         </div>
 
-        <div class="storage-shelf">
+        <div v-if="group.layout" class="storage-shelf storage-grid" :style="{ gridTemplateColumns: `repeat(${group.layout.columns}, minmax(0, 1fr))` }">
+          <div
+            v-for="(watch, index) in group.cells"
+            :key="index"
+            class="storage-cell"
+            :class="{ 'storage-cell-over': dragOver?.location === group.location && dragOver.index === index }"
+            @dragover.prevent="dragOver = { location: group.location, index }"
+            @dragleave="dragOver = null"
+            @drop.prevent="handleDrop(group, index)"
+          >
+            <RouterLink
+              v-if="watch"
+              :to="`/watches/${watch.id}`"
+              class="watch-token group"
+              :title="`${watch.brand} ${watch.model}`"
+              draggable="true"
+              @dragstart="dragged = { location: group.location, watchId: watch.id }"
+              @dragend="dragged = null; dragOver = null"
+            >
+              <span class="watch-brand font-display">{{ watch.brand }}</span>
+              <img
+                v-if="watch.imageUrls.length > 0"
+                :src="imageUrl(watch.imageUrls[0].url)"
+                :alt="`${watch.brand} ${watch.model}`"
+                class="watch-image"
+                loading="lazy"
+                draggable="false"
+              />
+              <div v-else class="watch-placeholder">⌚</div>
+              <span class="watch-model">{{ watch.model }}</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <div v-else class="storage-shelf">
           <RouterLink
             v-for="watch in group.watches"
             :key="watch.id"
@@ -69,14 +105,18 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { AuthResponse, Watch } from '@/types'
+import type { AuthResponse, StorageLayout, Watch } from '@/types'
 import { api } from '@/services/api'
-import { getWatches, imageUrl } from '@/services/watches'
+import { getWatches, imageUrl, updateStorageSlots } from '@/services/watches'
 
 const unassignedLabel = 'Unassigned'
 const loading = ref(true)
+const error = ref('')
 const allWatches = ref<Watch[]>([])
 const storageLocations = ref<string[]>([])
+const storageLayouts = ref<Record<string, StorageLayout>>({})
+const dragged = ref<{ location: string; watchId: number } | null>(null)
+const dragOver = ref<{ location: string; index: number } | null>(null)
 
 const collectionWatches = computed(() =>
   allWatches.value.filter(w => !w.isWishList && !w.isRetired)
@@ -95,12 +135,65 @@ const groupedWatches = computed(() => {
   }
 
   return [...groups.entries()]
-    .filter(([, watches]) => watches.length > 0)
-    .map(([location, watches]) => ({
-      location,
-      watches: [...watches].sort((a, b) => `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`)),
-    }))
+    .filter(([location, watches]) => watches.length > 0 || storageLayouts.value[location])
+    .map(([location, watches]) => {
+      const sorted = [...watches].sort((a, b) => `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`))
+      const layout = storageLayouts.value[location]
+      return { location, watches: sorted, layout, cells: layout ? buildCells(sorted, layout) : [] }
+    })
 })
+
+type Group = (typeof groupedWatches.value)[number]
+
+// Honour saved slots; watches without a valid, unique slot fill the first free cells.
+function buildCells(watches: Watch[], layout: StorageLayout): (Watch | null)[] {
+  const capacity = layout.rows * layout.columns
+  const cells: (Watch | null)[] = Array(capacity).fill(null)
+  const unplaced: Watch[] = []
+
+  for (const watch of watches) {
+    const slot = watch.storageSlot
+    if (slot !== undefined && slot !== null && slot >= 0 && slot < capacity && !cells[slot]) {
+      cells[slot] = watch
+    } else {
+      unplaced.push(watch)
+    }
+  }
+
+  for (const watch of unplaced) {
+    const free = cells.indexOf(null)
+    if (free === -1) break
+    cells[free] = watch
+  }
+
+  return cells
+}
+
+async function handleDrop(group: Group, targetIndex: number) {
+  const source = dragged.value
+  dragged.value = null
+  dragOver.value = null
+  if (!source || source.location !== group.location) return
+
+  const cells = [...group.cells]
+  const sourceIndex = cells.findIndex(w => w?.id === source.watchId)
+  if (sourceIndex === -1 || sourceIndex === targetIndex) return
+
+  ;[cells[sourceIndex], cells[targetIndex]] = [cells[targetIndex], cells[sourceIndex]]
+
+  const placements = cells.flatMap((w, slot) => (w ? [{ watchId: w.id, slot }] : []))
+  const previous = allWatches.value
+  const slotById = new Map(placements.map(p => [p.watchId, p.slot]))
+  allWatches.value = previous.map(w => (slotById.has(w.id) ? { ...w, storageSlot: slotById.get(w.id) } : w))
+
+  try {
+    await updateStorageSlots(group.location, placements)
+    error.value = ''
+  } catch {
+    allWatches.value = previous
+    error.value = 'Could not save the new arrangement.'
+  }
+}
 
 onMounted(async () => {
   try {
@@ -110,6 +203,7 @@ onMounted(async () => {
     ])
     allWatches.value = watches
     storageLocations.value = profileResp.data.storageLocations || []
+    storageLayouts.value = profileResp.data.storageLayouts || {}
   } finally {
     loading.value = false
   }
@@ -128,6 +222,34 @@ onMounted(async () => {
   background:
     radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.08), transparent 22rem),
     linear-gradient(180deg, rgba(30, 48, 82, 0.95), rgba(9, 24, 47, 0.98));
+}
+
+.storage-grid {
+  min-height: 0;
+  padding: 2rem 1.5rem;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.storage-cell {
+  min-height: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.25rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.storage-cell .watch-brand,
+.storage-cell .watch-model {
+  width: 100%;
+}
+
+.storage-cell-over {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.65);
 }
 
 .watch-token {

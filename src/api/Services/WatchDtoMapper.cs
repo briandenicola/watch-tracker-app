@@ -54,6 +54,7 @@ internal static class WatchDtoMapper
         MarketplaceCurrency = watch.MarketplaceCurrency,
         MarketplaceObservedAt = watch.MarketplaceObservedAt,
         StorageLocation = watch.StorageLocation,
+        StorageSlot = watch.StorageSlot,
         IsWishList = watch.IsWishList,
         WishlistPriority = watch.WishlistPriority,
         PriceAlertEnabled = watch.PriceAlertEnabled,

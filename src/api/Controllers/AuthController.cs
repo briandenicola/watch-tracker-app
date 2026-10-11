@@ -86,13 +86,21 @@ public class AuthController(IAuthService authService, IOidcService oidcService, 
 
     [Authorize]
     [HttpPut("storage-locations")]
-    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(StorageSettingsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<string>>> UpdateStorageLocations(UpdateStorageLocationsDto dto)
+    public async Task<ActionResult<StorageSettingsDto>> UpdateStorageLocations(UpdateStorageLocationsDto dto)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await authService.UpdateStorageLocationsAsync(userId, dto.StorageLocations);
-        return result is null ? NotFound() : Ok(result);
+        try
+        {
+            var result = await authService.UpdateStorageLocationsAsync(userId, dto.StorageLocations, dto.StorageLayouts);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [Authorize]

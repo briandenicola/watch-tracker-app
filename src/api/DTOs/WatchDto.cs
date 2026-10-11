@@ -52,6 +52,7 @@ public class WatchDto
     public string? MarketplaceCurrency { get; set; }
     public DateTime? MarketplaceObservedAt { get; set; }
     public string? StorageLocation { get; set; }
+    public int? StorageSlot { get; set; }
     public bool IsWishList { get; set; }
     public int? WishlistPriority { get; set; }
     public bool PriceAlertEnabled { get; set; }
