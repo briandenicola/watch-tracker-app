@@ -1,10 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
@@ -64,30 +61,13 @@ public class WatchAnalysisService(
     {
         try
         {
-            using var photo = await Image.LoadAsync<Rgba32>(filePath, ct);
-            while (photo.Frames.Count > 1)
-                photo.Frames.RemoveFrame(1);
-
-            photo.Mutate(ctx =>
+            var jpeg = await Task.Run(() =>
             {
-                ctx.AutoOrient();
-                ctx.BackgroundColor(Color.White);
-                if (photo.Width > MaxImageEdge || photo.Height > MaxImageEdge)
-                {
-                    ctx.Resize(new ResizeOptions
-                    {
-                        Size = new Size(MaxImageEdge, MaxImageEdge),
-                        Mode = ResizeMode.Max
-                    });
-                }
-            });
+                using var photo = ImageTools.Decode(filePath, applyExifOrientation: true);
+                return ImageTools.EncodeJpegOnWhite(photo, MaxImageEdge, ImageQuality);
+            }, ct);
 
-            using var buffer = new MemoryStream();
-            await photo.SaveAsJpegAsync(
-                buffer,
-                new JpegEncoder { Quality = ImageQuality },
-                ct);
-            return Convert.ToBase64String(buffer.ToArray());
+            return Convert.ToBase64String(jpeg);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

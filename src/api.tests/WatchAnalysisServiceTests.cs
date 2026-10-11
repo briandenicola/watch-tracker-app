@@ -3,8 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 using WatchTracker.Api.Models;
 using WatchTracker.Api.Services;
 
@@ -35,8 +34,13 @@ public class WatchAnalysisServiceTests
         database.Context.AddRange(user, watch, storedImage);
         await database.Context.SaveChangesAsync();
 
-        using (var source = new Image<Rgba32>(1800, 900, new Rgba32(0, 0, 0, 0)))
-            await source.SaveAsWebpAsync(Path.Combine(fixture.UploadsPath, storedImage.FileName));
+        using (var source = new SKBitmap(new SKImageInfo(1800, 900, SKColorType.Rgba8888, SKAlphaType.Premul)))
+        {
+            source.Erase(SKColors.Transparent);
+            using var image = SKImage.FromBitmap(source);
+            using var encoded = image.Encode(SKEncodedImageFormat.Webp, 90);
+            await File.WriteAllBytesAsync(Path.Combine(fixture.UploadsPath, storedImage.FileName), encoded.ToArray());
+        }
 
         var handler = new CapturingOllamaHandler();
         var service = new WatchAnalysisService(
@@ -76,10 +80,10 @@ public class WatchAnalysisServiceTests
                 .GetProperty("images")[0]
                 .GetString()!;
             var bytes = Convert.FromBase64String(base64);
-            ImageFormat = Image.DetectFormat(bytes).Name;
-            using var image = Image.Load<Rgba32>(bytes);
-            Width = image.Width;
-            Height = image.Height;
+            using var codec = SKCodec.Create(new MemoryStream(bytes))!;
+            ImageFormat = codec.EncodedFormat.ToString().ToUpperInvariant();
+            Width = codec.Info.Width;
+            Height = codec.Info.Height;
 
             var response = JsonSerializer.Serialize(new
             {

@@ -1,10 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using WatchTracker.Api.Data;
 using WatchTracker.Api.DTOs;
 using WatchTracker.Api.Models;
@@ -286,31 +283,16 @@ public class StyleAgentService(
 
         try
         {
-            using var photo = await Image.LoadAsync<Rgba32>(path, ct);
-            var oversized = photo.Width > MaxPhotoEdge || photo.Height > MaxPhotoEdge;
-
-            photo.Mutate(ctx =>
+            var jpeg = await Task.Run(() =>
             {
-                // Background removal leaves transparent PNGs, and JPEG has no
-                // alpha — without this the cut-out watch lands on black.
-                ctx.BackgroundColor(Color.White);
+                using var photo = ImageTools.Decode(path);
+                // Only ever down. Blowing a small image up would cost payload and add
+                // nothing for the model to see. Transparent PNGs from background
+                // removal are flattened onto white since JPEG has no alpha.
+                return ImageTools.EncodeJpegOnWhite(photo, MaxPhotoEdge, PhotoQuality);
+            }, ct);
 
-                // Only ever down. Blowing a small image up would cost payload
-                // and add nothing for the model to see.
-                if (oversized)
-                {
-                    ctx.Resize(new ResizeOptions
-                    {
-                        Size = new Size(MaxPhotoEdge, MaxPhotoEdge),
-                        Mode = ResizeMode.Max
-                    });
-                }
-            });
-
-            using var buffer = new MemoryStream();
-            await photo.SaveAsJpegAsync(buffer, new JpegEncoder { Quality = PhotoQuality }, ct);
-
-            return Convert.ToBase64String(buffer.ToArray());
+            return Convert.ToBase64String(jpeg);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

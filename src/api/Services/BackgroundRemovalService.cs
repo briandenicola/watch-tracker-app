@@ -1,8 +1,6 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 
 namespace WatchTracker.Api.Services;
 
@@ -82,48 +80,30 @@ public class BackgroundRemovalService : IBackgroundRemovalService, IDisposable
 
     private void ProcessImage(InferenceSession session, string inputPath, string outputPath)
     {
-        using var image = Image.Load<Rgba32>(inputPath);
-
-        if (image.Width > MaxInputDimension || image.Height > MaxInputDimension)
-            throw new InvalidOperationException(
-                $"Image too large ({image.Width}x{image.Height}). Maximum dimension is {MaxInputDimension}px.");
+        using var image = ImageTools.Decode(inputPath, maxDimension: MaxInputDimension);
 
         var originalWidth = image.Width;
         var originalHeight = image.Height;
 
         // Letterbox to 320x320 preserving aspect ratio
-        var (resizedW, resizedH, padX, padY) = ComputeLetterbox(originalWidth, originalHeight);
-
-        using var letterboxed = image.Clone(ctx =>
-        {
-            ctx.Resize(new ResizeOptions
-            {
-                Size = new Size(resizedW, resizedH),
-                Mode = ResizeMode.Max
-            });
-            // Pad to ModelSize x ModelSize
-            ctx.Pad(ModelSize, ModelSize, Color.Black);
-        });
+        var (resizedW, resizedH, _, _) = ComputeLetterbox(originalWidth, originalHeight);
+        var letterboxed = ImageTools.Letterbox(image, ModelSize, resizedW, resizedH);
 
         // Prepare input tensor: NCHW format, normalized to [0,1] then per-channel normalization
         var input = new DenseTensor<float>([1, 3, ModelSize, ModelSize]);
         float[] mean = [0.485f, 0.456f, 0.406f];
         float[] std = [0.229f, 0.224f, 0.225f];
 
-        letterboxed.ProcessPixelRows(accessor =>
+        for (int y = 0; y < ModelSize; y++)
         {
-            for (int y = 0; y < ModelSize; y++)
+            for (int x = 0; x < ModelSize; x++)
             {
-                var row = accessor.GetRowSpan(y);
-                for (int x = 0; x < ModelSize; x++)
-                {
-                    var pixel = row[x];
-                    input[0, 0, y, x] = (pixel.R / 255f - mean[0]) / std[0];
-                    input[0, 1, y, x] = (pixel.G / 255f - mean[1]) / std[1];
-                    input[0, 2, y, x] = (pixel.B / 255f - mean[2]) / std[2];
-                }
+                var offset = (y * ModelSize + x) * 4;
+                input[0, 0, y, x] = (letterboxed[offset] / 255f - mean[0]) / std[0];
+                input[0, 1, y, x] = (letterboxed[offset + 1] / 255f - mean[1]) / std[1];
+                input[0, 2, y, x] = (letterboxed[offset + 2] / 255f - mean[2]) / std[2];
             }
-        });
+        }
 
         // Run inference
         var inputs = new List<NamedOnnxValue>
@@ -139,9 +119,6 @@ public class BackgroundRemovalService : IBackgroundRemovalService, IDisposable
         int maskH = maskShape[2];
         int maskW = maskShape[3];
 
-        // Convert mask to image, unpad, resize to original dimensions
-        using var maskImage = new Image<L8>(maskW, maskH);
-
         // Normalize mask to [0, 255]
         float maskMin = float.MaxValue, maskMax = float.MinValue;
         for (int y = 0; y < maskH; y++)
@@ -154,43 +131,30 @@ public class BackgroundRemovalService : IBackgroundRemovalService, IDisposable
         float range = maskMax - maskMin;
         if (range < 1e-6f) range = 1f;
 
-        maskImage.ProcessPixelRows(accessor =>
-        {
-            for (int y = 0; y < maskH; y++)
+        var mask = new byte[maskW * maskH];
+        for (int y = 0; y < maskH; y++)
+            for (int x = 0; x < maskW; x++)
             {
-                var row = accessor.GetRowSpan(y);
-                for (int x = 0; x < maskW; x++)
-                {
-                    var normalized = (output[0, 0, y, x] - maskMin) / range;
-                    row[x] = new L8((byte)(Math.Clamp(normalized, 0f, 1f) * 255f));
-                }
+                var normalized = (output[0, 0, y, x] - maskMin) / range;
+                mask[y * maskW + x] = (byte)(Math.Clamp(normalized, 0f, 1f) * 255f);
             }
-        });
 
-        // Remove letterbox padding: crop the mask to the resized content area
+        // Remove letterbox padding: crop the mask to the resized content area, then
+        // resize to original dimensions
         int cropX = (maskW - resizedW) / 2;
         int cropY = (maskH - resizedH) / 2;
-        maskImage.Mutate(ctx =>
-        {
-            ctx.Crop(new Rectangle(cropX, cropY, resizedW, resizedH));
-            ctx.Resize(originalWidth, originalHeight);
-        });
+        var alpha = ImageTools.ResizeMask(
+            mask, maskW, maskH, SKRectI.Create(cropX, cropY, resizedW, resizedH), originalWidth, originalHeight);
 
         // Apply mask as alpha channel to original image
-        image.ProcessPixelRows(maskImage, (imgAccessor, maskAccessor) =>
-        {
-            for (int y = 0; y < originalHeight; y++)
-            {
-                var imgRow = imgAccessor.GetRowSpan(y);
-                var maskRow = maskAccessor.GetRowSpan(y);
-                for (int x = 0; x < originalWidth; x++)
-                {
-                    imgRow[x].A = maskRow[x].PackedValue;
-                }
-            }
-        });
+        var pixels = image.GetPixelSpan();
+        for (int i = 0; i < alpha.Length; i++)
+            pixels[i * 4 + 3] = alpha[i];
 
-        image.SaveAsPng(outputPath);
+        using (var encoded = SKImage.FromBitmap(image).Encode(SKEncodedImageFormat.Png, 100))
+        using (var file = File.Create(outputPath))
+            encoded.SaveTo(file);
+
         _logger.LogInformation("Background removed: {Input} → {Output}", inputPath, outputPath);
     }
 
