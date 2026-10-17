@@ -1042,6 +1042,32 @@ namespace WatchTracker.Api.Migrations
                     b.ToTable("WatchImages");
                 });
 
+            modelBuilder.Entity("WatchTracker.Api.Models.WatchPatrolConnection", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CredentialsProtected")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PendingAuthorizationProtected")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PendingExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PendingStateHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("PendingStateHash")
+                        .IsUnique();
+
+                    b.ToTable("WatchPatrolConnections");
+                });
+
             modelBuilder.Entity("WatchTracker.Api.Models.WatchShare", b =>
                 {
                     b.Property<int>("Id")
@@ -1466,6 +1492,17 @@ namespace WatchTracker.Api.Migrations
                     b.Navigation("User");
 
                     b.Navigation("Watch");
+                });
+
+            modelBuilder.Entity("WatchTracker.Api.Models.WatchPatrolConnection", b =>
+                {
+                    b.HasOne("WatchTracker.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.WearLog", b =>

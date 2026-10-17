@@ -13,6 +13,8 @@ public sealed class AdvisorToolContext(int userId, CollectionProfileDto profile)
         new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, CandidateFitScoreDto> ListingScores { get; } =
         new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, ModelContextProtocol.Protocol.Tool> WatchPatrolTools { get; } =
+        new(StringComparer.Ordinal);
 
     public static string ListingKey(string provider, string providerItemId) =>
         $"{provider}|{providerItemId}";

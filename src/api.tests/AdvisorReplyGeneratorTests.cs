@@ -11,6 +11,24 @@ namespace WatchTracker.Api.Tests;
 
 public class AdvisorReplyGeneratorTests
 {
+    [Theory]
+    [InlineData("watchpatrol_tools")]
+    [InlineData("watchpatrol_call")]
+    public async Task WatchPatrol_wrappers_are_approved_but_do_not_bypass_external_grounding(string name)
+    {
+        var tools = ObservedResearchTools();
+        var generator = CreateGenerator(new SequenceHandler(
+            Ollama(JsonSerializer.Serialize(new { type = "tool", tool = name, arguments = new { } })),
+            Ollama("""{"type":"answer","claims":[{"text":"The observed source provides watch research.","citations":[{"url":"https://research.test/brand","confidence":"medium"}]}],"recommendedListings":[],"followUps":[]}""")),
+            tools);
+
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "Research with WatchPatrol.");
+
+        Assert.Equal([name], tools.Calls);
+        Assert.Single(reply.Citations);
+        Assert.Contains("observed source", reply.Content);
+    }
+
     [Fact]
     public async Task Agent_executes_an_approved_tool_before_answering()
     {

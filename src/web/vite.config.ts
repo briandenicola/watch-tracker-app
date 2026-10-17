@@ -27,6 +27,10 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
         runtimeCaching: [
           {
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/advisor/watchpatrol'),
+            handler: 'NetworkOnly',
+          },
+          {
             urlPattern: /^.*\/api\/.*/i,
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', expiration: { maxEntries: 100, maxAgeSeconds: 300 } },

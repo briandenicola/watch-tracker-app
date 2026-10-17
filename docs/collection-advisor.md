@@ -20,6 +20,56 @@ Configure these values under **Admin > Settings**:
 
 The advisor remains available for collection-only questions when an optional search provider is unavailable. The UI reports provider failures and no-result states instead of presenting them as current evidence.
 
+### WatchPatrol (optional, free interactive MCP)
+
+On the Advisor page, choose **Connect WatchPatrol**, sign in to WatchPatrol and approve access.
+Sign-in uses a full-page redirect back to `/advisor`; the existing advisor conversation is saved.
+Each WatchTracker user connects their own WatchPatrol account. No API subscription or pasted key is needed.
+For an installed PWA whose external sign-in opens a separate browser, connect from the
+Advisor page in that browser first. The server-side connection then applies to the same user in the PWA.
+Disconnect removes this app's saved authorization and any pending connection; to revoke the
+provider-side grant too, use WatchPatrol's connected-app settings.
+
+The supplied MCP address is `https://api.watchpatrol.net/mcp/`. WatchPatrol's OAuth discovery
+currently advertises `https://www.watchpatrol.net/mcp/` as its canonical resource, which the
+app uses directly to avoid redirecting bearer credentials. The app uses Streamable HTTP and
+the already-referenced MCP SDK, OAuth dynamic public-client registration, authorization code
+with S256 PKCE, and the `mcp` scope only. Registration, authorization and token exchange are
+pinned to WatchPatrol's HTTPS origin. OAuth callbacks are authenticated API POSTs from the
+Advisor page, not anonymous account-link endpoints. The callback requires both matching
+browser session state and an unexpired, single-use authorization owned by the signed-in user.
+Access/refresh tokens and pending PKCE details are encrypted with the app's persisted Data
+Protection keys, using a separate protection purpose for each user. Preserve the existing
+`DataProtection:KeyPath` volume when replacing the container.
+
+The Advisor first calls `watchpatrol_tools`, then `watchpatrol_call` with a discovered tool name
+and its advertised argument schema. It accepts only explicitly read-only, non-destructive
+research tools with supported research names; image identification, alerts, starring,
+bulk/export and account actions are excluded. Missing read-only annotations fail closed,
+with a visible tool-status explanation. Discovery is metadata, never research evidence.
+
+Research results appear as escaped, expandable **Observed WatchPatrol result** text in the
+tool activity panel, with the observation time recorded in source citations. The model can
+summarize with citations, but cannot invent numeric price prose or turn arbitrary MCP output
+into listing cards. WatchPatrol asking prices do not update saved resale values or feed the
+scheduled price scanner, candidate finder or resale refresh service.
+
+The free plan currently advertises 60 calls/minute and 250 calls/day; WatchPatrol controls
+and may change those limits. The app does not automatically retry failed/throttled MCP
+requests. All lookups are initiated by an Advisor chat request, within its existing five-call,
+90-second budget. No background synchronization, bulk data collection or paid REST access
+is implemented. Query parameters supplied to a research tool are sent to WatchPatrol; the
+app does not send OAuth tokens to Ollama or the browser.
+
+The redirect must be `/advisor` on the current API origin or an explicit `AllowedOrigins`
+entry. HTTPS is required except on loopback development origins. `AllowedOrigins=*` does
+not authorize arbitrary OAuth redirect origins. The status endpoint is not service-worker
+cached, so another session or an offline cache cannot supply a stale connection state.
+
+Provider documentation: [integrations](https://www.watchpatrol.net/integrations/),
+[MCP/OAuth details](https://www.watchpatrol.net/llms-full.txt),
+[terms](https://www.watchpatrol.net/terms/).
+
 ## Grounding and safety
 
 - The agent can make at most five tool calls, use at most 48,000 prompt characters, and run for at most 90 seconds.
@@ -42,6 +92,7 @@ The advisor remains available for collection-only questions when an optional sea
 | Brave Search | Current web snippets and source URLs | Snippets can be incomplete and must be verified at the cited source. |
 | SearXNG | Current web snippets and source URLs | Coverage and freshness depend on the configured instance. |
 | Resale comparables | Min/median/max of matching active asking prices | This is not an appraisal or guaranteed resale value. |
+| WatchPatrol MCP | User-requested pricing, listings, sellers and market research | Optional per-user OAuth; asking prices, not completed sales. Observed payloads are displayed separately, not used to create listing cards or saved valuations. |
 
 Prices are observations, not offers or guarantees. Shipping can be unavailable, listings can expire, condition can differ, and currency conversion is not performed. “Value” means current asking-price evidence plus collection fit; investment returns are never guaranteed.
 
@@ -101,5 +152,16 @@ All listed tests must pass. API build, frontend type-check/build, frontend lint,
 | A listing is stale or unavailable | Ask the advisor to search again. Saved observations are not refreshed automatically. |
 | A response is rejected | Review the safe failure category. `grounding_validation` means the model emitted an unobserved citation, unsupported listing/price, or unstructured external claim. |
 | HTTP 429 | Wait for the one-minute advisor rate-limit window before retrying. |
+| WatchPatrol authorization fails | Disconnect and connect again. Confirm the browser uses HTTPS (or loopback HTTP), `/advisor` is an allowed redirect, and the app retained its Data Protection keys. |
+| WatchPatrol has no supported tools | The provider did not advertise supported research tools with explicit read-only metadata. The app deliberately does not expose unclassified or write tools. |
+| WatchPatrol usage limit is reached | Wait for the provider's limit to reset; the free daily allowance is separate from the app's own advisor rate limit. |
+| WatchPatrol result is too large | Ask for a narrower search or a smaller result limit. No truncated result is treated as complete evidence. |
 
 Schema migrations run automatically at API startup. Rolling back application code leaves additive advisor tables and nullable marketplace provenance columns in place; older code safely ignores them.
+
+For this integration, run `task test-watchpatrol` for the targeted OAuth, MCP transport/policy
+and Advisor regression cases, then `task build` and `task lint-web`. These tests use local fake
+provider responses, never live OAuth or paid endpoints. A live acceptance check still requires
+signing in through **Connect WatchPatrol** and asking the Advisor for a specific lookup.
+The additive `WatchPatrolConnections` migration applies on the next updated API startup;
+older application code ignores the table on rollback.

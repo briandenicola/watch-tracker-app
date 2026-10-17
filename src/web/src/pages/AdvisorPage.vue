@@ -18,6 +18,8 @@
       </button>
     </header>
 
+    <WatchPatrolConnectionPanel />
+
     <section class="advisor-shell">
       <div
         ref="transcriptEl"
@@ -79,12 +81,16 @@
                   :class="toolStatusClass(activity.status)"
                 >
                   <span class="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-current" />
-                  <span>
+                  <div class="min-w-0 flex-1">
                     <strong class="font-medium">{{ toolLabel(activity.tool) }}</strong>
                     <span> · {{ toolStatusLabel(activity.status) }}</span>
                     <span v-if="activity.durationMs > 0"> · {{ activity.durationMs }} ms</span>
                     <span v-if="activity.message" class="block text-text-muted">{{ activity.message }}</span>
-                  </span>
+                    <details v-if="activity.evidence" class="mt-2 text-text-secondary">
+                      <summary class="min-h-11 cursor-pointer py-3">Observed WatchPatrol result (asking-price research)</summary>
+                      <pre class="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs">{{ activity.evidence }}</pre>
+                    </details>
+                  </div>
                 </div>
               </div>
 
@@ -319,6 +325,7 @@
 import axios from 'axios'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
+import WatchPatrolConnectionPanel from '@/components/common/WatchPatrolConnectionPanel.vue'
 import {
   addAdvisorRecommendationToWishlist,
   getAdvisorChat,

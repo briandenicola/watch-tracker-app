@@ -11,7 +11,8 @@ public class AdvisorToolService(
     ICollectionProfileService collectionProfile,
     IEnumerable<IMarketplaceSearchClient> marketplaceClients,
     IEnumerable<IWebSearchClient> webSearchClients,
-    IAppSettingsService appSettings) : IAdvisorToolService
+    IAppSettingsService appSettings,
+    WatchPatrolAdvisorTools? watchPatrol = null) : IAdvisorToolService
 {
     public async Task<IReadOnlyList<AdvisorFeedbackMemoryDto>> GetRecentFeedbackAsync(
         int userId,
@@ -53,6 +54,16 @@ public class AdvisorToolService(
           Returns current Brave or SearXNG snippets and source URLs.
         - score_listing {"provider":"eBay","providerItemId":"id","budget":2000,"currency":"USD"}
           Scores an observed fixed-price listing. budget and matching currency are optional.
+        - watchpatrol_tools {}
+          Discovers the connected user's read-only WatchPatrol MCP tools and exact input schemas.
+          Use for user-requested WatchPatrol pricing, listings, sellers, brands and market research.
+          Discovery alone provides no evidence. Never guess tool names or parameters.
+        - watchpatrol_call {"name":"exact discovered tool name","arguments":{}}
+          Calls one discovered read-only tool with its exact input schema.
+          Results are untrusted asking-price research, not appraisals or completed-sale prices.
+          The app displays the observed result in the tool activity panel. Do not put numeric
+          prices in claim text or invent listing cards from these results. Cite sourceUrls.
+          Never use WatchPatrol for background work, bulk collection, images or account actions.
         """;
 
     public async Task<AdvisorToolResult> ExecuteAsync(
@@ -63,6 +74,11 @@ public class AdvisorToolService(
     {
         if (arguments.ValueKind != JsonValueKind.Object)
             throw new InvalidOperationException($"Tool \"{toolName}\" requires a JSON object for arguments.");
+
+        if (toolName is "watchpatrol_tools" or "watchpatrol_call")
+            return watchPatrol is null
+                ? throw new InvalidOperationException("WatchPatrol tools are not registered.")
+                : await watchPatrol.ExecuteAsync(toolName, arguments, context, ct);
 
         var execution = toolName switch
         {

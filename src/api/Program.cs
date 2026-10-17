@@ -331,6 +331,12 @@ builder.Services.AddHttpClient("RemoteImage")
 builder.Services.AddHttpClient<IStyleAgentService, StyleAgentService>();
 builder.Services.AddHttpClient<IWatchRecommendationService, WatchRecommendationService>();
 builder.Services.AddHttpClient<IAdvisorReplyGenerator, AdvisorReplyGenerator>();
+builder.Services.AddHttpClient("WatchPatrol")
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddScoped<IWatchPatrolConnectionService, WatchPatrolConnectionService>();
+builder.Services.AddScoped<IWatchPatrolMcpClient, WatchPatrolMcpClient>();
+builder.Services.AddScoped<WatchPatrolAdvisorTools>();
 builder.Services.AddHttpClient<IWebSearchClient, BraveSearchClient>()
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddHttpClient<IWebSearchClient, SearXngSearchClient>()

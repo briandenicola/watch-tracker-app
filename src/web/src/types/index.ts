@@ -463,6 +463,7 @@ export interface AdvisorToolActivity {
   status: 'completed' | 'completed_with_warnings' | 'unavailable' | 'failed'
   message?: string | null
   durationMs: number
+  evidence?: string | null
 }
 
 export interface AdvisorMessage {

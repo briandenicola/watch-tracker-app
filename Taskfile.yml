@@ -34,6 +34,22 @@ tasks:
     cmds:
       - dotnet test
 
+  test-watchpatrol:
+    desc: Run WatchPatrol and Advisor regression tests (no live provider calls)
+    deps: [test-watchpatrol-api, test-watchpatrol-web]
+
+  test-watchpatrol-api:
+    desc: Run WatchPatrol OAuth, MCP policy and Advisor API tests
+    dir: src/api.tests
+    cmds:
+      - dotnet test --filter "FullyQualifiedName~WatchPatrol|FullyQualifiedName~Advisor"
+
+  test-watchpatrol-web:
+    desc: Run WatchPatrol connection and Advisor frontend tests
+    dir: src/web
+    cmds:
+      - npm run test -- src/components/common/WatchPatrolConnectionPanel.test.ts src/pages/AdvisorPage.test.ts
+
   build-web:
     desc: Build the Vue frontend
     dir: src/web

@@ -30,7 +30,9 @@ public class AdvisorReplyGenerator(
         "marketplace_search",
         "resale_comparables",
         "web_research",
-        "score_listing"
+        "score_listing",
+        "watchpatrol_tools",
+        "watchpatrol_call"
     ];
     private static readonly HashSet<string> LocalEvidenceTools =
     [
@@ -241,7 +243,8 @@ public class AdvisorReplyGenerator(
               brand facts, or model facts.
             - Use collection_profile or collection_watches before making collection claims.
             - Use web_research for external brand/model claims and marketplace_search or
-              resale_comparables for prices.
+              resale_comparables for prices. For WatchPatrol research, discover its tools
+              with watchpatrol_tools, then use watchpatrol_call with an exact discovered schema.
             - Prices from marketplace tools are active asking prices, not completed sales.
             - Use score_listing for budget and collection-fit math; do not calculate those scores.
             - "Best value" means evidence-based price and collection fit, never guaranteed return.

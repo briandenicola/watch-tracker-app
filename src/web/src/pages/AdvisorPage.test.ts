@@ -13,6 +13,9 @@ const advisorApi = vi.hoisted(() => ({
 }))
 
 vi.mock('@/services/advisor', () => advisorApi)
+vi.mock('@/services/watchPatrol', () => ({
+  getWatchPatrolStatus: vi.fn().mockResolvedValue({ connected: false }),
+}))
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({ isAdmin: true }),
 }))
@@ -52,6 +55,22 @@ describe('Advisor recommendation actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     advisorApi.getAdvisorChat.mockResolvedValue(structuredClone(chatState))
+  })
+
+  it('renders provider evidence as inert text rather than model-supplied HTML', async () => {
+    const state = structuredClone(chatState)
+    state.session.messages[0]!.toolActivity = [{
+      tool: 'watchpatrol_call',
+      status: 'completed',
+      durationMs: 20,
+      evidence: '{"median":1250,"text":"<script>untrusted()</script>"}',
+    }]
+    advisorApi.getAdvisorChat.mockResolvedValue(state)
+    const wrapper = mount(AdvisorPage)
+    await flushPromises()
+    expect(wrapper.get('details pre').text()).toContain('"median":1250')
+    expect(wrapper.get('details pre').text()).toContain('<script>untrusted()</script>')
+    expect(wrapper.find('details script').exists()).toBe(false)
   })
 
   it('adds the persisted recommendation identity to the wishlist', async () => {

@@ -8,7 +8,7 @@ This page explains, in plain language, what each helper does, where it runs, wha
 
 - **You stay in control.** The AI only suggests. Nothing is saved to your collection until you review and approve it.
 - **The AI runs on your own server.** All helpers talk to an [Ollama](https://ollama.com) model that your admin configures. Your collection is not sent to a third-party AI service.
-- **The AI never does the math.** Counts, gaps, fit scores, prices and dates are calculated by the app itself. The AI reads those facts and explains them.
+- **The AI never does the math.** Counts, gaps, fit scores and budget checks are calculated in code. Prices and market statistics come from recorded data or source results. The AI reads those facts and explains them.
 - **Everything is private to you.** Every helper only sees your own watches and wish list.
 - **Prices come from real listings.** The AI cannot invent a price or a listing. Anything shown as a listing or a price came back from a real marketplace or web search.
 
@@ -141,12 +141,22 @@ The advisor is the most capable helper. It decides which **tools** it needs, use
 | `resale_comparables` | Low / middle / high **asking** prices for a model |
 | `web_research` | Current web results with source links |
 | `score_listing` | How well a listing fits your collection and budget |
+| `watchpatrol_tools` | Discovers supported read-only research tools for your connected WatchPatrol account |
+| `watchpatrol_call` | Runs one discovered WatchPatrol pricing, listing, seller or market lookup |
 
 Limits: at most **5 tool calls**, **90 seconds** per question, and a fixed size limit on what it reads.
 
 **Trust rules:** every statement about the outside world must cite a link the tools actually saw. If a search fails, the advisor says so instead of guessing. Prices and listing cards are rebuilt by the app from real results, not copied from the AI's text.
 
 You can add recommendations to your wish list and mark them helpful, irrelevant, already owned, or not interested. The ten most recent ratings shape later answers.
+
+**Optional WatchPatrol connection:** choose **Connect WatchPatrol** on the Advisor page and
+sign in with your own account. Its free MCP connection is used only for interactive chat
+research, never scheduled scans or saved resale-value updates. Read-only lookup parameters
+are sent to WatchPatrol, not your whole collection. Results are shown as escaped, expandable
+source details beneath the reply; prices remain asking-price research, not appraisals.
+Image identification and account actions such as creating alerts or starring listings are
+not enabled. See [connection details and limits](collection-advisor.md#watchpatrol-optional-free-interactive-mcp).
 
 ### Resale Value Estimator
 

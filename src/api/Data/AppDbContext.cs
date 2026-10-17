@@ -30,6 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WishlistShare> WishlistShares => Set<WishlistShare>();
     public DbSet<WishlistUserShare> WishlistUserShares => Set<WishlistUserShare>();
     public DbSet<CollectionReview> CollectionReviews => Set<CollectionReview>();
+    public DbSet<WatchPatrolConnection> WatchPatrolConnections => Set<WatchPatrolConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<AppSetting>(entity =>
         {
             entity.HasKey(a => a.Key);
+        });
+
+        modelBuilder.Entity<WatchPatrolConnection>(entity =>
+        {
+            entity.HasKey(c => c.UserId);
+            entity.Property(c => c.UserId).ValueGeneratedNever();
+            entity.HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(c => c.PendingStateHash).HasMaxLength(64);
+            entity.HasIndex(c => c.PendingStateHash).IsUnique();
         });
 
         modelBuilder.Entity<ApiKey>(entity =>

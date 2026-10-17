@@ -88,6 +88,7 @@ public class AdvisorToolActivityDto
     public required string Status { get; set; }
     public string? Message { get; set; }
     public long DurationMs { get; set; }
+    public string? Evidence { get; set; }
 }
 
 public class AdvisorMessageDto
