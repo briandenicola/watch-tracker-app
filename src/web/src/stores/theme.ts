@@ -1,12 +1,26 @@
 import { ref, watch } from 'vue'
 
-export type ThemeMode = 'dark' | 'light' | 'system'
+export type ThemeMode = 'dark' | 'light' | 'burnt-orange' | 'system'
+export type EffectiveTheme = Exclude<ThemeMode, 'system'>
 
 const STORAGE_KEY = 'watch-tracker-theme'
 
+const META_COLORS: Record<EffectiveTheme, string> = {
+  dark: '#1a1a1a',
+  light: '#f8f6f3',
+  'burnt-orange': '#2b1a10',
+}
+
+export const THEME_LABELS: Record<ThemeMode, string> = {
+  light: 'Light',
+  dark: 'Dark',
+  'burnt-orange': 'Burnt Orange',
+  system: 'System',
+}
+
 const mode = ref<ThemeMode>((localStorage.getItem(STORAGE_KEY) as ThemeMode) || 'system')
 
-function getEffectiveTheme(): 'dark' | 'light' {
+function getEffectiveTheme(): EffectiveTheme {
   if (mode.value === 'system') {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   }
@@ -19,7 +33,7 @@ function applyTheme() {
   // Update theme-color meta for PWA
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) {
-    meta.setAttribute('content', effective === 'dark' ? '#1a1a1a' : '#f8f6f3')
+    meta.setAttribute('content', META_COLORS[effective])
   }
 }
 

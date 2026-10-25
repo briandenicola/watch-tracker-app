@@ -54,7 +54,7 @@
       <!-- Appearance Section -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Appearance</h3>
-        <div class="flex gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             v-for="opt in themeOptions"
             :key="opt.value"
@@ -317,7 +317,7 @@ import { ref, onMounted } from 'vue'
 import type { ApiKey, LinkedOidcProvider, OidcProvider, OidcProviderPublic, StorageLayout, StorageSettings } from '@/types'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import { useTheme, type ThemeMode } from '@/stores/theme'
+import { useTheme, THEME_LABELS, type ThemeMode } from '@/stores/theme'
 import { usePreferences, type SortOption } from '@/stores/preferences'
 import { currentDateKey, formatInstant } from '@/utils/dateTime'
 import ShareWishlistModal from '@/components/common/ShareWishlistModal.vue'
@@ -331,11 +331,8 @@ const preferences = usePreferences()
 const loading = ref(true)
 const profileImage = ref<string | null>(null)
 
-const themeOptions: { value: ThemeMode; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
-]
+const themeOptions: { value: ThemeMode; label: string }[] = (['light', 'dark', 'burnt-orange', 'system'] as const)
+  .map((value) => ({ value, label: THEME_LABELS[value] }))
 
 const collectionSortOptions: { value: Exclude<SortOption, 'priority'>; label: string }[] = [
   { value: 'dateAdded', label: 'Date Added' },

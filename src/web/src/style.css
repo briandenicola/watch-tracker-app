@@ -44,6 +44,27 @@
   --color-sidebar-bg: #faf8f5;
 }
 
+/* === Burnt Orange Theme — 70s espresso dial with a burnt orange accent === */
+[data-theme="burnt-orange"] {
+  --color-bg: #2b1a10;
+  --color-bg-surface: #362114;
+  --color-bg-elevated: #432a19;
+  --color-bg-card: #311e12;
+  --color-accent: #e0782a;
+  --color-accent-hover: #f08c3c;
+  --color-accent-muted: #b85f1e;
+  --color-text: #f7ead8;
+  --color-text-secondary: #d4b896;
+  --color-text-muted: #a5876a;
+  --color-border: #5a3a22;
+  --color-border-light: #3f2818;
+  --color-danger: #e2604e;
+  --color-danger-hover: #ec7362;
+  --color-success: #9cc46a;
+  --color-nav-bg: #22140b;
+  --color-sidebar-bg: #2b1a10;
+}
+
 /* === Base Styles === */
 
 /* iOS renders date and time inputs as a native control sized to the localized

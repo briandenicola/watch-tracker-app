@@ -25,8 +25,8 @@
           @click="cycleTheme"
           class="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-muted hover:text-text transition-colors"
         >
-          <AppIcon :name="theme.getEffectiveTheme() === 'dark' ? 'moon' : 'sun'" :size="18" />
-          <span class="capitalize">{{ theme.mode.value }}</span>
+          <AppIcon :name="theme.getEffectiveTheme() === 'light' ? 'sun' : 'moon'" :size="18" />
+          <span>{{ THEME_LABELS[theme.mode.value] }}</span>
         </button>
         <button
           @click="auth.logout(); $router.push('/login')"
@@ -109,8 +109,8 @@
                 @click="cycleTheme"
                 class="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-muted hover:text-text transition-colors"
               >
-                <AppIcon :name="theme.getEffectiveTheme() === 'dark' ? 'moon' : 'sun'" :size="16" />
-                <span class="capitalize">Theme: {{ theme.mode.value }}</span>
+                <AppIcon :name="theme.getEffectiveTheme() === 'light' ? 'sun' : 'moon'" :size="16" />
+                <span>Theme: {{ THEME_LABELS[theme.mode.value] }}</span>
               </button>
               <button
                 @click="auth.logout(); $router.push('/login'); sidebarOpen = false"
@@ -169,7 +169,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useTheme } from '@/stores/theme'
+import { useTheme, THEME_LABELS } from '@/stores/theme'
 import { useApplicationSettings } from '@/stores/application'
 import { useNotificationsStore } from '@/stores/notifications'
 import AppIcon from '@/components/icons/AppIcon.vue'
@@ -231,7 +231,7 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 })
 
 function cycleTheme() {
-  const modes = ['dark', 'light', 'system'] as const
+  const modes = ['dark', 'light', 'burnt-orange', 'system'] as const
   const idx = modes.indexOf(theme.mode.value)
   theme.setTheme(modes[(idx + 1) % modes.length])
 }
