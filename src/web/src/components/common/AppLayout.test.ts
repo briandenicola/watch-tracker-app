@@ -11,6 +11,7 @@ const auth = vi.hoisted(() => ({
 const theme = vi.hoisted(() => ({
   mode: { value: 'dark' },
   getEffectiveTheme: vi.fn(() => 'dark'),
+  isLight: vi.fn(() => false),
   setTheme: vi.fn(),
 }))
 const application = vi.hoisted(() => ({ ready: true, load: vi.fn() }))
@@ -28,7 +29,9 @@ vi.mock('vue-router', () => ({
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => auth }))
 vi.mock('@/stores/theme', () => ({
   useTheme: () => theme,
-  THEME_LABELS: { light: 'Light', dark: 'Dark', 'burnt-orange': 'Burnt Orange', system: 'System' },
+  THEME_LABELS: { light: 'Light', dark: 'Dark', system: 'System' },
+  BASE_THEMES: ['system', 'dark', 'light'],
+  MUSEUM_THEMES: [],
 }))
 vi.mock('@/stores/application', () => ({ useApplicationSettings: () => application }))
 vi.mock('@/stores/notifications', () => ({ useNotificationsStore: () => notifications }))

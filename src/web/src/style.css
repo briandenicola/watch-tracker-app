@@ -44,25 +44,153 @@
   --color-sidebar-bg: #faf8f5;
 }
 
-/* === Burnt Orange Theme — 70s espresso dial with a burnt orange accent === */
-[data-theme="burnt-orange"] {
-  --color-bg: #2b1a10;
-  --color-bg-surface: #362114;
-  --color-bg-elevated: #432a19;
-  --color-bg-card: #311e12;
-  --color-accent: #e0782a;
-  --color-accent-hover: #f08c3c;
-  --color-accent-muted: #b85f1e;
-  --color-text: #f7ead8;
-  --color-text-secondary: #d4b896;
-  --color-text-muted: #a5876a;
-  --color-border: #5a3a22;
-  --color-border-light: #3f2818;
-  --color-danger: #e2604e;
-  --color-danger-hover: #ec7362;
-  --color-success: #9cc46a;
-  --color-nav-bg: #22140b;
-  --color-sidebar-bg: #2b1a10;
+/* === Aurearia museum themes (shared with the Aurearia and Domus apps) === */
+
+/* Aurea — midnight navy grounds with antique gold */
+[data-theme="aurea"] {
+  --color-bg: #0f0f1a;
+  --color-bg-surface: #1a2747;
+  --color-bg-elevated: #1e2a4a;
+  --color-bg-card: #16213e;
+  --color-accent: #c9a84c;
+  --color-accent-hover: #d3b86c;
+  --color-accent-muted: #9a8240;
+  --color-text: #e8e0d0;
+  --color-text-secondary: #a09880;
+  --color-text-muted: #706858;
+  --color-border: rgba(201, 168, 76, 0.18);
+  --color-border-light: rgba(201, 168, 76, 0.11);
+  --color-danger: #ef6b6b;
+  --color-danger-hover: #f48383;
+  --color-success: #4cc38a;
+  --color-nav-bg: #1a1a2e;
+  --color-sidebar-bg: #0f0f1a;
+}
+
+/* Parchment — warm paper grounds with aged gold ink */
+[data-theme="parchment"] {
+  --color-bg: #f5f0e8;
+  --color-bg-surface: #faf7f2;
+  --color-bg-elevated: #f0ebe3;
+  --color-bg-card: #ffffff;
+  --color-accent: #9a7b2e;
+  --color-accent-hover: #ac9354;
+  --color-accent-muted: #b1985c;
+  --color-text: #2c2416;
+  --color-text-secondary: #5c5040;
+  --color-text-muted: #8a7e6c;
+  --color-border: rgba(154, 123, 46, 0.22);
+  --color-border-light: rgba(154, 123, 46, 0.13);
+  --color-danger: #a63125;
+  --color-danger-hover: #bf4234;
+  --color-success: #146e44;
+  --color-nav-bg: #ede5d8;
+  --color-sidebar-bg: #f5f0e8;
+}
+
+/* British Museum — black field with Portland stone accents */
+[data-theme="british-museum"] {
+  --color-bg: #0c0c0b;
+  --color-bg-surface: #222221;
+  --color-bg-elevated: #1e1e1d;
+  --color-bg-card: #1a1a19;
+  --color-accent: #d8d4cc;
+  --color-accent-hover: #dfdcd5;
+  --color-accent-muted: #a5a29c;
+  --color-text: #e8e4dc;
+  --color-text-secondary: #a8a49c;
+  --color-text-muted: #6a6660;
+  --color-border: rgba(216, 212, 204, 0.15);
+  --color-border-light: rgba(216, 212, 204, 0.09);
+  --color-danger: #ef6b6b;
+  --color-danger-hover: #f48383;
+  --color-success: #4cc38a;
+  --color-nav-bg: #131312;
+  --color-sidebar-bg: #0c0c0b;
+}
+
+/* Louvre — sycamore and cinnamon */
+[data-theme="louvre"] {
+  --color-bg: #1a1510;
+  --color-bg-surface: #32291e;
+  --color-bg-elevated: #3a2f22;
+  --color-bg-card: #2a2218;
+  --color-accent: #977b3c;
+  --color-accent-hover: #aa935f;
+  --color-accent-muted: #786231;
+  --color-text: #ffffff;
+  --color-text-secondary: #b0a080;
+  --color-text-muted: #806848;
+  --color-border: rgba(151, 123, 60, 0.2);
+  --color-border-light: rgba(151, 123, 60, 0.12);
+  --color-danger: #ef6b6b;
+  --color-danger-hover: #f48383;
+  --color-success: #4cc38a;
+  --color-nav-bg: #231c14;
+  --color-sidebar-bg: #1a1510;
+}
+
+/* Capitoline — Giallo Roma gold and Rosso Roma crimson on near-black */
+[data-theme="capitoline"] {
+  --color-bg: #0a0808;
+  --color-bg-surface: #221818;
+  --color-bg-elevated: #261c1c;
+  --color-bg-card: #1a1212;
+  --color-accent: #f0bc42;
+  --color-accent-hover: #f3c864;
+  --color-accent-muted: #b68f34;
+  --color-text: #f0e8d8;
+  --color-text-secondary: #cacacc;
+  --color-text-muted: #8a8688;
+  --color-border: rgba(240, 188, 66, 0.18);
+  --color-border-light: rgba(240, 188, 66, 0.11);
+  --color-danger: #ef6b6b;
+  --color-danger-hover: #f48383;
+  --color-success: #4cc38a;
+  --color-nav-bg: #120e0e;
+  --color-sidebar-bg: #0a0808;
+}
+
+/* Byzantine — imperial gold on deep crimson grounds */
+[data-theme="byzantine"] {
+  --color-bg: #100a08;
+  --color-bg-surface: #261816;
+  --color-bg-elevated: #2a1b19;
+  --color-bg-card: #1e1210;
+  --color-accent: #ffbf00;
+  --color-accent-hover: #ffcb2e;
+  --color-accent-muted: #c39202;
+  --color-text: #f5e8d0;
+  --color-text-secondary: #c8a870;
+  --color-text-muted: #8a6848;
+  --color-border: rgba(255, 191, 0, 0.18);
+  --color-border-light: rgba(255, 191, 0, 0.11);
+  --color-danger: #ef6b6b;
+  --color-danger-hover: #f48383;
+  --color-success: #4cc38a;
+  --color-nav-bg: #180e0c;
+  --color-sidebar-bg: #100a08;
+}
+
+/* Modern Greek — white accents on deep navy, Hellenic flag palette */
+[data-theme="modern-greek"] {
+  --color-bg: #060d18;
+  --color-bg-surface: #12243a;
+  --color-bg-elevated: #162c44;
+  --color-bg-card: #0e1c30;
+  --color-accent: #ffffff;
+  --color-accent-hover: #f4f7fc;
+  --color-accent-muted: #c1c2c5;
+  --color-text: #e8f0ff;
+  --color-text-secondary: #8099c8;
+  --color-text-muted: #4a6090;
+  --color-border: rgba(13, 94, 175, 0.4);
+  --color-border-light: rgba(13, 94, 175, 0.24);
+  --color-danger: #ef6b6b;
+  --color-danger-hover: #f48383;
+  --color-success: #4cc38a;
+  --color-nav-bg: #0a1424;
+  --color-sidebar-bg: #060d18;
 }
 
 /* === Base Styles === */

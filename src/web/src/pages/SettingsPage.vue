@@ -54,18 +54,24 @@
       <!-- Appearance Section -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Appearance</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <button
-            v-for="opt in themeOptions"
-            :key="opt.value"
-            @click="theme.setTheme(opt.value)"
-            class="flex-1 px-4 py-3 border rounded-lg text-sm font-medium transition-colors text-center"
-            :class="theme.mode.value === opt.value
-              ? 'border-accent bg-accent/10 text-accent'
-              : 'border-border bg-bg-surface text-text-secondary hover:border-accent/50'"
-          >
-            {{ opt.label }}
-          </button>
+        <div v-for="group in themeGroups" :key="group.label" class="mb-4 last:mb-0">
+          <p class="text-xs uppercase tracking-wide text-text-muted mb-2">{{ group.label }}</p>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button
+              v-for="id in group.themes"
+              :key="id"
+              @click="theme.setTheme(id)"
+              class="flex items-center gap-2 px-3 py-3 border rounded-lg text-sm font-medium transition-colors text-left"
+              :class="theme.mode.value === id
+                ? 'border-accent bg-accent/10 text-accent'
+                : 'border-border bg-bg-surface text-text-secondary hover:border-accent/50'"
+            >
+              <span class="flex shrink-0 w-6 h-4 rounded-full overflow-hidden border border-border" aria-hidden="true">
+                <span v-for="(color, i) in swatchFor(id)" :key="i" class="flex-1" :style="{ backgroundColor: color }" />
+              </span>
+              <span class="truncate">{{ THEME_LABELS[id] }}</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -317,7 +323,7 @@ import { ref, onMounted } from 'vue'
 import type { ApiKey, LinkedOidcProvider, OidcProvider, OidcProviderPublic, StorageLayout, StorageSettings } from '@/types'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import { useTheme, THEME_LABELS, type ThemeMode } from '@/stores/theme'
+import { useTheme, THEMES, THEME_LABELS, BASE_THEMES, MUSEUM_THEMES, type ThemeMode } from '@/stores/theme'
 import { usePreferences, type SortOption } from '@/stores/preferences'
 import { currentDateKey, formatInstant } from '@/utils/dateTime'
 import ShareWishlistModal from '@/components/common/ShareWishlistModal.vue'
@@ -331,8 +337,16 @@ const preferences = usePreferences()
 const loading = ref(true)
 const profileImage = ref<string | null>(null)
 
-const themeOptions: { value: ThemeMode; label: string }[] = (['light', 'dark', 'burnt-orange', 'system'] as const)
-  .map((value) => ({ value, label: THEME_LABELS[value] }))
+const themeGroups = [
+  { label: 'Standard', themes: BASE_THEMES },
+  { label: 'Museum', themes: MUSEUM_THEMES },
+]
+
+// System shows half dark, half light, like the device it follows.
+function swatchFor(id: ThemeMode): readonly string[] {
+  if (id === 'system') return [THEMES.dark.swatch[0], THEMES.light.swatch[0]]
+  return THEMES[id].swatch
+}
 
 const collectionSortOptions: { value: Exclude<SortOption, 'priority'>; label: string }[] = [
   { value: 'dateAdded', label: 'Date Added' },
