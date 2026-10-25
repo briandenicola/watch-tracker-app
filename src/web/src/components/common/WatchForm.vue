@@ -45,7 +45,7 @@
           <button
             v-if="imageUrlInput"
             type="button"
-            @click="imageUrlMode = false; imageUrlInput = ''; imageUrlPreview = ''"
+            @click="imageUrlMode = false; imageUrlInput = ''"
             class="px-2 text-text-muted hover:text-text text-xs"
           >✕</button>
         </div>
