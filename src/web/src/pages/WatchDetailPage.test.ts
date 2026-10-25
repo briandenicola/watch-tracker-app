@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import WatchDetailPage from './WatchDetailPage.vue'
 import type { Watch } from '@/types'
+import { createPinia, setActivePinia } from 'pinia'
 
 const router = vi.hoisted(() => ({ push: vi.fn() }))
 const watchApi = vi.hoisted(() => ({
@@ -25,6 +26,10 @@ const watchApi = vi.hoisted(() => ({
 }))
 
 vi.mock('@/services/watches', () => watchApi)
+vi.mock('@/services/labels', () => ({
+  getLabels: vi.fn(() => Promise.resolve([])),
+  getSavedViews: vi.fn(() => Promise.resolve([])),
+}))
 vi.mock('@/services/api', () => ({ api: { get: vi.fn() } }))
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { id: '12' }, query: {}, path: '/watches/12' }),
@@ -84,6 +89,7 @@ function action(wrapper: ReturnType<typeof mount>, label: string) {
 
 describe('WatchDetailPage characteristic workflows', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.stubGlobal('confirm', vi.fn(() => true))
     vi.stubGlobal('ResizeObserver', class {

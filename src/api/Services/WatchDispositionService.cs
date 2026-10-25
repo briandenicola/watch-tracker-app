@@ -25,6 +25,7 @@ public class WatchDispositionService(AppDbContext context) : IWatchDispositionSe
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Labels)
             .Include(w => w.Disposition)
                 .ThenInclude(d => d!.ReceivedWatch)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
@@ -74,6 +75,7 @@ public class WatchDispositionService(AppDbContext context) : IWatchDispositionSe
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Labels)
             .Include(w => w.Disposition)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
         if (watch is null) return null;

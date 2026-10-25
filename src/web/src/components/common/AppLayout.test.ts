@@ -15,6 +15,11 @@ const theme = vi.hoisted(() => ({
   setTheme: vi.fn(),
 }))
 const application = vi.hoisted(() => ({ ready: true, load: vi.fn() }))
+const labels = vi.hoisted(() => ({
+  pinnedViews: [] as { id: number; name: string; scope: string }[],
+  load: vi.fn(() => Promise.resolve()),
+  clear: vi.fn(),
+}))
 const notifications = vi.hoisted(() => ({
   unreadCount: 2,
   refreshUnreadCount: vi.fn(),
@@ -22,7 +27,7 @@ const notifications = vi.hoisted(() => ({
 }))
 
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ path: '/' }),
+  useRoute: () => ({ path: '/', query: {} }),
   RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' },
   RouterView: { template: '<div />' },
 }))
@@ -35,6 +40,7 @@ vi.mock('@/stores/theme', () => ({
 }))
 vi.mock('@/stores/application', () => ({ useApplicationSettings: () => application }))
 vi.mock('@/stores/notifications', () => ({ useNotificationsStore: () => notifications }))
+vi.mock('@/stores/labels', () => ({ useLabelsStore: () => labels }))
 
 function mountLayout() {
   return mount(AppLayout, {
@@ -53,6 +59,7 @@ describe('AppLayout notifications link', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     notifications.unreadCount = 2
+    labels.pinnedViews = []
   })
 
   afterEach(() => {
@@ -81,5 +88,22 @@ describe('AppLayout notifications link', () => {
     const settingsIndex = links.findIndex(link => link.attributes('href') === '/settings')
     expect(links[settingsIndex + 1].attributes('href')).toBe('/help')
     expect(links[settingsIndex + 1].text()).toContain('Help')
+  })
+
+  it('lists pinned views in the desktop sidebar and loads them on start', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
+    labels.pinnedViews = [
+      { id: 3, name: 'Divers', scope: 'Collection' },
+      { id: 7, name: 'Grails', scope: 'Wishlist' },
+    ]
+    const wrapper = mountLayout()
+
+    expect(labels.load).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('[data-testid="pinned-views"]').findAll('a').map(link => link.text())).toEqual(['Divers', 'Grails'])
+  })
+
+  it('hides the views section when nothing is pinned', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
+    expect(mountLayout().find('[data-testid="pinned-views"]').exists()).toBe(false)
   })
 })

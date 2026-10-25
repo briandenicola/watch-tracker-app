@@ -11,6 +11,7 @@ public class ResaleValueService(AppDbContext context) : IResaleValueService
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Labels)
             .FirstOrDefaultAsync(w => w.Id == watchId && w.UserId == userId, ct);
         if (watch is null) return null;
 

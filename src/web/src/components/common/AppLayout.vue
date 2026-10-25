@@ -19,6 +19,19 @@
           <AppIcon :name="item.icon" :size="20" :stroke-width="1.5" />
           <span class="text-sm font-medium">{{ item.label }}</span>
         </RouterLink>
+        <div v-if="labels.pinnedViews.length" class="mt-4 border-t border-border pt-4" data-testid="pinned-views">
+          <p class="px-6 pb-1 text-xs uppercase tracking-wider text-text-muted">Views</p>
+          <RouterLink
+            v-for="view in labels.pinnedViews"
+            :key="view.id"
+            :to="{ path: '/', query: { view: String(view.id) } }"
+            class="flex items-center gap-3 px-6 py-2.5 text-text-secondary hover:text-text hover:bg-bg-elevated transition-colors"
+            :class="{ '!text-accent !bg-bg-elevated border-r-2 border-accent': isActiveView(view.id) }"
+          >
+            <AppIcon :name="view.scope === 'Wishlist' ? 'recommend' : 'collection'" :size="18" :stroke-width="1.5" />
+            <span class="truncate text-sm">{{ view.name }}</span>
+          </RouterLink>
+        </div>
       </nav>
       <div class="p-4 border-t border-border space-y-2">
         <button
@@ -83,6 +96,20 @@
               </button>
             </div>
             <nav class="flex-1 py-4 overflow-y-auto">
+              <div v-if="labels.pinnedViews.length" class="mb-2 border-b border-border pb-2">
+                <p class="px-6 pb-1 text-xs uppercase tracking-wider text-text-muted">Views</p>
+                <RouterLink
+                  v-for="view in labels.pinnedViews"
+                  :key="view.id"
+                  :to="{ path: '/', query: { view: String(view.id) } }"
+                  class="flex items-center gap-3 px-6 py-3 text-text-secondary hover:text-text hover:bg-bg-elevated transition-colors"
+                  :class="{ '!text-accent !bg-bg-elevated': isActiveView(view.id) }"
+                  @click="sidebarOpen = false"
+                >
+                  <AppIcon :name="view.scope === 'Wishlist' ? 'recommend' : 'collection'" :size="18" :stroke-width="1.5" />
+                  <span class="truncate text-sm">{{ view.name }}</span>
+                </RouterLink>
+              </div>
               <RouterLink
                 v-for="item in navItems"
                 :key="item.to"
@@ -172,6 +199,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useTheme, THEME_LABELS, BASE_THEMES, MUSEUM_THEMES } from '@/stores/theme'
 import { useApplicationSettings } from '@/stores/application'
 import { useNotificationsStore } from '@/stores/notifications'
+import { useLabelsStore } from '@/stores/labels'
 import AppIcon from '@/components/icons/AppIcon.vue'
 
 const auth = useAuthStore()
@@ -179,6 +207,7 @@ const route = useRoute()
 const theme = useTheme()
 const applicationSettings = useApplicationSettings()
 const notifications = useNotificationsStore()
+const labels = useLabelsStore()
 const applicationSettingsReady = applicationSettings.ready
 const sidebarOpen = ref(false)
 const windowWidth = ref(window.innerWidth)
@@ -204,9 +233,19 @@ function onViewportResize() {
   }
 }
 
+function isActiveView(id: number) {
+  return route.path === '/' && route.query.view === String(id)
+}
+
+function loadLabels() {
+  // Pinned views are a shortcut; the shell works without them.
+  if (auth.isAuthenticated) void labels.load().catch(() => {})
+}
+
 onMounted(() => {
   void applicationSettings.load()
   refreshNotifications()
+  loadLabels()
   window.addEventListener('resize', onResize)
   window.addEventListener('focus', refreshNotifications)
   if (window.visualViewport) {
@@ -226,8 +265,13 @@ watch(() => route.path, (path) => {
 })
 
 watch(() => auth.isAuthenticated, (isAuthenticated) => {
-  if (isAuthenticated) refreshNotifications()
-  else notifications.setUnreadCount(0)
+  if (isAuthenticated) {
+    refreshNotifications()
+    loadLabels()
+  } else {
+    notifications.setUnreadCount(0)
+    labels.clear()
+  }
 })
 
 function cycleTheme() {

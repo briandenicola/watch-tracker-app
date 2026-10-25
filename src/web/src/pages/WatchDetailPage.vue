@@ -22,6 +22,8 @@
 
       <WatchImageGallery :watch="watch" :removing-background="removingBg" @delete-image="handleDeleteImage" @remove-background="handleRemoveBackground" />
 
+      <WatchLabelsPanel :watch="watch" @updated="watch.labelIds = $event" />
+
       <section v-for="section in detailSections" :key="section.heading" class="detail-card mb-6">
         <h2 class="detail-heading">{{ section.heading }}</h2>
         <dl class="detail-list">
@@ -95,6 +97,7 @@ import ShareWatchModal from '@/components/common/ShareWatchModal.vue'
 import StyleAgentModal from '@/components/common/StyleAgentModal.vue'
 import WatchDetailHeader from '@/components/common/WatchDetailHeader.vue'
 import WatchImageGallery from '@/components/common/WatchImageGallery.vue'
+import WatchLabelsPanel from '@/components/common/WatchLabelsPanel.vue'
 import WatchHelpModal from '@/components/common/WatchHelpModal.vue'
 import WatchResaleHistory from '@/components/common/WatchResaleHistory.vue'
 import PriceWatchPanel from '@/components/common/PriceWatchPanel.vue'

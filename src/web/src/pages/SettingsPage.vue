@@ -75,6 +75,8 @@
         </div>
       </section>
 
+      <LabelsSettingsSection />
+
       <!-- Collection Preferences Section -->
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">Collection</h3>
@@ -323,6 +325,7 @@ import { ref, onMounted } from 'vue'
 import type { ApiKey, LinkedOidcProvider, OidcProvider, OidcProviderPublic, StorageLayout, StorageSettings } from '@/types'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import LabelsSettingsSection from '@/components/common/LabelsSettingsSection.vue'
 import { useTheme, THEMES, THEME_LABELS, BASE_THEMES, MUSEUM_THEMES, type ThemeMode } from '@/stores/theme'
 import { usePreferences, type SortOption } from '@/stores/preferences'
 import { currentDateKey, formatInstant } from '@/utils/dateTime'

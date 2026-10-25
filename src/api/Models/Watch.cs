@@ -64,6 +64,7 @@ public class Watch
     public ICollection<WearLog> WearLogs { get; set; } = [];
     public ICollection<ResaleValueEntry> ResaleValueEntries { get; set; } = [];
     public ICollection<PriceObservation> PriceObservations { get; set; } = [];
+    public ICollection<Label> Labels { get; set; } = [];
     public WatchDisposition? Disposition { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

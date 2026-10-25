@@ -287,6 +287,8 @@ builder.Services.AddScoped<IOidcService, OidcService>();
 builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
+builder.Services.AddScoped<ILabelService, LabelService>();
+builder.Services.AddScoped<ISavedViewService, SavedViewService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<WatchTracker.Api.Mcp.McpCaller>();
