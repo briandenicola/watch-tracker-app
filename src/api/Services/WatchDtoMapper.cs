@@ -8,6 +8,7 @@ internal static class WatchDtoMapper
     public static WatchDto Map(Watch watch) => new()
     {
         Id = watch.Id,
+        LabelIds = watch.Labels.Select(l => l.Id).Order().ToList(),
         Brand = watch.Brand,
         Model = watch.Model,
         MovementType = watch.MovementType,

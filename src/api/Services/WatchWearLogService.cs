@@ -13,6 +13,7 @@ public class WatchWearLogService(AppDbContext context) : IWatchWearLogService
         {
             var watch = await context.Watches
                 .Include(w => w.Images)
+                .Include(w => w.Labels)
                 .Include(w => w.Disposition)
                     .ThenInclude(d => d!.ReceivedWatch)
                 .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);

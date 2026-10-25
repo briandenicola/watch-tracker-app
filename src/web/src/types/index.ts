@@ -76,6 +76,7 @@ export interface Watch {
   storageSlot?: number
   isWishList: boolean
   wishlistPriority?: number
+  labelIds?: number[]
   priceAlertEnabled: boolean
   priceAlertTarget?: number
   priceCheckedAt?: string
@@ -744,3 +745,34 @@ export interface CollectionReviewState {
   configurationHint?: string | null
   review?: CollectionReview | null
 }
+
+export interface Label {
+  id: number
+  name: string
+  color: string
+  watchCount: number
+}
+
+export interface SaveLabel {
+  name: string
+  color?: string
+}
+
+export type SavedViewScope = 'Collection' | 'Wishlist'
+export type LabelMatchMode = 'Any' | 'All'
+export type SavedViewSort = 'dateAdded' | 'brand' | 'lastWorn' | 'timesWorn' | 'priority'
+
+export interface SavedView {
+  id: number
+  name: string
+  scope: SavedViewScope
+  labelIds: number[]
+  labelMatch: LabelMatchMode
+  brand?: string | null
+  movementType?: string | null
+  sortBy?: SavedViewSort | null
+  pinned: boolean
+  pinnedAt?: string | null
+}
+
+export type SaveSavedView = Omit<SavedView, 'id' | 'pinnedAt'>

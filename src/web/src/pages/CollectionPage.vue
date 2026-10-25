@@ -63,6 +63,53 @@
         </RouterLink>
       </div>
     </div>
+    <!-- Active saved view -->
+    <div
+      v-if="activeView"
+      class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2"
+      data-testid="active-view"
+    >
+      <span class="text-xs uppercase tracking-wider text-text-muted">View</span>
+      <span class="font-medium text-text">{{ activeView.name }}</span>
+      <span v-if="viewModified" class="text-xs text-text-muted">· changed</span>
+      <div class="ml-auto flex flex-wrap items-center gap-1">
+        <button
+          v-if="viewModified"
+          type="button"
+          class="rounded-md px-2 py-1 text-xs text-accent hover:bg-bg-elevated"
+          :disabled="viewBusy"
+          @click="updateActiveView"
+        >
+          Update view
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-bg-elevated hover:text-text disabled:opacity-50"
+          :disabled="viewBusy || (!activeView.pinned && labelsStore.pinLimitReached)"
+          :title="!activeView.pinned && labelsStore.pinLimitReached ? `You can pin up to ${PIN_LIMIT} views` : undefined"
+          @click="togglePinActiveView"
+        >
+          {{ activeView.pinned ? 'Unpin' : 'Pin to sidebar' }}
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-bg-elevated hover:text-danger"
+          :disabled="viewBusy"
+          @click="deleteActiveView"
+        >
+          Delete
+        </button>
+        <RouterLink
+          :to="{ path: '/', query: { tab } }"
+          class="rounded-md px-2 py-1 text-xs text-text-secondary hover:bg-bg-elevated hover:text-text"
+          aria-label="Close view"
+        >
+          ✕
+        </RouterLink>
+      </div>
+    </div>
+    <p v-if="viewError" class="mb-4 text-sm text-danger">{{ viewError }}</p>
+
     <!-- Collapsible Filter Panel -->
     <Transition name="filter">
       <div v-if="showFilters" class="mb-4 p-3 bg-bg-surface border border-border rounded-xl space-y-3">
@@ -106,6 +153,63 @@
             <option value="timesWorn">Most Worn</option>
           </select>
         </div>
+        <div v-if="labelsStore.labels.length" class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs text-text-secondary">Labels</span>
+            <div
+              v-if="filterLabels.length > 1"
+              class="flex gap-1 rounded-md border border-border p-0.5"
+              role="group"
+              aria-label="Label match"
+            >
+              <button
+                v-for="mode in labelMatchModes"
+                :key="mode.value"
+                type="button"
+                class="rounded px-2 py-0.5 text-xs transition-colors"
+                :class="labelMatch === mode.value ? 'bg-accent text-bg' : 'text-text-secondary hover:text-text'"
+                :aria-pressed="labelMatch === mode.value"
+                @click="labelMatch = mode.value"
+              >
+                {{ mode.label }}
+              </button>
+            </div>
+          </div>
+          <LabelPicker v-model="filterLabels" aria-label="Filter by label" />
+        </div>
+        <div class="border-t border-border pt-3">
+          <form v-if="savingView" class="flex flex-wrap items-center gap-2" @submit.prevent="saveCurrentView">
+            <input
+              v-model="newViewName"
+              type="text"
+              maxlength="80"
+              required
+              placeholder="View name"
+              aria-label="View name"
+              class="min-w-0 flex-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-accent focus:outline-none"
+            />
+            <label class="flex items-center gap-1.5 text-xs text-text-secondary">
+              <input v-model="pinNewView" type="checkbox" :disabled="labelsStore.pinLimitReached" />
+              Pin to sidebar
+            </label>
+            <button
+              type="submit"
+              :disabled="!newViewName.trim() || viewBusy"
+              class="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-bg hover:bg-accent-hover disabled:opacity-50"
+            >
+              Save
+            </button>
+            <button type="button" class="px-2 py-2 text-sm text-text-secondary hover:text-text" @click="savingView = false">Cancel</button>
+          </form>
+          <button
+            v-else
+            type="button"
+            class="text-sm text-accent hover:text-accent-hover"
+            @click="startSavingView"
+          >
+            Save as view…
+          </button>
+        </div>
       </div>
     </Transition>
     <p v-if="prioritySaveError" class="text-sm text-danger mb-4">{{ prioritySaveError }}</p>
@@ -113,7 +217,7 @@
       v-else-if="tab === 'wishlist' && sortBy === 'priority' && isDesktop && viewMode === 'cards' && !canDragPriority"
       class="text-xs text-text-muted mb-4"
     >
-      Clear brand and movement filters to drag watches into priority order.
+      Clear brand, movement and label filters to drag watches into priority order.
     </p>
     <RouterLink
       v-if="tab === 'wishlist' && sortBy === 'priority' && (!isDesktop || viewMode === 'compact') && allWatches.some(watch => watch.isWishList)"
@@ -291,6 +395,9 @@
             Observed {{ observedDate(watch.marketplaceObservedAt) }}
           </p>
           <p v-else-if="tab === 'collection'" class="text-xs text-text-muted mt-1">{{ watch.movementType }} · Worn {{ watch.timesWorn }}×</p>
+          <div v-if="cardLabels(watch).length" class="mt-2 flex flex-wrap gap-1">
+            <LabelChip v-for="label in cardLabels(watch)" :key="label.id" :label="label" />
+          </div>
         </div>
       </RouterLink>
     </div>
@@ -305,18 +412,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch as vueWatch } from 'vue'
-import { useRoute } from 'vue-router'
-import type { Watch } from '@/types'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch as vueWatch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import type { LabelMatchMode, SaveSavedView, SavedView, Watch } from '@/types'
 import { getWatches, imageUrl, reorderWishlist } from '@/services/watches'
 import { usePullToRefresh } from '@/composables/usePullToRefresh'
 import { usePreferences, type SortOption, type ViewMode } from '@/stores/preferences'
 import { useNotificationsStore } from '@/stores/notifications'
 import PullToRefresh from '@/components/common/PullToRefresh.vue'
 import AppIcon from '@/components/icons/AppIcon.vue'
+import LabelChip from '@/components/common/LabelChip.vue'
+import LabelPicker from '@/components/common/LabelPicker.vue'
+import { useLabelsStore, PIN_LIMIT } from '@/stores/labels'
 import { formatInstant } from '@/utils/dateTime'
+import { matchesLabels } from '@/utils/labels'
+import { serverMessage } from '@/utils/serverMessage'
 
 const route = useRoute()
+const router = useRouter()
+const labelsStore = useLabelsStore()
 const { prefs, setCollectionViewMode } = usePreferences()
 const notifications = useNotificationsStore()
 const notificationLabel = computed(() => notifications.unreadCount
@@ -353,6 +467,12 @@ function observedDate(value: string): string {
 // Filter & Sort state — default from preferences
 const filterBrand = ref('')
 const filterMovement = ref('')
+const filterLabels = ref<number[]>(route.query.label ? [Number(route.query.label)] : [])
+const labelMatch = ref<LabelMatchMode>('Any')
+const labelMatchModes: { value: LabelMatchMode; label: string }[] = [
+  { value: 'Any', label: 'Any' },
+  { value: 'All', label: 'All' },
+]
 const defaultSortForTab = (value: 'collection' | 'wishlist') =>
   value === 'wishlist' ? prefs.value.wishlistDefaultSort : prefs.value.collectionDefaultSort
 const sortBy = ref<SortOption>(defaultSortForTab(tab.value))
@@ -374,6 +494,9 @@ const filteredWatches = computed(() => {
   }
   if (filterMovement.value) {
     watches = watches.filter(w => w.movementType === filterMovement.value)
+  }
+  if (filterLabels.value.length) {
+    watches = watches.filter(w => matchesLabels(w.labelIds, filterLabels.value, labelMatch.value))
   }
 
   // Sort
@@ -408,6 +531,7 @@ const showFilters = ref(false)
 const hasActiveFilters = computed(() =>
   filterBrand.value !== ''
   || filterMovement.value !== ''
+  || filterLabels.value.length > 0
   || sortBy.value !== defaultSortForTab(tab.value),
 )
 const canDragPriority = computed(() =>
@@ -417,19 +541,142 @@ const canDragPriority = computed(() =>
   && sortBy.value === 'priority'
   && filterBrand.value === ''
   && filterMovement.value === ''
+  && filterLabels.value.length === 0
   && !prioritySaving.value,
 )
 
 function clearFilters() {
   filterBrand.value = ''
   filterMovement.value = ''
+  filterLabels.value = []
+  labelMatch.value = 'Any'
   sortBy.value = defaultSortForTab(tab.value)
 }
 
+function cardLabels(watch: Watch) {
+  return (watch.labelIds ?? [])
+    .map(id => labelsStore.labelsById.get(id))
+    .filter(label => label !== undefined)
+    .slice(0, 3)
+}
+
+// Saved views
+const activeView = computed<SavedView | undefined>(() =>
+  labelsStore.views.find(view => String(view.id) === route.query.view))
+const savingView = ref(false)
+const newViewName = ref('')
+const pinNewView = ref(false)
+const viewBusy = ref(false)
+const viewError = ref('')
+// Applying a view can switch tabs; the tab watcher then keeps the view's sort instead of the default.
+let pendingSort: SortOption | null = null
+
+function currentFilters(): Omit<SaveSavedView, 'name' | 'pinned'> {
+  return {
+    scope: tab.value === 'wishlist' ? 'Wishlist' : 'Collection',
+    labelIds: [...filterLabels.value].sort((a, b) => a - b),
+    labelMatch: labelMatch.value,
+    brand: filterBrand.value || null,
+    movementType: filterMovement.value || null,
+    sortBy: sortBy.value,
+  }
+}
+
+const viewModified = computed(() => {
+  const view = activeView.value
+  if (!view) return false
+  const now = currentFilters()
+  return now.scope !== view.scope
+    || now.labelIds.join() !== [...view.labelIds].sort((a, b) => a - b).join()
+    || (now.labelIds.length > 1 && now.labelMatch !== view.labelMatch)
+    || now.brand !== (view.brand || null)
+    || now.movementType !== (view.movementType || null)
+    || now.sortBy !== (view.sortBy || defaultSortForTab(view.scope === 'Wishlist' ? 'wishlist' : 'collection'))
+})
+
+function applyView(view: SavedView) {
+  const nextTab = view.scope === 'Wishlist' ? 'wishlist' : 'collection'
+  const sort = view.sortBy && (nextTab === 'wishlist' || view.sortBy !== 'priority') ? view.sortBy : defaultSortForTab(nextTab)
+  pendingSort = sort
+  tab.value = nextTab
+  filterBrand.value = view.brand ?? ''
+  filterMovement.value = view.movementType ?? ''
+  filterLabels.value = [...view.labelIds]
+  labelMatch.value = view.labelMatch
+  sortBy.value = sort
+  void nextTick(() => { pendingSort = null })
+}
+
+function startSavingView() {
+  newViewName.value = ''
+  pinNewView.value = false
+  viewError.value = ''
+  savingView.value = true
+}
+
+async function saveCurrentView() {
+  viewBusy.value = true
+  viewError.value = ''
+  try {
+    const view = await labelsStore.createView({ ...currentFilters(), name: newViewName.value.trim(), pinned: pinNewView.value })
+    savingView.value = false
+    showFilters.value = false
+    await router.replace({ path: '/', query: { view: String(view.id) } })
+  } catch (e) {
+    viewError.value = serverMessage(e) ?? 'The view could not be saved. Try again.'
+  } finally {
+    viewBusy.value = false
+  }
+}
+
+async function runViewAction(action: () => Promise<unknown>, failure: string) {
+  viewBusy.value = true
+  viewError.value = ''
+  try {
+    await action()
+  } catch (e) {
+    viewError.value = serverMessage(e) ?? failure
+  } finally {
+    viewBusy.value = false
+  }
+}
+
+function updateActiveView() {
+  const view = activeView.value
+  if (!view) return
+  void runViewAction(
+    () => labelsStore.updateView(view.id, { ...currentFilters(), name: view.name, pinned: view.pinned }),
+    'The view could not be updated. Try again.')
+}
+
+function togglePinActiveView() {
+  const view = activeView.value
+  if (!view) return
+  void runViewAction(() => labelsStore.setPinned(view.id, !view.pinned), 'The view could not be pinned. Try again.')
+}
+
+function deleteActiveView() {
+  const view = activeView.value
+  if (!view || !window.confirm(`Delete the view "${view.name}"? Your watches and labels are not affected.`)) return
+  void runViewAction(async () => {
+    await labelsStore.deleteView(view.id)
+    await router.replace({ path: '/', query: { tab: tab.value } })
+  }, 'The view could not be deleted. Try again.')
+}
+
+// Opening a view (from the sidebar or a link) applies it; leaving it clears its filters.
+vueWatch(() => [route.query.view, labelsStore.loaded] as const, ([viewId], previous) => {
+  if (activeView.value) {
+    if (viewId !== previous?.[0] || !previous?.[1]) applyView(activeView.value)
+  } else if (previous?.[0] && !viewId) {
+    clearFilters()
+  }
+}, { immediate: true })
+
 // Reset carousel index when tab or filters change
-vueWatch([tab, filterBrand, filterMovement, sortBy, viewMode], () => { currentIndex.value = 0 })
+vueWatch([tab, filterBrand, filterMovement, filterLabels, labelMatch, sortBy, viewMode], () => { currentIndex.value = 0 })
 vueWatch(tab, (nextTab) => {
-  sortBy.value = defaultSortForTab(nextTab)
+  sortBy.value = pendingSort ?? defaultSortForTab(nextTab)
 })
 
 const draggedWatchId = ref<number | null>(null)
@@ -541,6 +788,8 @@ const { refreshing, pullDistance, pulling } = usePullToRefresh(reload)
 
 onMounted(async () => {
   window.addEventListener('resize', onResize)
+  // Labels decorate the page; if they fail to load, the collection still shows.
+  void labelsStore.load().catch(() => {})
   try {
     allWatches.value = await getWatches()
   } finally {

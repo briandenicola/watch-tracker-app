@@ -31,6 +31,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WishlistUserShare> WishlistUserShares => Set<WishlistUserShare>();
     public DbSet<CollectionReview> CollectionReviews => Set<CollectionReview>();
     public DbSet<WatchPatrolConnection> WatchPatrolConnections => Set<WatchPatrolConnection>();
+    public DbSet<Label> Labels => Set<Label>();
+    public DbSet<SavedView> SavedViews => Set<SavedView>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +42,38 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(u => u.Role)
                 .HasConversion<string>();
+        });
+
+        modelBuilder.Entity<Label>(entity =>
+        {
+            entity.Property(l => l.Name).HasMaxLength(50);
+            entity.Property(l => l.Color).HasMaxLength(7);
+            entity.HasIndex(l => new { l.UserId, l.Name }).IsUnique();
+            entity.HasOne(l => l.User)
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(l => l.Watches)
+                .WithMany(w => w.Labels)
+                .UsingEntity("WatchLabels");
+        });
+
+        modelBuilder.Entity<SavedView>(entity =>
+        {
+            entity.Property(v => v.Name).HasMaxLength(80);
+            entity.Property(v => v.Brand).HasMaxLength(100);
+            entity.Property(v => v.SortBy).HasMaxLength(20);
+            entity.Property(v => v.Scope).HasConversion<string>();
+            entity.Property(v => v.LabelMatch).HasConversion<string>();
+            entity.Property(v => v.MovementType).HasConversion<string>();
+            entity.HasIndex(v => new { v.UserId, v.Name }).IsUnique();
+            entity.HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(v => v.Labels)
+                .WithMany(l => l.SavedViews)
+                .UsingEntity("SavedViewLabels");
         });
 
         modelBuilder.Entity<AppSetting>(entity =>

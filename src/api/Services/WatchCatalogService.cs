@@ -14,6 +14,7 @@ public class WatchCatalogService(
     {
         var query = context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Labels)
             .Include(w => w.Disposition)
                 .ThenInclude(d => d!.ReceivedWatch)
             .Where(w => w.UserId == userId);
@@ -30,6 +31,7 @@ public class WatchCatalogService(
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Labels)
             .Include(w => w.Disposition)
                 .ThenInclude(d => d!.ReceivedWatch)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);
@@ -78,6 +80,7 @@ public class WatchCatalogService(
     {
         var watch = await context.Watches
             .Include(w => w.Images)
+            .Include(w => w.Labels)
             .Include(w => w.Disposition)
                 .ThenInclude(d => d!.ReceivedWatch)
             .FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId, ct);

@@ -15,7 +15,37 @@ namespace WatchTracker.Api.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
+
+            modelBuilder.Entity("SavedViewLabels", b =>
+                {
+                    b.Property<int>("LabelsId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SavedViewsId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("LabelsId", "SavedViewsId");
+
+                    b.HasIndex("SavedViewsId");
+
+                    b.ToTable("SavedViewLabels");
+                });
+
+            modelBuilder.Entity("WatchLabels", b =>
+                {
+                    b.Property<int>("LabelsId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WatchesId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("LabelsId", "WatchesId");
+
+                    b.HasIndex("WatchesId");
+
+                    b.ToTable("WatchLabels");
+                });
 
             modelBuilder.Entity("WatchTracker.Api.Models.AdvisorMessage", b =>
                 {
@@ -283,6 +313,36 @@ namespace WatchTracker.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("ExternalLogins");
+                });
+
+            modelBuilder.Entity("WatchTracker.Api.Models.Label", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Labels");
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.OidcLoginTicket", b =>
@@ -597,6 +657,56 @@ namespace WatchTracker.Api.Migrations
                     b.HasIndex("WatchId", "RecordedAt");
 
                     b.ToTable("ResaleValueEntries");
+                });
+
+            modelBuilder.Entity("WatchTracker.Api.Models.SavedView", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Brand")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LabelMatch")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MovementType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PinnedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SortBy")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("SavedViews");
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.StyleMessage", b =>
@@ -1209,6 +1319,36 @@ namespace WatchTracker.Api.Migrations
                     b.ToTable("WishlistUserShares");
                 });
 
+            modelBuilder.Entity("SavedViewLabels", b =>
+                {
+                    b.HasOne("WatchTracker.Api.Models.Label", null)
+                        .WithMany()
+                        .HasForeignKey("LabelsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WatchTracker.Api.Models.SavedView", null)
+                        .WithMany()
+                        .HasForeignKey("SavedViewsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("WatchLabels", b =>
+                {
+                    b.HasOne("WatchTracker.Api.Models.Label", null)
+                        .WithMany()
+                        .HasForeignKey("LabelsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WatchTracker.Api.Models.Watch", null)
+                        .WithMany()
+                        .HasForeignKey("WatchesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("WatchTracker.Api.Models.AdvisorMessage", b =>
                 {
                     b.HasOne("WatchTracker.Api.Models.AdvisorSession", "Session")
@@ -1273,6 +1413,17 @@ namespace WatchTracker.Api.Migrations
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.ExternalLogin", b =>
+                {
+                    b.HasOne("WatchTracker.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WatchTracker.Api.Models.Label", b =>
                 {
                     b.HasOne("WatchTracker.Api.Models.User", "User")
                         .WithMany()
@@ -1370,6 +1521,17 @@ namespace WatchTracker.Api.Migrations
                     b.Navigation("User");
 
                     b.Navigation("Watch");
+                });
+
+            modelBuilder.Entity("WatchTracker.Api.Models.SavedView", b =>
+                {
+                    b.HasOne("WatchTracker.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.StyleMessage", b =>
@@ -1475,6 +1637,17 @@ namespace WatchTracker.Api.Migrations
                     b.Navigation("Watch");
                 });
 
+            modelBuilder.Entity("WatchTracker.Api.Models.WatchPatrolConnection", b =>
+                {
+                    b.HasOne("WatchTracker.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WatchTracker.Api.Models.WatchShare", b =>
                 {
                     b.HasOne("WatchTracker.Api.Models.User", "User")
@@ -1492,17 +1665,6 @@ namespace WatchTracker.Api.Migrations
                     b.Navigation("User");
 
                     b.Navigation("Watch");
-                });
-
-            modelBuilder.Entity("WatchTracker.Api.Models.WatchPatrolConnection", b =>
-                {
-                    b.HasOne("WatchTracker.Api.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WatchTracker.Api.Models.WearLog", b =>

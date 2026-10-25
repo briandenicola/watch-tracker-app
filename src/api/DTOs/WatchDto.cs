@@ -55,6 +55,7 @@ public class WatchDto
     public int? StorageSlot { get; set; }
     public bool IsWishList { get; set; }
     public int? WishlistPriority { get; set; }
+    public List<int> LabelIds { get; set; } = [];
     public bool PriceAlertEnabled { get; set; }
     public decimal? PriceAlertTarget { get; set; }
     public DateTime? PriceCheckedAt { get; set; }
