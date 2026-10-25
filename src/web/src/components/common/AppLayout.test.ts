@@ -26,7 +26,10 @@ vi.mock('vue-router', () => ({
   RouterView: { template: '<div />' },
 }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => auth }))
-vi.mock('@/stores/theme', () => ({ useTheme: () => theme }))
+vi.mock('@/stores/theme', () => ({
+  useTheme: () => theme,
+  THEME_LABELS: { light: 'Light', dark: 'Dark', 'burnt-orange': 'Burnt Orange', system: 'System' },
+}))
 vi.mock('@/stores/application', () => ({ useApplicationSettings: () => application }))
 vi.mock('@/stores/notifications', () => ({ useNotificationsStore: () => notifications }))
 
