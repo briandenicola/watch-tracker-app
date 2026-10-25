@@ -25,7 +25,7 @@
           @click="cycleTheme"
           class="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-muted hover:text-text transition-colors"
         >
-          <AppIcon :name="theme.getEffectiveTheme() === 'light' ? 'sun' : 'moon'" :size="18" />
+          <AppIcon :name="theme.isLight() ? 'sun' : 'moon'" :size="18" />
           <span>{{ THEME_LABELS[theme.mode.value] }}</span>
         </button>
         <button
@@ -109,7 +109,7 @@
                 @click="cycleTheme"
                 class="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-muted hover:text-text transition-colors"
               >
-                <AppIcon :name="theme.getEffectiveTheme() === 'light' ? 'sun' : 'moon'" :size="16" />
+                <AppIcon :name="theme.isLight() ? 'sun' : 'moon'" :size="16" />
                 <span>Theme: {{ THEME_LABELS[theme.mode.value] }}</span>
               </button>
               <button
@@ -169,7 +169,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useTheme, THEME_LABELS } from '@/stores/theme'
+import { useTheme, THEME_LABELS, BASE_THEMES, MUSEUM_THEMES } from '@/stores/theme'
 import { useApplicationSettings } from '@/stores/application'
 import { useNotificationsStore } from '@/stores/notifications'
 import AppIcon from '@/components/icons/AppIcon.vue'
@@ -231,7 +231,7 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 })
 
 function cycleTheme() {
-  const modes = ['dark', 'light', 'burnt-orange', 'system'] as const
+  const modes = [...BASE_THEMES, ...MUSEUM_THEMES]
   const idx = modes.indexOf(theme.mode.value)
   theme.setTheme(modes[(idx + 1) % modes.length])
 }
