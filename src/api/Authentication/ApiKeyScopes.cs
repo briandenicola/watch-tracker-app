@@ -1,8 +1,8 @@
 namespace WatchTracker.Api.Authentication;
 
 /// <summary>
-/// What an API key may do over MCP. Scopes only narrow MCP: the REST API accepts
-/// any valid key as before.
+/// What an API key may do over MCP. Every key only reads over the REST API
+/// (see <see cref="ApiKeyReadOnlyMiddleware"/>); scopes narrow MCP further.
 /// </summary>
 public static class ApiKeyScopes
 {
