@@ -32,7 +32,7 @@ Settings → **API Keys** → name it, pick an access level, **Create Key**. Cop
 | Read only | Look at watches, wish list, wear log, stored review, style memory |
 | Read + AI agents | All of that, plus run the AI agents |
 
-Give an assistant the lowest access it needs. Keys made before this feature are read only. A key only ever sees its owner's data. Revoke a key in Settings and it stops working immediately.
+Give an assistant the lowest access it needs. Keys made before this feature are read only. Every key only reads over the REST API too: adding, changing or deleting anything with a key gets a 403, so changes are made signed in to the app. A key only ever sees its owner's data. Revoke a key in Settings and it stops working immediately.
 
 ## 4. Connect your assistant
 

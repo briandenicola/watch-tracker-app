@@ -383,6 +383,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 app.UseAuthentication();
+app.UseMiddleware<ApiKeyReadOnlyMiddleware>();
 app.UseRateLimiter();
 
 // Uploads live in per-user subdirectories under this root; the file provider
