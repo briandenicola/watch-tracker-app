@@ -329,6 +329,24 @@ Append `format=json` to a watch detail URL to get the record itself instead of t
   The payload is the same redacted view the shared page shows.
 - `/watches/<id>?format=json` renders your own watch as JSON in the app, for a quick look at the raw record.
 
+### Life Store Feed
+
+`GET /api/lifestore/records` lists every watch and wish list item you have, retired and sold ones included, for the
+household life store to read. Each record embeds its wear log, resale values, labels and disposition.
+
+- **Read it with an API key** from **Settings → API Keys**, with access **Read only**, in an `X-API-Key` header. Keys
+  can only read the REST API, so the feed can't change anything.
+- **It returns what you see in the app,** including what you paid, where you bought it and the serial number, unlike a
+  share link. Treat the key like a password.
+- **Paged in id order.** `?limit=` sets the page size (default 100, at most 500). Pass the response's `next` as
+  `?page=` for the following page; `next` is `null` on the last page.
+
+```json
+{ "schema": "watchtracker.lifestore.records/1",
+  "records": [ { "kind": "watch", "id": "1", "updatedAt": "2026-10-02T08:00:00Z", "data": { "brand": "Seiko", "wears": [] } } ],
+  "next": "watch:1" }
+```
+
 ### Share a Watch
 
 **Share** in a watch's overflow menu creates a public link — `/s/<token>` — that shows that one watch to anyone,
