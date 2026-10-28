@@ -16,7 +16,9 @@ public class McpScopeTests
     [InlineData("Read, Agents", "read,agents")]
     [InlineData("agents,read,agents", "read,agents")]
     [InlineData("admin", null)]
-    [InlineData("read,write", null)]
+    [InlineData("read,write", "read,write")]
+    [InlineData("Write", "read,write")]
+    [InlineData("agents, write ,read", "read,write,agents")]
     public void Normalize_returns_canonical_scopes_or_null(string? input, string? expected) =>
         Assert.Equal(expected, ApiKeyScopes.Normalize(input));
 

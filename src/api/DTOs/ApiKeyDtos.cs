@@ -7,9 +7,16 @@ public class CreateApiKeyDto
     [Required, StringLength(100, MinimumLength = 1)]
     public required string Name { get; set; }
 
-    /// <summary>MCP scopes: "read" (default) or "read,agents".</summary>
+    /// <summary>"read" (default), "read,write" or "read,agents".</summary>
     [StringLength(50)]
     public string? Scopes { get; set; }
+}
+
+public class UpdateApiKeyDto
+{
+    /// <summary>"read", "read,write" or "read,agents".</summary>
+    [Required, StringLength(50)]
+    public required string Scopes { get; set; }
 }
 
 public class ApiKeyDto

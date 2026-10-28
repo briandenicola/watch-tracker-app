@@ -251,6 +251,12 @@
       <section class="bg-bg-card border border-border rounded-xl p-4">
         <h3 class="text-lg font-medium text-text mb-4">API Keys</h3>
 
+        <p class="text-sm text-text-muted mb-4">
+          Read only can look but not change anything. Read + write can also add, edit and delete, for apps that update your collection.
+          Read + AI agents can also run the AI agents over MCP. Change a key's access below without replacing it.
+        </p>
+        <p v-if="keyMsg" class="text-sm text-danger mb-4" role="alert">{{ keyMsg }}</p>
+
         <div v-if="newlyCreatedKey" class="mb-4 p-3 bg-success/10 border border-success/30 rounded-lg">
           <p class="text-sm text-success font-medium mb-1">Key created — copy it now, it won't be shown again:</p>
           <code class="text-sm text-text break-all">{{ newlyCreatedKey }}</code>
@@ -258,38 +264,48 @@
 
         <div v-if="apiKeys.length === 0" class="text-sm text-text-muted mb-4">No API keys yet.</div>
         <div v-else class="space-y-2 mb-4">
-          <div v-for="key in apiKeys" :key="key.id" class="flex items-center justify-between p-3 bg-bg-surface border border-border rounded-lg">
-            <div>
-              <p class="text-sm text-text">{{ key.name }}</p>
-              <p class="text-xs text-text-muted">{{ key.prefix }}… · {{ key.scopes === 'read,agents' ? 'Read + AI agents' : 'Read only' }} · Created {{ formatInstant(key.createdAt, { year: 'numeric', month: 'numeric', day: 'numeric' }) }}</p>
+          <div v-for="key in apiKeys" :key="key.id" class="flex flex-wrap items-center justify-between gap-2 p-3 bg-bg-surface border border-border rounded-lg">
+            <div class="min-w-0">
+              <p class="text-sm text-text break-words">{{ key.name }}</p>
+              <p class="text-xs text-text-muted">{{ key.prefix }}… · Created {{ formatInstant(key.createdAt, { year: 'numeric', month: 'numeric', day: 'numeric' }) }}</p>
             </div>
-            <button
-              @click="handleDeleteApiKey(key.id)"
-              class="px-3 py-1.5 text-danger text-xs border border-danger/50 rounded-lg hover:bg-danger/10 transition-colors"
-            >
-              Revoke
-            </button>
+            <div class="flex items-center gap-2">
+              <select
+                :value="key.scopes ?? 'read'"
+                :aria-label="`Access for ${key.name}`"
+                class="min-w-0 px-3 py-1.5 bg-bg-card border border-border rounded-lg text-text text-xs focus:outline-none focus:border-accent transition-colors"
+                @change="handleKeyAccess(key, ($event.target as HTMLSelectElement).value)"
+              >
+                <option v-for="option in keyAccessOptions(key.scopes ?? 'read')" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+              <button
+                @click="handleDeleteApiKey(key.id)"
+                class="px-3 py-1.5 text-danger text-xs border border-danger/50 rounded-lg hover:bg-danger/10 transition-colors"
+              >
+                Revoke
+              </button>
+            </div>
           </div>
         </div>
 
-        <form @submit.prevent="handleCreateApiKey" class="flex gap-2">
+        <form @submit.prevent="handleCreateApiKey" class="flex flex-wrap gap-2">
           <input
             v-model="newKeyName"
             placeholder="Key name"
-            class="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+            aria-label="Key name"
+            class="flex-1 basis-48 min-w-0 px-4 py-3 bg-bg-surface border border-border rounded-lg text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
           />
           <select
             v-model="newKeyScopes"
             aria-label="Key access"
-            class="px-3 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
+            class="min-w-0 px-3 py-3 bg-bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-accent transition-colors"
           >
-            <option value="read">Read only</option>
-            <option value="read,agents">Read + AI agents</option>
+            <option v-for="option in keyAccessOptions('read')" :key="option.value" :value="option.value">{{ option.label }}</option>
           </select>
           <button
             type="submit"
             :disabled="!newKeyName || creatingKey"
-            class="px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            class="whitespace-nowrap px-4 py-2 bg-accent hover:bg-accent-hover text-bg text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
             {{ creatingKey ? 'Creating...' : 'Create Key' }}
           </button>
@@ -391,6 +407,7 @@ const oidcMsg = ref('')
 const apiKeys = ref<ApiKey[]>([])
 const newKeyName = ref('')
 const newKeyScopes = ref('read')
+const keyMsg = ref('')
 const creatingKey = ref(false)
 const newlyCreatedKey = ref('')
 
@@ -568,6 +585,28 @@ async function handleCreateApiKey() {
     /* silent */
   } finally {
     creatingKey.value = false
+  }
+}
+
+/** The access a key can have. A key made through the API with another mix keeps it listed, so the select shows the truth. */
+const KEY_ACCESS = [
+  { value: 'read', label: 'Read only' },
+  { value: 'read,write', label: 'Read + write' },
+  { value: 'read,agents', label: 'Read + AI agents' },
+]
+function keyAccessOptions(current: string) {
+  return KEY_ACCESS.some(o => o.value === current) ? KEY_ACCESS : [...KEY_ACCESS, { value: current, label: current.replace(/,/g, ' + ') }]
+}
+
+async function handleKeyAccess(key: ApiKey, scopes: string) {
+  const before = key.scopes ?? 'read'
+  key.scopes = scopes
+  keyMsg.value = ''
+  try {
+    await api.patch(`/api/apikeys/${key.id}`, { scopes })
+  } catch {
+    key.scopes = before
+    keyMsg.value = `Couldn't change the access for ${key.name}. Try again; it still has its old access.`
   }
 }
 

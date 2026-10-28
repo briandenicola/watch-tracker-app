@@ -21,3 +21,6 @@ src/web/.env
 .vs/
 .vscode/
 *.user
+
+# Local runs write data-protection keys and the database here.
+src/api/data/

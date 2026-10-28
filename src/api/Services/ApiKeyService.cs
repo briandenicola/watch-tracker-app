@@ -11,11 +11,12 @@ namespace WatchTracker.Api.Services;
 public class ApiKeyService(AppDbContext context) : IApiKeyService
 {
     private const string KeyPrefix = "wt_";
+    private const string ScopesMessage = "Scopes must be \"read\", \"read,write\" or \"read,agents\".";
 
     public async Task<ApiKeyCreatedDto> CreateAsync(int userId, CreateApiKeyDto dto, CancellationToken ct = default)
     {
         var scopes = ApiKeyScopes.Normalize(dto.Scopes)
-            ?? throw new ArgumentException("Scopes must be \"read\" or \"read,agents\".", nameof(dto));
+            ?? throw new ArgumentException(ScopesMessage, nameof(dto));
         var rawKey = GenerateKey();
         var hash = HashKey(rawKey);
 
@@ -55,6 +56,19 @@ public class ApiKeyService(AppDbContext context) : IApiKeyService
                 LastUsedAt = k.LastUsedAt
             })
             .ToListAsync(ct);
+    }
+
+    /// <summary>Changes what an existing key may do; the key itself stays the same.</summary>
+    public async Task<ApiKeyDto?> UpdateScopesAsync(int id, int userId, string scopes, CancellationToken ct = default)
+    {
+        var normalized = ApiKeyScopes.Normalize(scopes)
+            ?? throw new ArgumentException(ScopesMessage, nameof(scopes));
+        var key = await context.ApiKeys.FirstOrDefaultAsync(k => k.Id == id && k.UserId == userId, ct);
+        if (key is null) return null;
+
+        key.Scopes = normalized;
+        await context.SaveChangesAsync(ct);
+        return new ApiKeyDto { Id = key.Id, Name = key.Name, Scopes = key.Scopes, CreatedAt = key.CreatedAt, LastUsedAt = key.LastUsedAt };
     }
 
     public async Task<bool> DeleteAsync(int id, int userId, CancellationToken ct = default)
