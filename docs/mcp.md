@@ -30,9 +30,10 @@ Settings → **API Keys** → name it, pick an access level, **Create Key**. Cop
 | Access | Can do |
 |---|---|
 | Read only | Look at watches, wish list, wear log, stored review, style memory |
-| Read + AI agents | All of that, plus run the AI agents |
+| Read + write | All of that, plus add, change and delete over the REST API, for apps that update your collection. Over MCP it is the same as Read only |
+| Read + AI agents | Look at everything, plus run the AI agents over MCP. It can't change data over the REST API |
 
-Give an assistant the lowest access it needs. Keys made before this feature are read only. Every key only reads over the REST API too: adding, changing or deleting anything with a key gets a 403, so changes are made signed in to the app. A key only ever sees its owner's data. Revoke a key in Settings and it stops working immediately.
+Give each app or assistant the lowest access it needs, and change a key's access in Settings at any time without replacing it: the app keeps working with the same key. Keys made before this feature are read only. Over the REST API, adding, changing or deleting with a key that isn't Read + write gets a 403. No key can create, change or revoke API keys; that is done signed in. A key only ever sees its owner's data. Revoke a key in Settings and it stops working immediately.
 
 ## 4. Connect your assistant
 
@@ -105,10 +106,10 @@ Agent results are saved in the same history you see in the app. Treat listings a
 | You see | Meaning and fix |
 |---|---|
 | `401` | Missing or wrong key. Check the `X-API-Key` header. |
-| `403` | The key is not an API key, or lacks access. Create a key with the right level. |
+| `403` | The key is not an API key, or lacks access. Change its access in Settings → API Keys. |
 | `503` | MCP is disabled. An admin enables it in App Settings → MCP Server. |
 | `429` | Too many requests. Wait a minute. |
-| Tool says the key lacks the "agents" scope | Create a Read + AI agents key. |
+| Tool says the key lacks the "agents" scope | Change the key to Read + AI agents in Settings. |
 | Agent tools missing from the tool list | The key is read only. |
 | Agent calls time out | Raise the proxy timeout (see above) and check Ollama is reachable. |
 | `find_review_candidates` says a review is needed | Run `generate_collection_review` first. |

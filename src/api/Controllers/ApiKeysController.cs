@@ -37,6 +37,23 @@ public class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
         }
     }
 
+    /// <summary>Changes a key's access (read, read,write or read,agents) without replacing it.</summary>
+    [HttpPatch("{id}")]
+    [ProducesResponseType(typeof(ApiKeyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiKeyDto>> Update(int id, UpdateApiKeyDto dto, CancellationToken ct)
+    {
+        try
+        {
+            var key = await apiKeyService.UpdateScopesAsync(id, UserId, dto.Scopes, ct);
+            return key is null ? NotFound() : Ok(key);
+        }
+        catch (ArgumentException ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
+    }
+
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

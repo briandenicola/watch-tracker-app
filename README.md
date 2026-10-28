@@ -334,8 +334,8 @@ Append `format=json` to a watch detail URL to get the record itself instead of t
 `GET /api/lifestore/records` lists every watch and wish list item you have, retired and sold ones included, for the
 household life store to read. Each record embeds its wear log, resale values, labels and disposition.
 
-- **Read it with an API key** from **Settings → API Keys**, with access **Read only**, in an `X-API-Key` header. Keys
-  can only read the REST API, so the feed can't change anything.
+- **Read it with an API key** from **Settings → API Keys**, with access **Read only**, in an `X-API-Key` header. A
+  Read only key can't change anything; only Read + write keys can.
 - **It returns what you see in the app,** including what you paid, where you bought it and the serial number, unlike a
   share link. Treat the key like a password.
 - **Paged in id order.** `?limit=` sets the page size (default 100, at most 500). Pass the response's `next` as
