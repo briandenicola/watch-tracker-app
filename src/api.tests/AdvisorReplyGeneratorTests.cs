@@ -50,6 +50,29 @@ public class AdvisorReplyGeneratorTests
     }
 
     [Fact]
+    public async Task Unusable_follow_ups_are_dropped_instead_of_failing_the_answer()
+    {
+        var overlong = new string('x', 201);
+        var answer = JsonSerializer.Serialize(new
+        {
+            type = "answer",
+            claims = new[] { new { text = "Your collection has a gap.", evidenceTools = new[] { "collection_profile" } } },
+            recommendedListings = Array.Empty<object>(),
+            followUps = new[] { " First? ", "", overlong, "first?", "Second?", "Third?", "Fourth?" }
+        });
+        var generator = CreateGenerator(
+            new SequenceHandler(
+                Ollama("""{"type":"tool","tool":"collection_profile","arguments":{}}"""),
+                Ollama(answer)),
+            new StubTools());
+
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "What is missing?");
+
+        Assert.Equal("Your collection has a gap.", reply.Content);
+        Assert.Equal(["First?", "Second?", "Third?"], reply.FollowUps);
+    }
+
+    [Fact]
     public async Task Collection_claim_with_external_data_gets_one_correction_attempt()
     {
         var handler = new SequenceHandler(
