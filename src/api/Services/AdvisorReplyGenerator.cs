@@ -121,19 +121,22 @@ public class AdvisorReplyGenerator(
                         LogCompletion(requestTimer, toolCalls, "answer");
                         return reply;
                     }
-                    catch (CorrectableGroundingException) when (
+                    catch (CorrectableGroundingException ex) when (
                         answerCorrections < MaxAnswerCorrections
                         && messages.Sum(message => message.Content.Length) < MaxPromptCharacters - 500)
                     {
                         answerCorrections++;
                         logger.LogWarning(
-                            "The collection advisor mislabeled external data in a collection claim; requesting one corrected answer.");
+                            "The collection advisor answer failed a grounding check; requesting one corrected answer.");
+                        logger.LogDebug("The grounding check that failed was: {Reason}", ex.Message);
                         messages.Add(new ChatMessage("assistant", rawAction));
                         messages.Add(new ChatMessage(
                             "user",
-                            "CORRECTION REQUIRED: Return the answer again using the required schema. "
-                            + "Collection-only claim text must not contain prices, URLs, or other external data. "
-                            + "Use only completed local evidenceTools for collection claims."));
+                            $"CORRECTION REQUIRED: {ex.Message} Return the answer again using the required schema. "
+                            + "Every claim must either cite exact URLs returned by tools, or list completed local "
+                            + "evidenceTools; collection claim text must not contain prices, URLs, or other external data. "
+                            + "Prices and URLs typed by the user are not evidence. "
+                            + "Remove any claim you cannot support either way."));
                         continue;
                     }
                 }
@@ -259,6 +262,9 @@ public class AdvisorReplyGenerator(
             - If required constraints such as budget, condition, size, or intended use are absent,
               return a clarify action instead of guessing.
             - External claims must cite observed tool URLs with high, medium, or low confidence.
+            - In an answer with external citations, a claim about the user's collection may instead
+              list completed local evidenceTools. Every other claim needs a citation; omit opinions
+              you cannot support. Prices and URLs typed by the user are not evidence.
             - If a provider is unavailable, failed, or returned no results, say so explicitly
               and do not present that tool call as current market or research evidence.
             - Keep the final answer under {{{MaxReplyLength}}} characters.
@@ -439,8 +445,18 @@ public class AdvisorReplyGenerator(
                     throw new InvalidOperationException(
                         "The collection advisor placed a URL in claim text instead of a citation.");
                 if (claim.Citations is not { Count: > 0 })
-                    throw new InvalidOperationException(
+                {
+                    // A mixed answer ("this fills a gap in your collection") is
+                    // legitimate when the claim rests on completed local tools; the
+                    // price and URL checks above already keep external data out of it.
+                    if (IsCompletedLocalClaim(claim, activities))
+                    {
+                        renderedClaims.Add(text);
+                        continue;
+                    }
+                    throw new CorrectableGroundingException(
                         "The collection advisor returned an external claim without a citation.");
+                }
 
                 var claimCitationIndexes = new List<int>();
                 foreach (var reference in claim.Citations)
@@ -595,6 +611,15 @@ public class AdvisorReplyGenerator(
             followUps,
             activities);
     }
+
+    private static bool IsCompletedLocalClaim(
+        AgentClaim claim,
+        IReadOnlyList<AdvisorToolActivityDto> activities) =>
+        claim.ListingPrices is not { Count: > 0 }
+        && claim.EvidenceTools is { Count: > 0 }
+        && claim.EvidenceTools.All(tool =>
+            LocalEvidenceTools.Contains(tool)
+            && activities.Any(activity => activity.Tool == tool && activity.Status == "completed"));
 
     /// <summary>
     /// Follow-ups are optional suggestion chips, not evidence, so a model that

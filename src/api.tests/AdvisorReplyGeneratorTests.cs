@@ -50,6 +50,39 @@ public class AdvisorReplyGeneratorTests
     }
 
     [Fact]
+    public async Task External_answer_may_include_a_claim_backed_by_completed_local_tools()
+    {
+        var tools = ObservedResearchTools();
+        var generator = CreateGenerator(new SequenceHandler(
+            Ollama("""{"type":"tool","tool":"collection_profile","arguments":{}}"""),
+            Ollama("""{"type":"tool","tool":"web_research","arguments":{}}"""),
+            Ollama("""{"type":"answer","claims":[{"text":"The brand uses Seiko movements.","citations":[{"url":"https://research.test/brand","confidence":"medium"}]},{"text":"It would be your first field watch.","evidenceTools":["collection_profile"]}],"recommendedListings":[],"followUps":[]}""")),
+            tools);
+
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "Is this brand a fit?");
+
+        Assert.Contains("Seiko movements. [1]", reply.Content);
+        Assert.Contains("It would be your first field watch.", reply.Content);
+        Assert.Single(reply.Citations);
+    }
+
+    [Fact]
+    public async Task Uncited_external_claim_gets_one_correction_naming_the_failure()
+    {
+        var handler = new SequenceHandler(
+            Ollama("""{"type":"tool","tool":"web_research","arguments":{}}"""),
+            Ollama("""{"type":"answer","claims":[{"text":"It is a solid budget pick."}],"recommendedListings":[],"followUps":[]}"""),
+            Ollama("""{"type":"answer","claims":[{"text":"The observed source provides watch research.","citations":[{"url":"https://research.test/brand","confidence":"medium"}]}],"recommendedListings":[],"followUps":[]}"""));
+        var generator = CreateGenerator(handler, ObservedResearchTools());
+
+        var reply = await generator.GenerateAsync(7, new CollectionProfileDto(), [], "Is this brand any good?");
+
+        Assert.Contains("observed source", reply.Content);
+        Assert.Equal(3, handler.RequestBodies.Count);
+        Assert.Contains("external claim without a citation", handler.RequestBodies[2]);
+    }
+
+    [Fact]
     public async Task Unusable_follow_ups_are_dropped_instead_of_failing_the_answer()
     {
         var overlong = new string('x', 201);
