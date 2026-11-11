@@ -18,6 +18,7 @@ public class AdvisorReplyGenerator(
     private const int MaxConversationHistory = 8;
     private const int MaxPromptCharacters = 48_000;
     private const int MaxReplyLength = 10_000;
+    private const int RemovalNoticeReserve = 200;
     private const int MaxCitations = 10;
     private const int MaxRecommendationCards = 5;
     private const int MaxFollowUps = 3;
@@ -108,37 +109,53 @@ public class AdvisorReplyGenerator(
                 }
                 if (action.Type.Equals("answer", StringComparison.OrdinalIgnoreCase))
                 {
-                    try
-                    {
-                        var reply = BuildReply(action, toolContext, activities);
-                        var returnedFollowUps = action.FollowUps?.Count ?? 0;
-                        if (reply.FollowUps.Count != returnedFollowUps)
-                            logger.LogWarning(
-                                "The collection advisor returned {ReturnedCount} follow-up questions; {KeptCount} "
-                                + "were kept after dropping blank, overlong, duplicate, or excess entries.",
-                                returnedFollowUps,
-                                reply.FollowUps.Count);
-                        LogCompletion(requestTimer, toolCalls, "answer");
-                        return reply;
-                    }
-                    catch (CorrectableGroundingException ex) when (
-                        answerCorrections < MaxAnswerCorrections
-                        && messages.Sum(message => message.Content.Length) < MaxPromptCharacters - 500)
+                    var built = BuildReply(action, toolContext, activities);
+                    var reasons = built.Rejections.Distinct().ToList();
+                    if (reasons.Count > 0
+                        && answerCorrections < MaxAnswerCorrections
+                        && messages.Sum(message => message.Content.Length) < MaxPromptCharacters - 1000)
                     {
                         answerCorrections++;
                         logger.LogWarning(
-                            "The collection advisor answer failed a grounding check; requesting one corrected answer.");
-                        logger.LogDebug("The grounding check that failed was: {Reason}", ex.Message);
+                            "The collection advisor answer had {RejectedCount} parts that failed grounding checks; "
+                            + "requesting one corrected answer.",
+                            built.Rejections.Count);
+                        logger.LogDebug("The grounding checks that failed were: {Reasons}", string.Join(" | ", reasons));
                         messages.Add(new ChatMessage("assistant", rawAction));
                         messages.Add(new ChatMessage(
                             "user",
-                            $"CORRECTION REQUIRED: {ex.Message} Return the answer again using the required schema. "
+                            "CORRECTION REQUIRED: " + string.Join(" ", reasons)
+                            + " Return the answer again using the required schema. "
                             + "Every claim must either cite exact URLs returned by tools, or list completed local "
                             + "evidenceTools; collection claim text must not contain prices, URLs, or other external data. "
                             + "Prices and URLs typed by the user are not evidence. "
                             + "Remove any claim you cannot support either way."));
                         continue;
                     }
+
+                    var reply = built.Reply;
+                    if (built.Rejections.Count > 0)
+                    {
+                        // The removal is disclosed rather than silent, so the user knows
+                        // the answer is partial; the dropped text itself never ships.
+                        logger.LogWarning(
+                            "The collection advisor answer was returned with {RejectedCount} unsupported parts removed.",
+                            built.Rejections.Count);
+                        logger.LogDebug("The grounding checks that failed were: {Reasons}", string.Join(" | ", reasons));
+                        reply = reply with
+                        {
+                            Content = reply.Content + "\n\n" + RemovalNotice(built.Rejections.Count)
+                        };
+                    }
+                    var returnedFollowUps = action.FollowUps?.Count ?? 0;
+                    if (reply.FollowUps.Count != returnedFollowUps)
+                        logger.LogWarning(
+                            "The collection advisor returned {ReturnedCount} follow-up questions; {KeptCount} "
+                            + "were kept after dropping blank, overlong, duplicate, or excess entries.",
+                            returnedFollowUps,
+                            reply.FollowUps.Count);
+                    LogCompletion(requestTimer, toolCalls, "answer");
+                    return reply;
                 }
 
                 if (!action.Type.Equals("tool", StringComparison.OrdinalIgnoreCase)
@@ -407,7 +424,14 @@ public class AdvisorReplyGenerator(
         }
     }
 
-    private static AdvisorGeneratedReply BuildReply(
+    /// <summary>
+    /// Builds the reply from the model's structured claims. Every claim is checked
+    /// in full before anything from it is kept, and a claim that fails is dropped
+    /// rather than failing the whole answer; the reasons are returned so the caller
+    /// can ask for one correction, then disclose any removal. Only failures of the
+    /// answer as a whole still throw. Nothing that failed a check reaches the user.
+    /// </summary>
+    private static BuiltReply BuildReply(
         AgentAction action,
         AdvisorToolContext context,
         IReadOnlyList<AdvisorToolActivityDto> activities)
@@ -417,7 +441,9 @@ public class AdvisorReplyGenerator(
                 "The collection advisor answered without approved tool evidence.");
 
         var citations = new List<AdvisorCitationDto>();
-        string content;
+        var rejections = new List<string>();
+        var renderedClaims = new List<string>();
+        var claimsReturned = 0;
         if (context.Sources.Count > 0)
         {
             if (!string.IsNullOrWhiteSpace(action.Content))
@@ -426,89 +452,33 @@ public class AdvisorReplyGenerator(
             if (action.Claims is not { Count: > 0 })
                 throw new InvalidOperationException(
                     "The collection advisor used external evidence without claim-level citations.");
-            if (action.Claims.Count > MaxCitations)
-                throw new InvalidOperationException(
-                    $"The collection advisor exceeded the {MaxCitations}-claim limit.");
 
-            var renderedClaims = new List<string>();
+            claimsReturned = action.Claims.Count;
             foreach (var claim in action.Claims)
             {
-                var text = claim.Text?.Trim();
-                if (string.IsNullOrWhiteSpace(text) || text.Length > 1000)
-                    throw new InvalidOperationException(
-                        "The collection advisor returned an invalid external claim.");
-                if (ContainsPriceValue(text))
-                    throw new InvalidOperationException(
-                        "The collection advisor placed an unqualified price in external claim text.");
-                if (text.Contains("http://", StringComparison.OrdinalIgnoreCase)
-                    || text.Contains("https://", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException(
-                        "The collection advisor placed a URL in claim text instead of a citation.");
-                if (claim.Citations is not { Count: > 0 })
+                var (rendered, newSources, rejection) = CheckExternalClaim(claim, context, activities, citations);
+                rejection ??= renderedClaims.Count >= MaxCitations
+                    ? $"The collection advisor exceeded the {MaxCitations}-claim limit."
+                    : citations.Count + newSources.Count > MaxCitations
+                        ? $"The collection advisor exceeded the {MaxCitations}-citation limit."
+                        : null;
+                if (rejection is null)
                 {
-                    // A mixed answer ("this fills a gap in your collection") is
-                    // legitimate when the claim rests on completed local tools; the
-                    // price and URL checks above already keep external data out of it.
-                    if (IsCompletedLocalClaim(claim, activities))
+                    // Citation markers are numbered against the list as it will be
+                    // once this claim's new sources are appended.
+                    citations.AddRange(newSources);
+                    rendered = RenderCitationMarkers(rendered!, claim, citations);
+                    if (!FitsReply(renderedClaims, rendered))
                     {
-                        renderedClaims.Add(text);
-                        continue;
+                        citations.RemoveRange(citations.Count - newSources.Count, newSources.Count);
+                        rejection = "The collection advisor response exceeded the allowed length.";
                     }
-                    throw new CorrectableGroundingException(
-                        "The collection advisor returned an external claim without a citation.");
                 }
-
-                var claimCitationIndexes = new List<int>();
-                foreach (var reference in claim.Citations)
-                {
-                    if (!context.Sources.TryGetValue(reference.Url, out var source))
-                        throw new InvalidOperationException(
-                            "The collection advisor cited a URL that was not returned by an approved tool.");
-                    var confidence = reference.Confidence?.Trim().ToLowerInvariant();
-                    if (confidence is not ("high" or "medium" or "low"))
-                        throw new InvalidOperationException(
-                            "The collection advisor citation used an unsupported confidence value.");
-                    var citationIndex = citations.FindIndex(c => c.Url == source.Url);
-                    if (citationIndex < 0)
-                    {
-                        if (citations.Count >= MaxCitations)
-                            throw new InvalidOperationException(
-                                $"The collection advisor exceeded the {MaxCitations}-citation limit.");
-                        citations.Add(new AdvisorCitationDto
-                        {
-                            Title = source.Title,
-                            Url = source.Url,
-                            Provider = source.Provider,
-                            Confidence = confidence,
-                            ObservedAt = source.ObservedAt
-                        });
-                        citationIndex = citations.Count - 1;
-                    }
-                    claimCitationIndexes.Add(citationIndex);
-                }
-
-                var citationMarkers = string.Join(
-                    " ",
-                    claimCitationIndexes.Distinct().Select(index => $"[{index + 1}]"));
-                var rendered = $"{text} {citationMarkers}";
-                foreach (var priceReference in claim.ListingPrices ?? [])
-                {
-                    var key = AdvisorToolContext.ListingKey(
-                        priceReference.Provider,
-                        priceReference.ProviderItemId);
-                    if (!context.Listings.TryGetValue(key, out var listing)
-                        || !claim.Citations.Any(reference => reference.Url == listing.ItemUrl))
-                        throw new InvalidOperationException(
-                            "The collection advisor used a price that was not tied to a cited observed listing.");
-                    rendered +=
-                        $"\n\nObserved asking price: {listing.Currency} {(listing.TotalPrice ?? listing.Price):0.00} " +
-                        $"(observed {listing.ObservedAt:yyyy-MM-dd HH:mm} UTC" +
-                        (listing.TotalPrice is null ? "; shipping total unavailable" : "") +
-                        ").";
-                }
-                renderedClaims.Add(rendered);
+                if (rejection is null)
+                    renderedClaims.Add(rendered!);
+                else
+                    rejections.Add(rejection);
             }
-            content = string.Join("\n\n", renderedClaims);
         }
         else
         {
@@ -517,10 +487,10 @@ public class AdvisorReplyGenerator(
                 .ToList();
             if (externalAttempts.Count > 0)
             {
-                content = externalAttempts.Any(activity =>
+                renderedClaims.Add(externalAttempts.Any(activity =>
                         activity.Status is "failed" or "unavailable")
                     ? "I couldn't retrieve current external evidence from the configured providers. Check the provider status below and try again."
-                    : "The configured providers returned no matching current external evidence. Try a more specific query or different constraints.";
+                    : "The configured providers returned no matching current external evidence. Try a more specific query or different constraints.");
             }
             else
             {
@@ -530,54 +500,68 @@ public class AdvisorReplyGenerator(
                 if (action.Claims is not { Count: > 0 })
                     throw new InvalidOperationException(
                         "The collection advisor answer omitted its evidence-backed claims.");
-                if (action.Claims.Count > MaxCitations)
-                    throw new InvalidOperationException(
-                        $"The collection advisor exceeded the {MaxCitations}-claim limit.");
 
-                var renderedClaims = new List<string>();
+                claimsReturned = action.Claims.Count;
                 foreach (var claim in action.Claims)
                 {
                     var text = claim.Text?.Trim();
+                    string? rejection = null;
                     if (string.IsNullOrWhiteSpace(text) || text.Length > 1000)
-                        throw new InvalidOperationException(
-                            "The collection advisor returned an invalid collection claim.");
-                    if (ContainsPriceValue(text)
+                        rejection = "The collection advisor returned an invalid collection claim.";
+                    else if (ContainsPriceValue(text)
                         || text.Contains("http://", StringComparison.OrdinalIgnoreCase)
                         || text.Contains("https://", StringComparison.OrdinalIgnoreCase))
-                        throw new CorrectableGroundingException(
-                            "The collection advisor returned unsupported external data in a collection claim.");
-                    if (claim.Citations is { Count: > 0 }
-                        || claim.EvidenceTools is not { Count: > 0 }
-                        || claim.EvidenceTools.Any(tool =>
-                            !LocalEvidenceTools.Contains(tool)
-                            || !activities.Any(activity =>
-                                activity.Tool == tool && activity.Status == "completed")))
-                        throw new InvalidOperationException(
-                            "The collection advisor returned a collection claim without completed local evidence.");
-                    renderedClaims.Add(text);
+                        rejection = "The collection advisor returned unsupported external data in a collection claim.";
+                    else if (claim.Citations is { Count: > 0 } || !IsCompletedLocalClaim(claim, activities))
+                        rejection = "The collection advisor returned a collection claim without completed local evidence.";
+                    else if (renderedClaims.Count >= MaxCitations)
+                        rejection = $"The collection advisor exceeded the {MaxCitations}-claim limit.";
+                    else if (!FitsReply(renderedClaims, text))
+                        rejection = "The collection advisor response exceeded the allowed length.";
+
+                    if (rejection is null)
+                        renderedClaims.Add(text!);
+                    else
+                        rejections.Add(rejection);
                 }
-                content = string.Join("\n\n", renderedClaims);
             }
         }
-        if (content.Length > MaxReplyLength)
-            throw new InvalidOperationException("The collection advisor response exceeded the allowed length.");
 
+        if (claimsReturned > 0 && renderedClaims.Count == 0)
+            renderedClaims.Add(
+                "I couldn't tie any part of my answer to evidence I actually observed, so I left it out. "
+                + "Try a narrower question, such as one specific model or listing.");
+        var content = string.Join("\n\n", renderedClaims);
+
+        // Cards are only shown for observed listings that a kept claim cites, so a
+        // dropped claim also takes its listing card with it.
         var cards = new List<AdvisorRecommendationCardDto>();
-        if (action.RecommendedListings?.Count > MaxRecommendationCards)
-            throw new InvalidOperationException(
-                $"The collection advisor exceeded the {MaxRecommendationCards}-recommendation limit.");
         foreach (var reference in action.RecommendedListings ?? [])
         {
             var key = AdvisorToolContext.ListingKey(reference.Provider, reference.ProviderItemId);
             if (!context.Listings.TryGetValue(key, out var listing))
-                throw new InvalidOperationException(
+            {
+                rejections.Add(
                     "The collection advisor recommended a listing that was not returned by an approved tool.");
+                continue;
+            }
+            if (!citations.Any(citation => citation.Url == listing.ItemUrl))
+            {
+                rejections.Add("The collection advisor recommended a listing without citing that listing.");
+                continue;
+            }
             if (cards.Any(card =>
                     card.Provider?.Equals(listing.Provider, StringComparison.OrdinalIgnoreCase) == true
                     && card.ProviderItemId?.Equals(
                         listing.ProviderItemId,
                         StringComparison.OrdinalIgnoreCase) == true))
                 continue;
+            if (cards.Count >= MaxRecommendationCards)
+            {
+                rejections.Add(
+                    $"The collection advisor exceeded the {MaxRecommendationCards}-recommendation limit.");
+                continue;
+            }
             context.ListingScores.TryGetValue(key, out var score);
             cards.Add(new AdvisorRecommendationCardDto
             {
@@ -600,17 +584,110 @@ public class AdvisorReplyGenerator(
             });
         }
 
-        var followUps = SanitizeFollowUps(action.FollowUps);
-        if (cards.Any(card => !citations.Any(citation => citation.Url == card.ItemUrl)))
-            throw new InvalidOperationException(
-                "The collection advisor recommended a listing without citing that listing.");
-        return new AdvisorGeneratedReply(
-            content,
-            citations,
-            cards,
-            followUps,
-            activities);
+        return new BuiltReply(
+            new AdvisorGeneratedReply(
+                content,
+                citations,
+                cards,
+                SanitizeFollowUps(action.FollowUps),
+                activities),
+            rejections);
     }
+
+    /// <summary>
+    /// Checks one external-answer claim without changing any shared state. Returns
+    /// the claim text with its observed prices rendered, the sources it would add to
+    /// the citation list, or the reason it must be dropped.
+    /// </summary>
+    private static (string? Rendered, List<AdvisorCitationDto> NewSources, string? Rejection) CheckExternalClaim(
+        AgentClaim claim,
+        AdvisorToolContext context,
+        IReadOnlyList<AdvisorToolActivityDto> activities,
+        IReadOnlyList<AdvisorCitationDto> existing)
+    {
+        var none = new List<AdvisorCitationDto>();
+        var text = claim.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(text) || text.Length > 1000)
+            return (null, none, "The collection advisor returned an invalid external claim.");
+        if (ContainsPriceValue(text))
+            return (null, none, "The collection advisor placed an unqualified price in external claim text.");
+        if (text.Contains("http://", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("https://", StringComparison.OrdinalIgnoreCase))
+            return (null, none, "The collection advisor placed a URL in claim text instead of a citation.");
+        if (claim.Citations is not { Count: > 0 })
+        {
+            // A mixed answer ("this fills a gap in your collection") is legitimate
+            // when the claim rests on completed local tools; the price and URL
+            // checks above already keep external data out of it.
+            return IsCompletedLocalClaim(claim, activities)
+                ? (text, none, null)
+                : (null, none, "The collection advisor returned an external claim without a citation.");
+        }
+
+        var newSources = new List<AdvisorCitationDto>();
+        foreach (var reference in claim.Citations)
+        {
+            if (reference.Url is null || !context.Sources.TryGetValue(reference.Url, out var source))
+                return (null, none, "The collection advisor cited a URL that was not returned by an approved tool.");
+            var confidence = reference.Confidence?.Trim().ToLowerInvariant();
+            if (confidence is not ("high" or "medium" or "low"))
+                return (null, none, "The collection advisor citation used an unsupported confidence value.");
+            if (existing.Any(c => c.Url == source.Url) || newSources.Any(c => c.Url == source.Url))
+                continue;
+            newSources.Add(new AdvisorCitationDto
+            {
+                Title = source.Title,
+                Url = source.Url,
+                Provider = source.Provider,
+                Confidence = confidence,
+                ObservedAt = source.ObservedAt
+            });
+        }
+
+        var rendered = text;
+        foreach (var priceReference in claim.ListingPrices ?? [])
+        {
+            var key = AdvisorToolContext.ListingKey(priceReference.Provider, priceReference.ProviderItemId);
+            if (!context.Listings.TryGetValue(key, out var listing)
+                || !claim.Citations.Any(reference => reference.Url == listing.ItemUrl))
+                return (null, none,
+                    "The collection advisor used a price that was not tied to a cited observed listing.");
+            rendered +=
+                $"\n\nObserved asking price: {listing.Currency} {(listing.TotalPrice ?? listing.Price):0.00} " +
+                $"(observed {listing.ObservedAt:yyyy-MM-dd HH:mm} UTC" +
+                (listing.TotalPrice is null ? "; shipping total unavailable" : "") +
+                ").";
+        }
+        return (rendered, newSources, null);
+    }
+
+    /// <summary>Inserts the claim's citation markers after its text, before any rendered price lines.</summary>
+    private static string RenderCitationMarkers(
+        string rendered,
+        AgentClaim claim,
+        IReadOnlyList<AdvisorCitationDto> citations)
+    {
+        if (claim.Citations is not { Count: > 0 })
+            return rendered;
+        var markers = string.Join(
+            " ",
+            claim.Citations
+                .Select(reference => citations.ToList().FindIndex(c => c.Url == reference.Url))
+                .Distinct()
+                .Select(index => $"[{index + 1}]"));
+        var text = claim.Text!.Trim();
+        return $"{text} {markers}{rendered[text.Length..]}";
+    }
+
+    private static bool FitsReply(IReadOnlyList<string> renderedClaims, string next) =>
+        renderedClaims.Sum(claim => claim.Length + 2) + next.Length + RemovalNoticeReserve <= MaxReplyLength;
+
+    private static string RemovalNotice(int count) =>
+        count == 1
+            ? "Note: one statement was removed because it couldn't be tied to evidence the advisor observed."
+            : $"Note: {count} statements were removed because they couldn't be tied to evidence the advisor observed.";
+
+    private sealed record BuiltReply(AdvisorGeneratedReply Reply, IReadOnlyList<string> Rejections);
 
     private static bool IsCompletedLocalClaim(
         AgentClaim claim,
@@ -744,9 +821,6 @@ public class AdvisorReplyGenerator(
     }
 
     private sealed record ChatMessage(string Role, string Content);
-
-    private sealed class CorrectableGroundingException(string message)
-        : InvalidOperationException(message);
 
     private sealed class AgentAction
     {
