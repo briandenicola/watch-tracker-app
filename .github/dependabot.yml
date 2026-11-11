@@ -8,6 +8,8 @@ updates:
       codeql:
         patterns:
           - github/codeql-action/*
+      github-actions-minor-patch:
+        update-types: [minor, patch]
 
   - package-ecosystem: npm
     directory: /src/web
@@ -17,6 +19,9 @@ updates:
       - dependency-name: vue-router
         update-types:
           - version-update:semver-major
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
 
   - package-ecosystem: nuget
     directory: /src/api
@@ -27,23 +32,37 @@ updates:
         patterns:
           - SkiaSharp
           - SkiaSharp.NativeAssets.*
+      nuget-minor-patch:
+        update-types: [minor, patch]
 
   - package-ecosystem: nuget
     directory: /src/api.tests
     schedule:
       interval: weekly
+    groups:
+      nuget-minor-patch:
+        update-types: [minor, patch]
 
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    groups:
+      docker-minor-patch:
+        update-types: [minor, patch]
 
   - package-ecosystem: docker
     directory: /src/api
     schedule:
       interval: weekly
+    groups:
+      docker-minor-patch:
+        update-types: [minor, patch]
 
   - package-ecosystem: docker
     directory: /.devcontainer
     schedule:
       interval: weekly
+    groups:
+      docker-minor-patch:
+        update-types: [minor, patch]
