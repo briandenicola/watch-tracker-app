@@ -14,7 +14,7 @@ COPY src/api/ .
 RUN dotnet publish -c Release -o /app/publish
 
 # Download U2Net ONNX model with integrity check
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS model-download
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS model-download
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     mkdir -p /models && \
     curl -fSL -o /models/u2net.onnx \
@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     echo "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491  /models/u2net.onnx" | sha256sum -c - && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=api-build /app/publish .
 COPY --from=web-build /web/dist ./wwwroot
