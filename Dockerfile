@@ -6,7 +6,7 @@ COPY src/web/ .
 ENV VITE_API_BASE_URL=""
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS api-build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS api-build
 WORKDIR /src
 COPY src/api/WatchTracker.Api.csproj .
 RUN dotnet restore
