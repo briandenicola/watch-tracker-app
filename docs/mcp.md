@@ -1,6 +1,6 @@
 # MCP Server: deploy and use
 
-WatchTracker has a built-in [MCP](https://modelcontextprotocol.io) server. It lets an AI assistant such as Hermes Agent look at your collection and use WatchTracker's AI agents for you. It cannot change your watches, wish list or wear log.
+WatchTracker has a built-in [MCP](https://modelcontextprotocol.io) server. It lets an AI assistant such as Hermes Agent look at your collection and use WatchTracker's AI agents for you. With a key you have given wish list access, it can also add a watch to your wish list. That is the only change it can make: it cannot edit or delete watches, or touch your wear log.
 
 It is part of the normal WatchTracker container: **there is nothing extra to install or run.** You only turn it on and give the assistant a key.
 
@@ -30,10 +30,12 @@ Settings → **API Keys** → name it, pick an access level, **Create Key**. Cop
 | Access | Can do |
 |---|---|
 | Read only | Look at watches, wish list, wear log, stored review, style memory |
-| Read + write | All of that, plus add, change and delete over the REST API, for apps that update your collection. Over MCP it is the same as Read only |
-| Read + AI agents | Look at everything, plus run the AI agents over MCP. It can't change data over the REST API |
+| Read + add to wish list | All of that, plus `add_to_wishlist` over MCP. It can't edit or delete anything, and can't change data over the REST API |
+| Read + AI agents | Look at everything, plus run the AI agents over MCP. It can't change data |
+| Read + AI agents + add to wish list | Both of the above. This is the one for an assistant that should ask the agents and add what they find to your wish list |
+| Read + write | Look at everything, plus add, change and delete over the REST API, for apps that update your collection. It can also use `add_to_wishlist` |
 
-Give each app or assistant the lowest access it needs, and change a key's access in Settings at any time without replacing it: the app keeps working with the same key. Keys made before this feature are read only. Over the REST API, adding, changing or deleting with a key that isn't Read + write gets a 403. No key can create, change or revoke API keys; that is done signed in. A key only ever sees its owner's data. Revoke a key in Settings and it stops working immediately.
+Don't give an assistant Read + write just so it can add to your wish list: that key can edit and delete everything over the REST API. Use an add to wish list key instead. Give each app or assistant the lowest access it needs, and change a key's access in Settings at any time without replacing it: the app keeps working with the same key. Keys made before this feature are read only. Over the REST API, adding, changing or deleting with a key that isn't Read + write gets a 403. No key can create, change or revoke API keys; that is done signed in. A key only ever sees its owner's data. Revoke a key in Settings and it stops working immediately.
 
 ## 4. Connect your assistant
 
@@ -92,14 +94,18 @@ AI agents (agents access), slower and limited to 10 a minute:
 - "What should I wear my Speedmaster with to a wedding in the evening?" → `ask_style_agent`
 - "Pick a watch for a navy suit at a dinner." → `recommend_watch_for_outfit` (needs 2+ watches)
 
+Add to wish list (wish list access):
+
+- "Add the Tudor Black Bay 58 to my wish list." → `add_to_wishlist` (goes to the end of the priority order; a watch already on the list is reported, not added twice; limited to 10 a minute)
+
 Agent results are saved in the same history you see in the app. Treat listings and prices as leads to check, not facts. See [AI agents](ai-agents.md) for what each agent does.
 
 ## Limits and safety
 
 - Only API keys work. Browser sign-ins are refused.
-- Read-only keys never see the agent tools.
-- 60 requests a minute per person, 128 KiB per request, 10 agent runs a minute.
-- No tool writes to your watches, wish list or wear log.
+- Read-only keys never see the agent tools or `add_to_wishlist`.
+- 60 requests a minute per person, 128 KiB per request, 10 agent runs a minute, 10 wish list adds a minute.
+- `add_to_wishlist` is the only tool that changes your data, and only for keys with wish list (or write) access. No tool edits or deletes a watch or writes to the wear log.
 
 ## Troubleshooting
 
@@ -111,5 +117,7 @@ Agent results are saved in the same history you see in the app. Treat listings a
 | `429` | Too many requests. Wait a minute. |
 | Tool says the key lacks the "agents" scope | Change the key to Read + AI agents in Settings. |
 | Agent tools missing from the tool list | The key is read only. |
+| `add_to_wishlist` missing from the tool list | The key has no wish list access. Change it in Settings → API Keys. |
 | Agent calls time out | Raise the proxy timeout (see above) and check Ollama is reachable. |
+| `add_to_wishlist` says too many adds | You get 10 a minute across all your keys. Wait a minute. |
 | `find_review_candidates` says a review is needed | Run `generate_collection_review` first. |

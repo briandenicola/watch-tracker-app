@@ -1,6 +1,6 @@
 ---
 name: using-watchtracker-mcp
-description: Use the WatchTracker MCP server to read a collector's watches, wish list, wear log and collection review, and to run its AI agents (Collection Advisor, Collection Review, Candidate Finder, Style Agent, Outfit Recommender). Use when asked about the user's watch collection.
+description: Use the WatchTracker MCP server to read a collector's watches, wish list, wear log and collection review, to add a watch to the wish list, and to run its AI agents (Collection Advisor, Collection Review, Candidate Finder, Style Agent, Outfit Recommender). Use when asked about the user's watch collection.
 ---
 
 # Using the WatchTracker MCP server
@@ -31,10 +31,17 @@ If calls return 503, the admin has not enabled MCP (Admin > App Settings > MCP S
 | `ask_style_agent` | Needs `watchId`; give `occasion` and `weather` |
 | `recommend_watch_for_outfit` | Needs 2+ watches; `occasion` and `outfitDescription` |
 
+## Write tools (key needs the `wishlist` scope; `write` also works)
+
+| Tool | Notes |
+|---|---|
+| `add_to_wishlist` | Needs `brand` and `model`; optional `referenceNumber`, `linkUrl`, `price` + `currency`, `notes`. Returns `added`, `watchId`, `message` |
+
 ## Guidance
 
 - Prefer read tools. They are fast; agent tools run a local model and are limited to 10 per minute.
 - Check `get_collection_review` before calling `generate_collection_review`; only regenerate if it is missing or stale.
 - Run `generate_collection_review` before `find_review_candidates`.
-- Nothing here changes watches, the wish list or the wear log.
+- `add_to_wishlist` is the only tool that changes data. Call it only when the user asks for a specific watch to be added, never on your own initiative after an advisor reply. `added: false` means it was already there; say so, do not retry. It is limited to 10 calls a minute; if refused for that, tell the user rather than looping.
+- Nothing here edits or deletes watches or writes to the wear log.
 - Treat advisor listings and prices as leads to verify, not facts.

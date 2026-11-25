@@ -252,8 +252,8 @@
         <h3 class="text-lg font-medium text-text mb-4">API Keys</h3>
 
         <p class="text-sm text-text-muted mb-4">
-          Read only can look but not change anything. Read + write can also add, edit and delete, for apps that update your collection.
-          Read + AI agents can also run the AI agents over MCP. Change a key's access below without replacing it.
+          Read only can look but not change anything. Add to wish list lets an assistant add a watch to your wish list over MCP, and nothing else.
+          AI agents lets it run the AI agents over MCP. Read + write can add, edit and delete anything, for apps that update your collection. Change a key's access below without replacing it.
         </p>
         <p v-if="keyMsg" class="text-sm text-danger mb-4" role="alert">{{ keyMsg }}</p>
 
@@ -591,8 +591,10 @@ async function handleCreateApiKey() {
 /** The access a key can have. A key made through the API with another mix keeps it listed, so the select shows the truth. */
 const KEY_ACCESS = [
   { value: 'read', label: 'Read only' },
-  { value: 'read,write', label: 'Read + write' },
+  { value: 'read,wishlist', label: 'Read + add to wish list' },
   { value: 'read,agents', label: 'Read + AI agents' },
+  { value: 'read,agents,wishlist', label: 'Read + AI agents + add to wish list' },
+  { value: 'read,write', label: 'Read + write' },
 ]
 function keyAccessOptions(current: string) {
   return KEY_ACCESS.some(o => o.value === current) ? KEY_ACCESS : [...KEY_ACCESS, { value: current, label: current.replace(/,/g, ' + ') }]

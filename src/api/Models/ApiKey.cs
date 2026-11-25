@@ -7,7 +7,7 @@ public class ApiKey
     public User User { get; set; } = null!;
     public required string Name { get; set; }
     public required string KeyHash { get; set; }
-    /// <summary>Canonical comma-separated MCP scopes: "read" or "read,agents".</summary>
+    /// <summary>Canonical comma-separated scopes, e.g. "read" or "read,agents,wishlist". See <see cref="Authentication.ApiKeyScopes"/>.</summary>
     public string Scopes { get; set; } = "read";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastUsedAt { get; set; }

@@ -293,6 +293,7 @@ builder.Services.AddScoped<ISavedViewService, SavedViewService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<WatchTracker.Api.Mcp.McpCaller>();
+builder.Services.AddSingleton<WatchTracker.Api.Mcp.McpWishlistLimiter>();
 var mcpJson = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)
 {
     TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver(),
@@ -303,18 +304,15 @@ builder.Services.AddMcpServer()
     .WithHttpTransport(o => o.Stateless = true)
     .WithTools<WatchTracker.Api.Mcp.WatchTrackerReadTools>(mcpJson)
     .WithTools<WatchTracker.Api.Mcp.WatchTrackerAgentTools>(mcpJson)
+    .WithTools<WatchTracker.Api.Mcp.WatchTrackerWriteTools>(mcpJson)
     .WithRequestFilters(f => f.AddListToolsFilter(next => async (ctx, ct) =>
     {
         var result = await next(ctx, ct);
         var caller = ctx.Services?.GetService<WatchTracker.Api.Mcp.McpCaller>();
-        if (caller is not null && !caller.HasScope(ApiKeyScopes.Agents))
+        if (caller is not null)
         {
-            var agentTools = typeof(WatchTracker.Api.Mcp.WatchTrackerAgentTools).GetMethods()
-                .Select(m => m.GetCustomAttributes(typeof(ModelContextProtocol.Server.McpServerToolAttribute), false)
-                    .Cast<ModelContextProtocol.Server.McpServerToolAttribute>().FirstOrDefault()?.Name)
-                .Where(n => n is not null)
-                .ToHashSet();
-            result.Tools = result.Tools.Where(t => !agentTools.Contains(t.Name)).ToList();
+            var hidden = WatchTracker.Api.Mcp.McpToolScopes.HiddenFrom(caller);
+            result.Tools = result.Tools.Where(t => !hidden.Contains(t.Name)).ToList();
         }
         return result;
     }));

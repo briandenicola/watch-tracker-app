@@ -11,7 +11,7 @@ namespace WatchTracker.Api.Services;
 public class ApiKeyService(AppDbContext context) : IApiKeyService
 {
     private const string KeyPrefix = "wt_";
-    private const string ScopesMessage = "Scopes must be \"read\", \"read,write\" or \"read,agents\".";
+    private const string ScopesMessage = "Scopes must be \"read\", optionally with any of \"write\", \"agents\" and \"wishlist\".";
 
     public async Task<ApiKeyCreatedDto> CreateAsync(int userId, CreateApiKeyDto dto, CancellationToken ct = default)
     {

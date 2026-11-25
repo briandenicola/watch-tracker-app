@@ -26,12 +26,39 @@ public class McpCaller(IHttpContextAccessor accessor)
     public bool HasScope(string scope) =>
         ApiKeyScopes.Has(Principal.FindFirstValue(ApiKeyScopes.ClaimType), scope);
 
-    public void RequireScope(string scope)
+    /// <summary>Passes when the key has any one of the scopes; the first is the one named in the refusal.</summary>
+    public void RequireScope(params string[] scopes)
     {
-        if (!HasScope(scope))
+        if (!scopes.Any(HasScope))
             throw new McpException(
-                $"This API key does not have the \"{scope}\" scope. Create a key with read,{scope} access.");
+                $"This API key does not have the \"{scopes[0]}\" scope. Give it that access in Settings > API Keys.");
     }
+}
+
+/// <summary>
+/// Which tools need more than the read scope. A key without the scope neither
+/// sees the tool in its list nor can call it (each tool checks again itself).
+/// </summary>
+public static class McpToolScopes
+{
+    /// <summary>The scopes that open add_to_wishlist: its own narrow one, or full write.</summary>
+    public static readonly string[] WishlistAdd = [ApiKeyScopes.Wishlist, ApiKeyScopes.Write];
+
+    private static readonly (string[] AnyOf, HashSet<string> Tools)[] Scoped =
+    [
+        ([ApiKeyScopes.Agents], ToolNames(typeof(WatchTrackerAgentTools))),
+        (WishlistAdd, ToolNames(typeof(WatchTrackerWriteTools)))
+    ];
+
+    public static HashSet<string> HiddenFrom(McpCaller caller) =>
+        Scoped.Where(s => !s.AnyOf.Any(caller.HasScope)).SelectMany(s => s.Tools).ToHashSet();
+
+    private static HashSet<string> ToolNames(Type type) =>
+        type.GetMethods()
+            .Select(m => m.GetCustomAttributes(typeof(McpServerToolAttribute), false)
+                .Cast<McpServerToolAttribute>().FirstOrDefault()?.Name)
+            .OfType<string>()
+            .ToHashSet();
 }
 
 /// <summary>Caps how often one user can start an agent run, since each one drives the local model.</summary>
@@ -52,6 +79,36 @@ public static class McpAgentLimiter
         if (!lease.IsAcquired)
             throw new McpException("Too many agent requests. Wait a minute before trying again.");
     }
+}
+
+/// <summary>
+/// Caps how many wish list adds one user's keys can make, so an assistant that
+/// has been misled (by a listing page, say) cannot bury the wish list in junk.
+/// Counted per user, not per key, and only for calls that reach the database:
+/// a refused scope or a bad argument does not use up the allowance.
+/// </summary>
+public sealed class McpWishlistLimiter : IDisposable
+{
+    public const int PerMinute = 10;
+
+    private readonly PartitionedRateLimiter<int> limiter =
+        PartitionedRateLimiter.Create<int, int>(userId =>
+            RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = PerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    public void Acquire(int userId)
+    {
+        using var lease = limiter.AttemptAcquire(userId);
+        if (!lease.IsAcquired)
+            throw new McpException(
+                $"Too many wish list adds. The limit is {PerMinute} a minute; wait a minute before adding more.");
+    }
+
+    public void Dispose() => limiter.Dispose();
 }
 
 /// <summary>Read-only tools over the signed-in collector's own data.</summary>
@@ -337,5 +394,81 @@ public class WatchTrackerAgentTools(
         {
             throw new McpException(ex.Message);
         }
+    }
+}
+
+/// <summary>
+/// Tools that change the collector's data. Registered for every caller but refuse
+/// keys without the wishlist (or write) scope, and are hidden from their tool list.
+/// </summary>
+[McpServerToolType]
+public class WatchTrackerWriteTools(
+    McpCaller caller,
+    IRecommendationWishlistService wishlist,
+    McpWishlistLimiter limiter)
+{
+    public const string DefaultNote = "Added by an assistant over MCP.";
+
+    [McpServerTool(Name = "add_to_wishlist", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
+    [Description("Add a watch to the wish list, at the end of the priority order. Only call this when the user has asked for this watch to be added. If the wish list already has it (same link, or same brand and model), nothing is added and the existing watch id is returned with added=false. Limited to 10 calls a minute.")]
+    public async Task<object> AddToWishlist(
+        [Description("The brand, up to 200 characters.")] string brand,
+        [Description("The model, up to 200 characters.")] string model,
+        [Description("Optional reference number / SKU, up to 100 characters.")] string? referenceNumber = null,
+        [Description("Optional http(s) link to a product page or listing, up to 2000 characters.")] string? linkUrl = null,
+        [Description("Optional expected price.")] decimal? price = null,
+        [Description("Three-letter currency code for the price (e.g. USD).")] string? currency = null,
+        [Description("Optional note recorded on the watch, up to 2000 characters. Say why the user wants it.")] string? notes = null,
+        CancellationToken ct = default)
+    {
+        caller.RequireScope(McpToolScopes.WishlistAdd);
+
+        brand = brand?.Trim() ?? "";
+        model = model?.Trim() ?? "";
+        referenceNumber = string.IsNullOrWhiteSpace(referenceNumber) ? null : referenceNumber.Trim();
+        linkUrl = string.IsNullOrWhiteSpace(linkUrl) ? null : linkUrl.Trim();
+        currency = string.IsNullOrWhiteSpace(currency) ? null : currency.Trim().ToUpperInvariant();
+        notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+
+        if (brand.Length is 0 or > 200 || model.Length is 0 or > 200)
+            throw new McpException("brand and model are required, up to 200 characters each.");
+        if (referenceNumber?.Length > 100)
+            throw new McpException("referenceNumber is limited to 100 characters.");
+        if (linkUrl is not null
+            && (linkUrl.Length > 2000
+                || !Uri.TryCreate(linkUrl, UriKind.Absolute, out var uri)
+                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)))
+            throw new McpException("linkUrl must be an http or https address, up to 2000 characters.");
+        if (price is < 0 or > 10_000_000)
+            throw new McpException("price must be between 0 and 10,000,000.");
+        if (currency is not null && (currency.Length != 3 || !currency.All(char.IsAsciiLetter)))
+            throw new McpException("currency must be a three-letter code.");
+        if (notes?.Length > 2000)
+            throw new McpException("notes is limited to 2000 characters.");
+
+        limiter.Acquire(caller.UserId);
+
+        var result = await wishlist.AddWatchAsync(
+            new AdvisorRecommendationCardDto
+            {
+                Title = $"{brand} {model}",
+                Brand = brand,
+                Model = model,
+                ReferenceNumber = referenceNumber,
+                ItemUrl = linkUrl,
+                Price = price,
+                Currency = price is null ? null : currency
+            },
+            caller.UserId,
+            notes ?? DefaultNote,
+            ct);
+
+        // The service words its refusals for recommendation cards; say it plainly here.
+        var message = result.Added
+            ? "Added to the wish list."
+            : result.Message.Contains("another watch", StringComparison.Ordinal)
+                ? result.Message
+                : "This watch is already on the wish list.";
+        return new { added = result.Added, watchId = result.WatchId, message };
     }
 }
