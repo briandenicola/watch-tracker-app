@@ -5,7 +5,8 @@ namespace WatchTracker.Api.Authentication;
 /// <summary>
 /// What an API key may change over the REST API. Any key may use GET, HEAD or
 /// OPTIONS; POST, PUT, PATCH and DELETE need a key with the "write" scope
-/// (Read + write in Settings). No key may create, change or revoke API keys:
+/// (Read + write in Settings); the "wishlist" scope does not count, it only
+/// opens the MCP add_to_wishlist tool. No key may create, change or revoke API keys:
 /// that is done signed in. The MCP endpoint is left to its own scope checks,
 /// and browser (JWT) requests pass unchanged.
 /// </summary>

@@ -19,6 +19,9 @@ public class McpScopeTests
     [InlineData("read,write", "read,write")]
     [InlineData("Write", "read,write")]
     [InlineData("agents, write ,read", "read,write,agents")]
+    [InlineData("wishlist", "read,wishlist")]
+    [InlineData("Wishlist, agents", "read,agents,wishlist")]
+    [InlineData("wishlist,agents,write,read", "read,write,agents,wishlist")]
     public void Normalize_returns_canonical_scopes_or_null(string? input, string? expected) =>
         Assert.Equal(expected, ApiKeyScopes.Normalize(input));
 
@@ -59,6 +62,8 @@ public class McpScopeTests
     [InlineData("read,agents", false, true)]
     [InlineData("read,write", true, false)]
     [InlineData("read,write,agents", true, true)]
+    [InlineData("read,wishlist", true, false)]
+    [InlineData("read,agents,wishlist", true, true)]
     public void Tools_are_listed_only_for_keys_with_their_scope(string scopes, bool seesWrite, bool seesAgents)
     {
         var hidden = McpToolScopes.HiddenFrom(CallerWith(scopes));
@@ -79,6 +84,27 @@ public class McpScopeTests
         await Assert.ThrowsAsync<McpException>(() => tools.AddToWishlist("Tudor", "Black Bay 58"));
         Assert.Empty(db.Context.Watches);
     }
+
+    [Theory]
+    [InlineData("read,wishlist")]
+    [InlineData("read,agents,wishlist")]
+    [InlineData("read,write")]
+    public async Task Wishlist_or_write_keys_can_add_to_the_wish_list(string scopes)
+    {
+        await using var db = await TestDatabase.CreateAsync();
+        db.Context.Users.Add(new WatchTracker.Api.Models.User { Id = 7, Username = "brian", Email = "b@example.com", PasswordHash = "x" });
+        await db.Context.SaveChangesAsync();
+        var tools = new WatchTrackerWriteTools(
+            CallerWith(scopes), new WatchTracker.Api.Services.RecommendationWishlistService(db.Context));
+
+        await tools.AddToWishlist("Tudor", "Black Bay 58");
+
+        Assert.Single(db.Context.Watches);
+    }
+
+    [Fact]
+    public void A_wishlist_key_is_not_an_agents_key() =>
+        Assert.Throws<McpException>(() => CallerWith("read,wishlist").RequireScope(ApiKeyScopes.Agents));
 
     [Fact]
     public void Jwt_style_caller_without_scopes_has_no_access() =>

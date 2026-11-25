@@ -48,6 +48,9 @@ public class ApiKeyReadOnlyMiddlewareTests
     [InlineData("PATCH", "/api/watches/1", "read,agents")]
     [InlineData("DELETE", "/api/watches/1", "read,agents")]
     [InlineData("POST", "/api/data/import", "read")]
+    // The wishlist scope opens one MCP tool; it is not a way to write over REST.
+    [InlineData("POST", "/api/watches", "read,wishlist")]
+    [InlineData("DELETE", "/api/watches/1", "read,agents,wishlist")]
     public async Task KeysWithoutWriteCannotChangeData(string method, string path, string scopes)
     {
         var (status, passed) = await Run(method, path, ApiKeyAuthenticationHandler.SchemeName, scopes);

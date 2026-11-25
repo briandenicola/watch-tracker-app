@@ -31,7 +31,7 @@ If calls return 503, the admin has not enabled MCP (Admin > App Settings > MCP S
 | `ask_style_agent` | Needs `watchId`; give `occasion` and `weather` |
 | `recommend_watch_for_outfit` | Needs 2+ watches; `occasion` and `outfitDescription` |
 
-## Write tools (key needs the `write` scope)
+## Write tools (key needs the `wishlist` scope; `write` also works)
 
 | Tool | Notes |
 |---|---|

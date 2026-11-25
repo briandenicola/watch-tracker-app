@@ -26,11 +26,12 @@ public class McpCaller(IHttpContextAccessor accessor)
     public bool HasScope(string scope) =>
         ApiKeyScopes.Has(Principal.FindFirstValue(ApiKeyScopes.ClaimType), scope);
 
-    public void RequireScope(string scope)
+    /// <summary>Passes when the key has any one of the scopes; the first is the one named in the refusal.</summary>
+    public void RequireScope(params string[] scopes)
     {
-        if (!HasScope(scope))
+        if (!scopes.Any(HasScope))
             throw new McpException(
-                $"This API key does not have the \"{scope}\" scope. Give it that access in Settings > API Keys.");
+                $"This API key does not have the \"{scopes[0]}\" scope. Give it that access in Settings > API Keys.");
     }
 }
 
@@ -40,14 +41,17 @@ public class McpCaller(IHttpContextAccessor accessor)
 /// </summary>
 public static class McpToolScopes
 {
-    private static readonly (string Scope, HashSet<string> Tools)[] Scoped =
+    /// <summary>The scopes that open add_to_wishlist: its own narrow one, or full write.</summary>
+    public static readonly string[] WishlistAdd = [ApiKeyScopes.Wishlist, ApiKeyScopes.Write];
+
+    private static readonly (string[] AnyOf, HashSet<string> Tools)[] Scoped =
     [
-        (ApiKeyScopes.Agents, ToolNames(typeof(WatchTrackerAgentTools))),
-        (ApiKeyScopes.Write, ToolNames(typeof(WatchTrackerWriteTools)))
+        ([ApiKeyScopes.Agents], ToolNames(typeof(WatchTrackerAgentTools))),
+        (WishlistAdd, ToolNames(typeof(WatchTrackerWriteTools)))
     ];
 
     public static HashSet<string> HiddenFrom(McpCaller caller) =>
-        Scoped.Where(s => !caller.HasScope(s.Scope)).SelectMany(s => s.Tools).ToHashSet();
+        Scoped.Where(s => !s.AnyOf.Any(caller.HasScope)).SelectMany(s => s.Tools).ToHashSet();
 
     private static HashSet<string> ToolNames(Type type) =>
         type.GetMethods()
@@ -365,7 +369,7 @@ public class WatchTrackerAgentTools(
 
 /// <summary>
 /// Tools that change the collector's data. Registered for every caller but refuse
-/// keys without the write scope, and are hidden from their tool list.
+/// keys without the wishlist (or write) scope, and are hidden from their tool list.
 /// </summary>
 [McpServerToolType]
 public class WatchTrackerWriteTools(McpCaller caller, IRecommendationWishlistService wishlist)
@@ -384,7 +388,7 @@ public class WatchTrackerWriteTools(McpCaller caller, IRecommendationWishlistSer
         [Description("Optional note recorded on the watch, up to 2000 characters. Say why the user wants it.")] string? notes = null,
         CancellationToken ct = default)
     {
-        caller.RequireScope(ApiKeyScopes.Write);
+        caller.RequireScope(McpToolScopes.WishlistAdd);
 
         brand = brand?.Trim() ?? "";
         model = model?.Trim() ?? "";
