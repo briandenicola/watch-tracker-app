@@ -252,7 +252,7 @@
         <h3 class="text-lg font-medium text-text mb-4">API Keys</h3>
 
         <p class="text-sm text-text-muted mb-4">
-          Read only can look but not change anything. Read + write can also add, edit and delete, for apps that update your collection.
+          Read only can look but not change anything. Read + write can also add, edit and delete, for apps that update your collection, and lets an assistant add to your wish list over MCP.
           Read + AI agents can also run the AI agents over MCP. Change a key's access below without replacing it.
         </p>
         <p v-if="keyMsg" class="text-sm text-danger mb-4" role="alert">{{ keyMsg }}</p>
@@ -593,6 +593,7 @@ const KEY_ACCESS = [
   { value: 'read', label: 'Read only' },
   { value: 'read,write', label: 'Read + write' },
   { value: 'read,agents', label: 'Read + AI agents' },
+  { value: 'read,write,agents', label: 'Read + write + AI agents' },
 ]
 function keyAccessOptions(current: string) {
   return KEY_ACCESS.some(o => o.value === current) ? KEY_ACCESS : [...KEY_ACCESS, { value: current, label: current.replace(/,/g, ' + ') }]

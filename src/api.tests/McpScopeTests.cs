@@ -54,6 +54,32 @@ public class McpScopeTests
     public void Agents_key_passes_agent_scope() =>
         CallerWith("read,agents").RequireScope(ApiKeyScopes.Agents);
 
+    [Theory]
+    [InlineData("read", false, false)]
+    [InlineData("read,agents", false, true)]
+    [InlineData("read,write", true, false)]
+    [InlineData("read,write,agents", true, true)]
+    public void Tools_are_listed_only_for_keys_with_their_scope(string scopes, bool seesWrite, bool seesAgents)
+    {
+        var hidden = McpToolScopes.HiddenFrom(CallerWith(scopes));
+        Assert.Equal(seesWrite, !hidden.Contains("add_to_wishlist"));
+        Assert.Equal(seesAgents, !hidden.Contains("ask_collection_advisor"));
+        Assert.DoesNotContain("list_wishlist", hidden);
+    }
+
+    [Theory]
+    [InlineData("read")]
+    [InlineData("read,agents")]
+    public async Task Keys_without_write_cannot_add_to_the_wish_list(string scopes)
+    {
+        await using var db = await TestDatabase.CreateAsync();
+        var tools = new WatchTrackerWriteTools(
+            CallerWith(scopes), new WatchTracker.Api.Services.RecommendationWishlistService(db.Context));
+
+        await Assert.ThrowsAsync<McpException>(() => tools.AddToWishlist("Tudor", "Black Bay 58"));
+        Assert.Empty(db.Context.Watches);
+    }
+
     [Fact]
     public void Jwt_style_caller_without_scopes_has_no_access() =>
         Assert.False(CallerWith(null).HasScope(ApiKeyScopes.Read));

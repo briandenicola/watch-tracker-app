@@ -1,10 +1,10 @@
 namespace WatchTracker.Api.Authentication;
 
 /// <summary>
-/// What an API key may do. Every key reads. "write" lets it change data over
-/// the REST API (see <see cref="ApiKeyReadOnlyMiddleware"/>); "agents" lets it
-/// run the AI agents over MCP. Settings offers read, read,write and
-/// read,agents.
+/// What an API key may do. Every key reads. "write" lets it change data: over
+/// the REST API (see <see cref="ApiKeyReadOnlyMiddleware"/>) and through the MCP
+/// write tools; "agents" lets it run the AI agents over MCP. Settings offers
+/// read, read,write, read,agents and read,write,agents.
 /// </summary>
 public static class ApiKeyScopes
 {

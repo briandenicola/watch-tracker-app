@@ -25,7 +25,15 @@ public class RecommendationWishlistService(AppDbContext context) : IRecommendati
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(card.ItemUrl)) return null;
+        return await AddWatchAsync(card, userId, note, ct);
+    }
 
+    public async Task<AdvisorWishlistActionResultDto> AddWatchAsync(
+        AdvisorRecommendationCardDto card,
+        int userId,
+        string note,
+        CancellationToken ct = default)
+    {
         var wishlistLock = WishlistLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
         await wishlistLock.WaitAsync(ct);
         try
@@ -109,8 +117,11 @@ public class RecommendationWishlistService(AppDbContext context) : IRecommendati
         var normalizedModel = Normalize(card.Model);
         var normalizedReference = Normalize(card.ReferenceNumber);
 
+        // A watch named without a link must not match every other linkless watch.
+        var url = NormalizeUrl(card.ItemUrl);
+
         return wishlist.FirstOrDefault(w =>
-            string.Equals(NormalizeUrl(w.LinkUrl), NormalizeUrl(card.ItemUrl), StringComparison.OrdinalIgnoreCase)
+            (url.Length > 0 && string.Equals(NormalizeUrl(w.LinkUrl), url, StringComparison.OrdinalIgnoreCase))
             || (normalizedBrand.Length > 0
                 && normalizedModel.Length > 0
                 && Normalize(w.Brand) == normalizedBrand
@@ -145,8 +156,8 @@ public class RecommendationWishlistService(AppDbContext context) : IRecommendati
         WishlistPriority = (wishlist.Max(w => w.WishlistPriority) ?? -1) + 1,
         PurchasePrice = card.TotalPrice ?? card.Price,
         Sku = TrimNullableTo(card.ReferenceNumber, 100),
-        LinkUrl = card.ItemUrl,
-        LinkText = TrimTo(card.Title, 200),
+        LinkUrl = string.IsNullOrWhiteSpace(card.ItemUrl) ? null : card.ItemUrl,
+        LinkText = string.IsNullOrWhiteSpace(card.ItemUrl) ? null : TrimTo(card.Title, 200),
         AcquiredFrom = TrimNullableTo(card.Provider, 200),
         MarketplaceProvider = card.Provider,
         MarketplaceItemId = card.ProviderItemId,

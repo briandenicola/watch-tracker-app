@@ -15,4 +15,15 @@ public interface IRecommendationWishlistService
         int userId,
         string note,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// The same, for a watch named by hand: brand and model are enough and a link
+    /// is optional. Used where a person (or their assistant) says what they want
+    /// rather than picking a listing.
+    /// </summary>
+    Task<AdvisorWishlistActionResultDto> AddWatchAsync(
+        AdvisorRecommendationCardDto card,
+        int userId,
+        string note,
+        CancellationToken ct = default);
 }
