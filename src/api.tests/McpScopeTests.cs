@@ -79,7 +79,7 @@ public class McpScopeTests
     {
         await using var db = await TestDatabase.CreateAsync();
         var tools = new WatchTrackerWriteTools(
-            CallerWith(scopes), new WatchTracker.Api.Services.RecommendationWishlistService(db.Context));
+            CallerWith(scopes), new WatchTracker.Api.Services.RecommendationWishlistService(db.Context), new McpWishlistLimiter());
 
         await Assert.ThrowsAsync<McpException>(() => tools.AddToWishlist("Tudor", "Black Bay 58"));
         Assert.Empty(db.Context.Watches);
@@ -95,7 +95,7 @@ public class McpScopeTests
         db.Context.Users.Add(new WatchTracker.Api.Models.User { Id = 7, Username = "brian", Email = "b@example.com", PasswordHash = "x" });
         await db.Context.SaveChangesAsync();
         var tools = new WatchTrackerWriteTools(
-            CallerWith(scopes), new WatchTracker.Api.Services.RecommendationWishlistService(db.Context));
+            CallerWith(scopes), new WatchTracker.Api.Services.RecommendationWishlistService(db.Context), new McpWishlistLimiter());
 
         await tools.AddToWishlist("Tudor", "Black Bay 58");
 

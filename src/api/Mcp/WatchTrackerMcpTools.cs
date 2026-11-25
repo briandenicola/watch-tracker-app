@@ -81,6 +81,36 @@ public static class McpAgentLimiter
     }
 }
 
+/// <summary>
+/// Caps how many wish list adds one user's keys can make, so an assistant that
+/// has been misled (by a listing page, say) cannot bury the wish list in junk.
+/// Counted per user, not per key, and only for calls that reach the database:
+/// a refused scope or a bad argument does not use up the allowance.
+/// </summary>
+public sealed class McpWishlistLimiter : IDisposable
+{
+    public const int PerMinute = 10;
+
+    private readonly PartitionedRateLimiter<int> limiter =
+        PartitionedRateLimiter.Create<int, int>(userId =>
+            RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = PerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    public void Acquire(int userId)
+    {
+        using var lease = limiter.AttemptAcquire(userId);
+        if (!lease.IsAcquired)
+            throw new McpException(
+                $"Too many wish list adds. The limit is {PerMinute} a minute; wait a minute before adding more.");
+    }
+
+    public void Dispose() => limiter.Dispose();
+}
+
 /// <summary>Read-only tools over the signed-in collector's own data.</summary>
 [McpServerToolType]
 public class WatchTrackerReadTools(
@@ -372,12 +402,15 @@ public class WatchTrackerAgentTools(
 /// keys without the wishlist (or write) scope, and are hidden from their tool list.
 /// </summary>
 [McpServerToolType]
-public class WatchTrackerWriteTools(McpCaller caller, IRecommendationWishlistService wishlist)
+public class WatchTrackerWriteTools(
+    McpCaller caller,
+    IRecommendationWishlistService wishlist,
+    McpWishlistLimiter limiter)
 {
     public const string DefaultNote = "Added by an assistant over MCP.";
 
     [McpServerTool(Name = "add_to_wishlist", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Add a watch to the wish list, at the end of the priority order. Only call this when the user has asked for this watch to be added. If the wish list already has it (same link, or same brand and model), nothing is added and the existing watch id is returned with added=false.")]
+    [Description("Add a watch to the wish list, at the end of the priority order. Only call this when the user has asked for this watch to be added. If the wish list already has it (same link, or same brand and model), nothing is added and the existing watch id is returned with added=false. Limited to 10 calls a minute.")]
     public async Task<object> AddToWishlist(
         [Description("The brand, up to 200 characters.")] string brand,
         [Description("The model, up to 200 characters.")] string model,
@@ -412,6 +445,8 @@ public class WatchTrackerWriteTools(McpCaller caller, IRecommendationWishlistSer
             throw new McpException("currency must be a three-letter code.");
         if (notes?.Length > 2000)
             throw new McpException("notes is limited to 2000 characters.");
+
+        limiter.Acquire(caller.UserId);
 
         var result = await wishlist.AddWatchAsync(
             new AdvisorRecommendationCardDto

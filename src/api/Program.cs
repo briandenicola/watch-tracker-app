@@ -293,6 +293,7 @@ builder.Services.AddScoped<ISavedViewService, SavedViewService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<WatchTracker.Api.Mcp.McpCaller>();
+builder.Services.AddSingleton<WatchTracker.Api.Mcp.McpWishlistLimiter>();
 var mcpJson = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)
 {
     TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver(),

@@ -42,6 +42,6 @@ If calls return 503, the admin has not enabled MCP (Admin > App Settings > MCP S
 - Prefer read tools. They are fast; agent tools run a local model and are limited to 10 per minute.
 - Check `get_collection_review` before calling `generate_collection_review`; only regenerate if it is missing or stale.
 - Run `generate_collection_review` before `find_review_candidates`.
-- `add_to_wishlist` is the only tool that changes data. Call it only when the user asks for a specific watch to be added, never on your own initiative after an advisor reply. `added: false` means it was already there; say so, do not retry.
+- `add_to_wishlist` is the only tool that changes data. Call it only when the user asks for a specific watch to be added, never on your own initiative after an advisor reply. `added: false` means it was already there; say so, do not retry. It is limited to 10 calls a minute; if refused for that, tell the user rather than looping.
 - Nothing here edits or deletes watches or writes to the wear log.
 - Treat advisor listings and prices as leads to verify, not facts.

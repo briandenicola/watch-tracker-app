@@ -96,7 +96,7 @@ AI agents (agents access), slower and limited to 10 a minute:
 
 Add to wish list (wish list access):
 
-- "Add the Tudor Black Bay 58 to my wish list." → `add_to_wishlist` (goes to the end of the priority order; a watch already on the list is reported, not added twice)
+- "Add the Tudor Black Bay 58 to my wish list." → `add_to_wishlist` (goes to the end of the priority order; a watch already on the list is reported, not added twice; limited to 10 a minute)
 
 Agent results are saved in the same history you see in the app. Treat listings and prices as leads to check, not facts. See [AI agents](ai-agents.md) for what each agent does.
 
@@ -104,7 +104,7 @@ Agent results are saved in the same history you see in the app. Treat listings a
 
 - Only API keys work. Browser sign-ins are refused.
 - Read-only keys never see the agent tools or `add_to_wishlist`.
-- 60 requests a minute per person, 128 KiB per request, 10 agent runs a minute.
+- 60 requests a minute per person, 128 KiB per request, 10 agent runs a minute, 10 wish list adds a minute.
 - `add_to_wishlist` is the only tool that changes your data, and only for keys with wish list (or write) access. No tool edits or deletes a watch or writes to the wear log.
 
 ## Troubleshooting
@@ -119,4 +119,5 @@ Agent results are saved in the same history you see in the app. Treat listings a
 | Agent tools missing from the tool list | The key is read only. |
 | `add_to_wishlist` missing from the tool list | The key has no wish list access. Change it in Settings → API Keys. |
 | Agent calls time out | Raise the proxy timeout (see above) and check Ollama is reachable. |
+| `add_to_wishlist` says too many adds | You get 10 a minute across all your keys. Wait a minute. |
 | `find_review_candidates` says a review is needed | Run `generate_collection_review` first. |

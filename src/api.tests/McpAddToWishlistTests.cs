@@ -122,7 +122,41 @@ public class McpAddToWishlistTests
         Assert.Empty(await db.Context.Watches.ToListAsync());
     }
 
-    private static WatchTrackerWriteTools Tools(TestDatabase db, User user)
+    [Fact]
+    public async Task Adds_are_capped_per_user_each_minute()
+    {
+        await using var db = await TestDatabase.CreateAsync();
+        var brian = await AddUserAsync(db, "brian");
+        var nelie = await AddUserAsync(db, "nelie");
+        var limiter = new McpWishlistLimiter();
+        var tools = Tools(db, brian, limiter);
+        for (var i = 0; i < McpWishlistLimiter.PerMinute; i++)
+            await tools.AddToWishlist("Seiko", $"Model {i}");
+
+        var refused = await Assert.ThrowsAsync<McpException>(() => tools.AddToWishlist("Seiko", "One too many"));
+
+        Assert.Contains("Too many", refused.Message);
+        Assert.Equal(McpWishlistLimiter.PerMinute, await db.Context.Watches.CountAsync(w => w.UserId == brian.Id));
+        // A second key for the same user shares the allowance; another user has their own.
+        await Assert.ThrowsAsync<McpException>(() => Tools(db, brian, limiter).AddToWishlist("Seiko", "Other key"));
+        await Tools(db, nelie, limiter).AddToWishlist("Seiko", "Model 0");
+    }
+
+    [Fact]
+    public async Task Refused_arguments_do_not_use_up_the_allowance()
+    {
+        await using var db = await TestDatabase.CreateAsync();
+        var user = await AddUserAsync(db, "brian");
+        var tools = Tools(db, user, new McpWishlistLimiter());
+        for (var i = 0; i < McpWishlistLimiter.PerMinute + 5; i++)
+            await Assert.ThrowsAsync<McpException>(() => tools.AddToWishlist("", "x"));
+
+        await tools.AddToWishlist("Tudor", "Black Bay 58");
+
+        Assert.Single(await db.Context.Watches.ToListAsync());
+    }
+
+    private static WatchTrackerWriteTools Tools(TestDatabase db, User user, McpWishlistLimiter? limiter = null)
     {
         var context = new DefaultHttpContext
         {
@@ -135,7 +169,8 @@ public class McpAddToWishlistTests
         };
         return new WatchTrackerWriteTools(
             new McpCaller(new HttpContextAccessor { HttpContext = context }),
-            new RecommendationWishlistService(db.Context));
+            new RecommendationWishlistService(db.Context),
+            limiter ?? new McpWishlistLimiter());
     }
 
     private static T Read<T>(object result, string property) =>
